@@ -41,11 +41,72 @@ const courseSchema = new mongoose.Schema({
     sections: [{
         title: { type: String, required: true },
         isPublic: { type: Boolean, default: false },
+        isPreview: { type: Boolean, default: false },
         lectures: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Lecture'
         }]
-    }]
+    }],
+    // Marketplace fields
+    isMarketplace: {
+        type: Boolean,
+        default: false
+    },
+    price: {
+        type: Number,
+        default: 0
+    },
+    currency: {
+        type: String,
+        enum: ['INR', 'USD'],
+        default: 'INR'
+    },
+    originalPrice: {
+        type: Number,
+        default: 0
+    },
+    thumbnail: {
+        type: String,
+        default: ''
+    },
+    previewVideo: {
+        type: String,
+        default: ''
+    },
+    category: {
+        type: String,
+        default: ''
+    },
+    level: {
+        type: String,
+        enum: ['Beginner', 'Intermediate', 'Advanced', ''],
+        default: ''
+    },
+    requirements: [{
+        type: String
+    }],
+    whatYouWillLearn: [{
+        type: String
+    }],
+    language: {
+        type: String,
+        default: 'English'
+    },
+    totalDuration: {
+        type: Number,
+        default: 0
+    },
+    enrollmentCount: {
+        type: Number,
+        default: 0
+    },
+    tags: [{
+        type: String
+    }],
+    rating: {
+        average: { type: Number, default: 0 },
+        count: { type: Number, default: 0 }
+    }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

@@ -1,16 +1,23 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher } from 'react-icons/fa';
+import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaStore } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
-const StudentDashboard = () => {
+const StudentDashboard = ({ defaultTab }) => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const tabParam = searchParams.get('tab');
-    const [activeTab, setActiveTab] = useState(tabParam === 'created' ? 'created' : 'enrolled');
+    const location = useLocation();
+
+    // Determine active tab from route or prop
+    const getInitialTab = () => {
+        if (location.pathname === '/my-courses') return 'created';
+        if (defaultTab === 'created') return 'created';
+        return 'enrolled';
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab());
     const [enrolledCourses, setEnrolledCourses] = useState([]);
     const [createdCourses, setCreatedCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,14 +28,14 @@ const StudentDashboard = () => {
     const [creating, setCreating] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    // Sync tab with URL
+    // Sync tab with route
     useEffect(() => {
-        if (activeTab === 'created') {
-            setSearchParams({ tab: 'created' });
-        } else {
-            setSearchParams({});
+        if (activeTab === 'created' && location.pathname !== '/my-courses') {
+            navigate('/my-courses', { replace: true });
+        } else if (activeTab === 'enrolled' && location.pathname !== '/my-learning') {
+            navigate('/my-learning', { replace: true });
         }
-    }, [activeTab, setSearchParams]);
+    }, [activeTab, location.pathname, navigate]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -109,42 +116,22 @@ const StudentDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pb-12 transition-colors duration-300">
 
-            {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
-                <div className="container mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
-                                Welcome back, {user?.name?.split(' ')[0] || 'User'}
-                            </h1>
-                        </div>
-                        {/* Quick Stats */}
-                        <div className="flex items-center gap-4 text-sm">
-                            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                                <FaGraduationCap className="text-slate-400 dark:text-slate-500" />
-                                <span className="font-medium text-slate-900 dark:text-white">{enrolledCourses.length}</span>
-                                <span>Enrolled</span>
-                            </div>
-                            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
-                            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                                <FaChalkboardTeacher className="text-slate-400 dark:text-slate-500" />
-                                <span className="font-medium text-slate-900 dark:text-white">{createdCourses.length}</span>
-                                <span>Teaching</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Tabs */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10">
                 <div className="container mx-auto px-4">
                     <div className="flex gap-1">
+                        <Link
+                            to="/marketplace"
+                            className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                        >
+                            <FaStore className="text-sm" />
+                            <span>Marketplace</span>
+                        </Link>
                         <button
                             onClick={() => setActiveTab('enrolled')}
                             className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'enrolled'
-                                    ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
-                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
+                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                 }`}
                         >
                             <FaGraduationCap className="text-sm" />
@@ -158,8 +145,8 @@ const StudentDashboard = () => {
                         <button
                             onClick={() => setActiveTab('created')}
                             className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'created'
-                                    ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
-                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
+                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                 }`}
                         >
                             <FaChalkboardTeacher className="text-sm" />
@@ -311,7 +298,7 @@ const StudentDashboard = () => {
                                                 {/* Status Badge */}
                                                 <div className="flex flex-col items-end gap-2">
                                                     <span className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${course.status === 'Published' ? 'bg-white/25' :
-                                                            course.status === 'Archived' ? 'bg-red-500/50' : 'bg-yellow-500/50'
+                                                        course.status === 'Archived' ? 'bg-red-500/50' : 'bg-yellow-500/50'
                                                         }`}>
                                                         {course.status === 'Published' ? (
                                                             <span className="flex items-center gap-1">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock } from 'react-icons/fa';
 import BroadcastList from '../components/BroadcastList';
 import AuthContext from '../context/AuthContext';
 
@@ -14,6 +14,7 @@ const StudentCourseDetails = () => {
 
     const [course, setCourse] = useState(null);
     const [progressMap, setProgressMap] = useState({});
+    const [isEnrolled, setIsEnrolled] = useState(false);
     const [expandedSections, setExpandedSections] = useState({});
 
     // Broadcast State
@@ -63,10 +64,11 @@ const StudentCourseDetails = () => {
         const fetchData = async () => {
             try {
                 // Fetch course details and progress in parallel (optimized)
+                // Wrap progress/unread calls to prevent page crash if they fail (e.g. not enrolled/logged in)
                 const [courseRes, progressRes, unreadRes] = await Promise.all([
                     api.get(`/courses/${id}`),
-                    api.get(`/courses/${id}/my-progress`),
-                    api.get(`/broadcasts/course/${id}/unread-count`)
+                    api.get(`/courses/${id}/my-progress`).catch(() => ({ data: null })),
+                    api.get(`/broadcasts/course/${id}/unread-count`).catch(() => ({ data: { unreadCount: 0 } }))
                 ]);
 
                 // 1. Set Course Details
@@ -81,6 +83,7 @@ const StudentCourseDetails = () => {
 
                 // 2. Set Student's Progress (from optimized endpoint)
                 if (progressRes.data && progressRes.data.completedLectures) {
+                    setIsEnrolled(true);
                     const map = {};
                     progressRes.data.completedLectures.forEach(item => {
                         map[item.lecture] = {
@@ -272,7 +275,7 @@ const StudentCourseDetails = () => {
 
                     <div className="space-y-4 sm:space-y-6">
                         {course.sections && course.sections.length > 0 ? (
-                            course.sections.map((section) => {
+                            course.sections.filter(section => section.isPublic).map((section) => {
                                 // Section Progress Logic
                                 const totalSecLectures = section.lectures ? section.lectures.length : 0;
                                 const completionLabel = course.completedStatus || 'Completed';
@@ -318,6 +321,7 @@ const StudentCourseDetails = () => {
                                             <div className="divide-y divide-gray-100 dark:divide-slate-800 animate-in slide-in-from-top-2 duration-200">
                                                 {section.lectures && section.lectures.length > 0 ? (
                                                     section.lectures.map((lec) => {
+                                                        const isPreview = lec.isPreview || section.isPreview;
                                                         const progress = progressMap[lec._id] || { status: 'Not Started' };
                                                         const status = progress.status;
                                                         const completedAt = progress.completedAt ? new Date(progress.completedAt) : null;
@@ -329,8 +333,15 @@ const StudentCourseDetails = () => {
                                                         return (
                                                             <div
                                                                 key={lec._id}
-                                                                onClick={() => navigate(`/course/${id}/lecture/${lec._id}`)}
-                                                                className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors p-4 flex items-center justify-between cursor-pointer"
+                                                                onClick={() => {
+                                                                    if (isEnrolled || isPreview) {
+                                                                        navigate(`/course/${id}/lecture/${lec._id}`);
+                                                                    }
+                                                                }}
+                                                                className={`group transition-colors p-4 flex items-center justify-between ${isEnrolled || isPreview
+                                                                    ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer'
+                                                                    : 'opacity-60 cursor-not-allowed bg-slate-50/50 dark:bg-slate-900/50'
+                                                                    }`}
                                                             >
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="shrink-0">
@@ -342,8 +353,17 @@ const StudentCourseDetails = () => {
                                                                                 }
                                                                             </div>
                                                                         ) : (
-                                                                            <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400 shadow-sm transition-colors">
-                                                                                {lec.number}
+                                                                            <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold transition-colors shadow-sm ${!isEnrolled && !isPreview
+                                                                                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                                                                                    : isPreview && !isEnrolled
+                                                                                        ? 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400'
+                                                                                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                                                                                }`}>
+                                                                                {!isEnrolled ? (
+                                                                                    isPreview ? <FaUnlock size={12} /> : <FaLock size={12} />
+                                                                                ) : (
+                                                                                    lec.number
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -351,7 +371,14 @@ const StudentCourseDetails = () => {
                                                                         <span className="font-medium text-sm text-slate-900 dark:text-white group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                                                                             {lec.title}
                                                                         </span>
-                                                                        <div className="flex items-center gap-3 mt-1.5">
+                                                                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                                            {/* Preview Badge */}
+                                                                            {isPreview && !isEnrolled && (
+                                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 uppercase tracking-wide">
+                                                                                    Free Preview
+                                                                                </span>
+                                                                            )}
+
                                                                             {lec.dueDate ? (
                                                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isLate
                                                                                     ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
@@ -393,7 +420,8 @@ const StudentCourseDetails = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
+                                        )
+                                        }
                                     </div>
                                 );
                             })
@@ -404,7 +432,7 @@ const StudentCourseDetails = () => {
                         )}
                     </div>
                 </div>
-            </div>
+            </div >
         );
     };
 
@@ -519,11 +547,10 @@ const StudentCourseDetails = () => {
                                             <button
                                                 onClick={() => navigate(`/course/${id}/quiz/${quiz._id}`)}
                                                 disabled={!canTake}
-                                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                                                    canTake
-                                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
-                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                                                }`}
+                                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${canTake
+                                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                                                    }`}
                                             >
                                                 {canTake ? (quiz.attemptCount > 0 ? 'Retry' : 'Start Quiz') : 'No Attempts Left'}
                                             </button>
@@ -598,11 +625,10 @@ const StudentCourseDetails = () => {
                                 <button
                                     key={tab.id}
                                     onClick={() => handleTabChange(tab.id)}
-                                    className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] ${
-                                        isActive
-                                            ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
-                                            : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                    }`}
+                                    className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] ${isActive
+                                        ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                        }`}
                                 >
                                     <Icon size={12} />
                                     {tab.label}

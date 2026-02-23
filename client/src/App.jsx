@@ -24,6 +24,18 @@ const QuizAnalytics = lazy(() => import('./pages/QuizAnalytics'));
 const StudentProgressDetail = lazy(() => import('./pages/StudentProgressDetail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+// Marketplace pages
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const CourseLanding = lazy(() => import('./pages/CourseLanding'));
+const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
+const CreateMarketplaceCourse = lazy(() => import('./pages/CreateMarketplaceCourse'));
+const ManageCoupons = lazy(() => import('./pages/ManageCoupons'));
+const InstructorCoupons = lazy(() => import('./pages/InstructorCoupons'));
+const BecomeInstructor = lazy(() => import('./pages/BecomeInstructor'));
+const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
+const MyPurchases = lazy(() => import('./pages/MyPurchases'));
+
+
 // Loading spinner component for Suspense fallback
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center dark:bg-slate-950">
@@ -65,6 +77,25 @@ const CourseOwnerRoute = ({ children }) => {
   }
 
   // Backend will verify ownership, frontend just ensures user is logged in
+  return children;
+};
+
+// Route for instructors only
+const InstructorRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  if (user.role !== 'instructor' && user.role !== 'admin') {
+    return <Navigate to="/become-instructor" />;
+  }
+
   return children;
 };
 
@@ -112,11 +143,33 @@ function App() {
                   <Route path="/admin/course/:courseId/quizzes" element={<CourseOwnerRoute><QuizManage /></CourseOwnerRoute>} />
                   <Route path="/admin/course/:courseId/quiz/:quizId/analytics" element={<CourseOwnerRoute><QuizAnalytics /></CourseOwnerRoute>} />
 
-                  <Route path="/" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+                  {/* Home - Marketplace */}
+                  <Route path="/" element={<Marketplace />} />
+                  <Route path="/marketplace" element={<Marketplace />} />
+                  <Route path="/marketplace/course/:id" element={<CourseLanding />} />
+
+                  {/* My Learning & My Courses - tabs on StudentDashboard */}
+                  <Route path="/my-learning" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+                  <Route path="/my-courses" element={<ProtectedRoute><StudentDashboard defaultTab="created" /></ProtectedRoute>} />
+
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/course/:id" element={<ProtectedRoute><StudentCourseDetails /></ProtectedRoute>} />
-                  <Route path="/course/:id/lecture/:lectureId" element={<ProtectedRoute><CourseView /></ProtectedRoute>} />
+                  {/* Public route for lecture view - checks preview status internally */}
+                  <Route path="/course/:id/lecture/:lectureId" element={<CourseView />} />
                   <Route path="/course/:courseId/quiz/:quizId" element={<ProtectedRoute><QuizTake /></ProtectedRoute>} />
+
+                  {/* Marketplace routes - protected */}
+                  <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
+                  <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
+
+
+                  {/* Instructor routes */}
+                  <Route path="/become-instructor" element={<ProtectedRoute><BecomeInstructor /></ProtectedRoute>} />
+                  <Route path="/instructor/dashboard" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
+                  <Route path="/instructor/create-course" element={<InstructorRoute><CreateMarketplaceCourse /></InstructorRoute>} />
+                  <Route path="/instructor/courses" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
+                  <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
+                  <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
 
                   {/* 404 Not Found - Catch all undefined routes */}
                   <Route path="*" element={<NotFound />} />

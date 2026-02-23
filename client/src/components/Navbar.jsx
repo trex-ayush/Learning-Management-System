@@ -2,7 +2,7 @@ import { useContext, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaGraduationCap, FaSearch, FaTimes, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
+import { FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaGraduationCap, FaSearch, FaTimes, FaChevronDown, FaArrowLeft, FaStore, FaShoppingBag, FaChalkboardTeacher } from 'react-icons/fa';
 import api from '../api/axios';
 
 const Navbar = () => {
@@ -123,11 +123,10 @@ const Navbar = () => {
                             className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between gap-3"
                         >
                             <span className="text-sm text-slate-900 dark:text-white truncate">{result.title}</span>
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                                result.type === 'enrolled'
-                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                    : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                            }`}>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${result.type === 'enrolled'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                }`}>
                                 {result.type === 'enrolled' ? 'Enrolled' : 'Created'}
                             </span>
                         </button>
@@ -181,11 +180,10 @@ const Navbar = () => {
                                                             setSearchFilter(option.value);
                                                             setIsFilterDropdownOpen(false);
                                                         }}
-                                                        className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${
-                                                            searchFilter === option.value
-                                                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                                                : 'text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                                                        }`}
+                                                        className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${searchFilter === option.value
+                                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                                            : 'text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                                            }`}
                                                     >
                                                         {option.label}
                                                     </button>
@@ -276,6 +274,26 @@ const Navbar = () => {
                                             My Profile
                                         </Link>
 
+                                        <Link
+                                            to="/my-purchases"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        >
+                                            <FaShoppingBag size={14} />
+                                            My Purchases
+                                        </Link>
+
+                                        {(user.role === 'instructor' || user.role === 'admin') && (
+                                            <Link
+                                                to="/instructor/dashboard"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                <FaChalkboardTeacher size={14} />
+                                                Instructor Dashboard
+                                            </Link>
+                                        )}
+
                                         {user.role === 'admin' && (
                                             <Link
                                                 to="/admin/activities"
@@ -355,11 +373,10 @@ const Navbar = () => {
                             <button
                                 key={option.value}
                                 onClick={() => setSearchFilter(option.value)}
-                                className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                                    searchFilter === option.value
-                                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                                        : 'text-slate-500 dark:text-slate-400'
-                                }`}
+                                className={`flex-1 py-3 text-sm font-medium transition-colors ${searchFilter === option.value
+                                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                                    }`}
                             >
                                 {option.label}
                             </button>

@@ -28,6 +28,10 @@ const lectureSchema = new mongoose.Schema({
         type: String,
         default: 'Pending'
     },
+    isPreview: {
+        type: Boolean,
+        default: false
+    },
     isPublic: {
         type: Boolean,
         default: false

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import AuthContext from '../context/AuthContext';
-import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave } from 'react-icons/fa';
+import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUnlock } from 'react-icons/fa';
 import StatusSelector from '../components/StatusSelector';
 import LectureSidebarItem from '../components/LectureSidebarItem';
 import Pagination from '../components/Pagination';
@@ -87,6 +87,7 @@ const CourseView = () => {
 
     useEffect(() => {
         const fetchProgress = async () => {
+            if (!user) return; // Skip if guest
             try {
                 const res = await api.get('/courses/my/enrolled');
                 const currentCourseProgress = res.data.find(p => p.course._id === id || p.course === id);
@@ -251,6 +252,9 @@ const CourseView = () => {
 
     const currentProgress = selectedLecture ? progressMap[selectedLecture._id] || { status: 'Not Started', notes: '' } : {};
 
+    // Check access
+    const hasAccess = isEnrolled || (user && user.role === 'admin') || (course && user && course.user === user._id) || (selectedLecture && selectedLecture.isPreview);
+
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
@@ -396,8 +400,8 @@ const CourseView = () => {
                                         {/* Bordered Container for Section with Lectures */}
                                         <div
                                             className={`w-12 border-2 rounded-lg p-1 flex flex-col items-center gap-1 ${isEvenSection
-                                                    ? 'border-slate-900 dark:border-white'
-                                                    : 'border-slate-300 dark:border-slate-700'
+                                                ? 'border-slate-900 dark:border-white'
+                                                : 'border-slate-300 dark:border-slate-700'
                                                 }`}
                                             title={section.title}
                                         >
@@ -413,10 +417,10 @@ const CourseView = () => {
                                                         key={lec._id}
                                                         onClick={() => handleSelectLecture(lec)}
                                                         className={`w-9 h-9 rounded-md flex items-center justify-center text-xs font-bold transition-all ${isSelected
-                                                                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
-                                                                : isCompleted
-                                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
-                                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                                                            : isCompleted
+                                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                                                             }`}
                                                         title={`${lec.title} (${status})`}
                                                     >
@@ -442,27 +446,55 @@ const CourseView = () => {
                                 <div className="lg:col-span-2">
                                     <div className="bg-black w-full" style={{ aspectRatio: '16/9', maxHeight: '65vh' }}>
                                         <div className="w-full h-full relative group">
-                                            {selectedLecture.resourceUrl ? (
-                                                selectedLecture.resourceUrl.includes('youtube') || selectedLecture.resourceUrl.includes('youtu.be') ? (
-                                                    <iframe
-                                                        src={selectedLecture.resourceUrl.replace('watch?v=', 'embed/').split('&')[0]}
-                                                        className="w-full h-full"
-                                                        frameBorder="0"
-                                                        allowFullScreen
-                                                        title="Video"
-                                                    ></iframe>
+                                            {hasAccess ? (
+                                                selectedLecture.resourceUrl ? (
+                                                    selectedLecture.resourceUrl.includes('youtube') || selectedLecture.resourceUrl.includes('youtu.be') ? (
+                                                        <iframe
+                                                            src={selectedLecture.resourceUrl.replace('watch?v=', 'embed/').split('&')[0]}
+                                                            className="w-full h-full"
+                                                            frameBorder="0"
+                                                            allowFullScreen
+                                                            title="Video"
+                                                        ></iframe>
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                                                            <a href={selectedLecture.resourceUrl} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 flex flex-col items-center gap-3 transition-colors p-4">
+                                                                <FaPlayCircle className="text-5xl" />
+                                                                <span className="text-base font-medium text-center">Open External Resource</span>
+                                                            </a>
+                                                        </div>
+                                                    )
                                                 ) : (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-                                                        <a href={selectedLecture.resourceUrl} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 flex flex-col items-center gap-3 transition-colors p-4">
-                                                            <FaPlayCircle className="text-5xl" />
-                                                            <span className="text-base font-medium text-center">Open External Resource</span>
-                                                        </a>
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 flex-col p-4">
+                                                        <span className="text-5xl mb-3">📚</span>
+                                                        <span className="font-medium text-base">No Video Resource</span>
                                                     </div>
                                                 )
                                             ) : (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 flex-col p-4">
-                                                    <span className="text-5xl mb-3">📚</span>
-                                                    <span className="font-medium text-base">No Video Resource</span>
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 p-6 text-center">
+                                                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500">
+                                                        <FaLock size={24} />
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Content Locked</h3>
+                                                    <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md text-sm">
+                                                        This lecture is part of the full course. Enroll now to unlock all content.
+                                                    </p>
+
+                                                    {!user ? (
+                                                        <button
+                                                            onClick={() => navigate('/login')}
+                                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm"
+                                                        >
+                                                            Login to Enroll
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => navigate(`/marketplace/course/${id}`)}
+                                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm"
+                                                        >
+                                                            View Course
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

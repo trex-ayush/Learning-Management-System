@@ -17,8 +17,21 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'student'],
+        enum: ['admin', 'student', 'instructor'],
         default: 'student'
+    },
+    // Instructor profile fields
+    bio: {
+        type: String,
+        default: ''
+    },
+    profileImage: {
+        type: String,
+        default: ''
+    },
+    stripeAccountId: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

@@ -21,6 +21,7 @@ const CourseManage = () => {
     const [course, setCourse] = useState(null);
     const [newSectionTitle, setNewSectionTitle] = useState('');
     const [newSectionIsPublic, setNewSectionIsPublic] = useState(true);
+    const [newSectionIsPreview, setNewSectionIsPreview] = useState(false);
     const [expandedSections, setExpandedSections] = useState({});
 
     // Section State
@@ -31,7 +32,7 @@ const CourseManage = () => {
     const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
     const [activeSectionId, setActiveSectionId] = useState(null);
     const [editingLectureId, setEditingLectureId] = useState(null);
-    const [newLecture, setNewLecture] = useState({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true });
+    const [newLecture, setNewLecture] = useState({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, isPreview: false });
 
     // Students State
     const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -212,12 +213,13 @@ const CourseManage = () => {
         e.preventDefault();
         try {
             if (editingSectionId) {
-                await api.put(`/courses/${id}/sections/${editingSectionId}`, { title: newSectionTitle, isPublic: newSectionIsPublic });
+                await api.put(`/courses/${id}/sections/${editingSectionId}`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview });
             } else {
-                await api.post(`/courses/${id}/sections`, { title: newSectionTitle, isPublic: newSectionIsPublic });
+                await api.post(`/courses/${id}/sections`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview });
             }
             setNewSectionTitle('');
             setNewSectionIsPublic(true);
+            setNewSectionIsPreview(false);
             setEditingSectionId(null);
             fetchCourse();
             toast.success(editingSectionId ? 'Section updated!' : 'Section added!');
@@ -267,7 +269,8 @@ const CourseManage = () => {
             description: lec.description,
             dueDate: lec.dueDate ? lec.dueDate.split('T')[0] : '',
             status: lec.status || 'Pending',
-            isPublic: lec.isPublic
+            isPublic: lec.isPublic,
+            isPreview: lec.isPreview
         });
         setEditingLectureId(lec._id);
         setActiveSectionId(sectionId);
@@ -391,6 +394,7 @@ const CourseManage = () => {
                             setEditingSectionId(null);
                             setNewSectionTitle('');
                             setNewSectionIsPublic(true);
+                            setNewSectionIsPreview(false);
                             setIsSectionModalOpen(true);
                         }}
                         className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors h-8 sm:h-9"
@@ -415,6 +419,11 @@ const CourseManage = () => {
                                     </div>
                                     <FaBook className="text-slate-300 dark:text-slate-600 text-xs shrink-0 hidden sm:block" />
                                     <span className="truncate">{section.title}</span>
+                                    {section.isPreview && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 uppercase tracking-wide shrink-0">
+                                            Preview
+                                        </span>
+                                    )}
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-normal shrink-0">({section.lectures?.length || 0})</span>
                                 </h3>
                                 <div className="flex items-center gap-1 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -430,6 +439,7 @@ const CourseManage = () => {
                                             setEditingSectionId(section._id);
                                             setNewSectionTitle(section.title);
                                             setNewSectionIsPublic(section.isPublic);
+                                            setNewSectionIsPreview(section.isPreview || false);
                                             setIsSectionModalOpen(true);
                                         }}
                                         className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -497,23 +507,30 @@ const CourseManage = () => {
                                                     >
                                                         {lec.isPublic ? <FaEye className="text-green-500" size={11} /> : <FaEyeSlash className="text-slate-400" size={11} />}
                                                     </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            handleEditClick(lec, section._id);
-                                                            setIsLectureModalOpen(true);
-                                                        }}
-                                                        className="p-1.5 sm:p-2 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
-                                                        title="Edit"
-                                                    >
-                                                        <FaEdit size={11} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteLecture(lec._id)}
-                                                        className="p-1.5 sm:p-2 text-red-300 dark:text-red-900/50 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
-                                                        title="Delete"
-                                                    >
-                                                        <FaTrash size={11} />
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        {lec.isPreview && (
+                                                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                                                                Preview
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                handleEditClick(lec, section._id);
+                                                                setIsLectureModalOpen(true);
+                                                            }}
+                                                            className="p-1.5 sm:p-2 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <FaEdit size={11} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteLecture(lec._id)}
+                                                            className="p-1.5 sm:p-2 text-red-300 dark:text-red-900/50 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <FaTrash size={11} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -724,6 +741,8 @@ const CourseManage = () => {
         </div>
     );
 
+
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 pb-12 transition-colors duration-300">
 
@@ -895,6 +914,20 @@ const CourseManage = () => {
                             required
                         />
                     </div>
+
+                    <div className="flex items-center gap-2 px-1 mb-2">
+                        <input
+                            type="checkbox"
+                            id="isSectionPreview"
+                            checked={newSectionIsPreview}
+                            onChange={(e) => setNewSectionIsPreview(e.target.checked)}
+                            className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <label htmlFor="isSectionPreview" className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase cursor-pointer">
+                            Free Preview Section
+                        </label>
+                    </div>
+
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5">
                             {editingSectionId ? "Update Section" : "Add Section"}
@@ -975,6 +1008,19 @@ const CourseManage = () => {
                             value={newLecture.description}
                             onChange={(e) => setNewLecture({ ...newLecture, description: e.target.value })}
                         />
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-4">
+                        <input
+                            type="checkbox"
+                            id="isPreview"
+                            checked={newLecture.isPreview || false}
+                            onChange={(e) => setNewLecture({ ...newLecture, isPreview: e.target.checked })}
+                            className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <label htmlFor="isPreview" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                            Free Preview (Demo for non-enrolled users)
+                        </label>
                     </div>
 
                     <div className="flex justify-end pt-4">

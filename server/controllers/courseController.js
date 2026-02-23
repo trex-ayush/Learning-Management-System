@@ -49,6 +49,18 @@ const updateCourse = asyncHandler(async (req, res) => {
     course.lectureStatuses = lectureStatuses !== undefined ? lectureStatuses : course.lectureStatuses;
     course.completedStatus = req.body.completedStatus || course.completedStatus;
 
+    // Marketplace fields
+    if (req.body.isMarketplace !== undefined) course.isMarketplace = req.body.isMarketplace;
+    if (req.body.price !== undefined) course.price = req.body.price;
+    if (req.body.originalPrice !== undefined) course.originalPrice = req.body.originalPrice;
+    if (req.body.currency !== undefined) course.currency = req.body.currency;
+    if (req.body.category !== undefined) course.category = req.body.category;
+    if (req.body.level !== undefined) course.level = req.body.level;
+    if (req.body.thumbnail !== undefined) course.thumbnail = req.body.thumbnail;
+    if (req.body.tags !== undefined) course.tags = req.body.tags;
+    if (req.body.requirements !== undefined) course.requirements = req.body.requirements;
+    if (req.body.whatYouWillLearn !== undefined) course.whatYouWillLearn = req.body.whatYouWillLearn;
+
     await course.save();
     res.status(200).json(course);
 });
@@ -206,7 +218,8 @@ const addLectureToSection = asyncHandler(async (req, res) => {
         description,
         dueDate,
         status: req.body.status || 'Pending',
-        isPublic: req.body.isPublic !== undefined ? req.body.isPublic : false
+        isPublic: req.body.isPublic !== undefined ? req.body.isPublic : false,
+        isPreview: req.body.isPreview !== undefined ? req.body.isPreview : false
     });
 
     // Add to section
@@ -232,6 +245,9 @@ const updateLecture = asyncHandler(async (req, res) => {
     lecture.status = req.body.status || lecture.status;
     if (req.body.isPublic !== undefined) {
         lecture.isPublic = req.body.isPublic;
+    }
+    if (req.body.isPreview !== undefined) {
+        lecture.isPreview = req.body.isPreview;
     }
 
     await lecture.save();
