@@ -50,6 +50,20 @@ const purchaseSchema = new mongoose.Schema({
     purchasedAt: {
         type: Date,
         default: Date.now
+    },
+    invoiceNumber: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    invoiceStatus: {
+        type: String,
+        enum: ['created', 'paid'],
+        default: null
+    },
+    originalPrice: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
@@ -57,5 +71,23 @@ const purchaseSchema = new mongoose.Schema({
 
 // Compound index to prevent duplicate purchases
 purchaseSchema.index({ user: 1, course: 1 }, { unique: true });
+
+// Generate next sequential invoice number
+purchaseSchema.statics.generateInvoiceNumber = async function () {
+    const year = new Date().getFullYear();
+    const prefix = `INV-${year}-`;
+
+    const lastInvoice = await this.findOne({
+        invoiceNumber: { $regex: `^${prefix}` }
+    }).sort({ invoiceNumber: -1 });
+
+    let nextNum = 1;
+    if (lastInvoice?.invoiceNumber) {
+        const lastNum = parseInt(lastInvoice.invoiceNumber.split('-').pop(), 10);
+        nextNum = lastNum + 1;
+    }
+
+    return `${prefix}${String(nextNum).padStart(5, '0')}`;
+};
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

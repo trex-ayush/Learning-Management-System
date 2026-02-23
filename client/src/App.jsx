@@ -34,6 +34,7 @@ const InstructorCoupons = lazy(() => import('./pages/InstructorCoupons'));
 const BecomeInstructor = lazy(() => import('./pages/BecomeInstructor'));
 const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
+const InvoicePage = lazy(() => import('./pages/InvoicePage'));
 
 
 // Loading spinner component for Suspense fallback
@@ -161,6 +162,9 @@ function App() {
                   {/* Marketplace routes - protected */}
                   <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
                   <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
+
+                  {/* Invoice - public (shareable via link) */}
+                  <Route path="/invoice/:invoiceNumber" element={<InvoicePage />} />
 
 
                   {/* Instructor routes */}
