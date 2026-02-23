@@ -30,6 +30,8 @@ const CourseLanding = lazy(() => import('./pages/CourseLanding'));
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
 const CreateMarketplaceCourse = lazy(() => import('./pages/CreateMarketplaceCourse'));
 const ManageCoupons = lazy(() => import('./pages/ManageCoupons'));
+const InstructorCoupons = lazy(() => import('./pages/InstructorCoupons'));
+const BecomeInstructor = lazy(() => import('./pages/BecomeInstructor'));
 const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 
@@ -162,9 +164,12 @@ function App() {
 
 
                   {/* Instructor routes */}
+                  <Route path="/become-instructor" element={<ProtectedRoute><BecomeInstructor /></ProtectedRoute>} />
                   <Route path="/instructor/dashboard" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
                   <Route path="/instructor/create-course" element={<InstructorRoute><CreateMarketplaceCourse /></InstructorRoute>} />
-
+                  <Route path="/instructor/courses" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
+                  <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
+                  <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
 
                   {/* 404 Not Found - Catch all undefined routes */}
                   <Route path="*" element={<NotFound />} />

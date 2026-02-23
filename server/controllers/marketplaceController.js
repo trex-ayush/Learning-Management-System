@@ -89,7 +89,6 @@ const getMarketplaceCourse = asyncHandler(async (req, res) => {
         .populate({
             path: 'sections.lectures',
             model: 'Lecture',
-            model: 'Lecture',
             select: 'title number description isPublic isPreview'
         });
 

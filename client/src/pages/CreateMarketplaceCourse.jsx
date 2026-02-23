@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaTimes, FaImage, FaVideo, FaSave, FaArrowLeft } from 'react-icons/fa';
 import api from '../api/axios';
@@ -26,18 +26,29 @@ const CreateMarketplaceCourse = () => {
         whatYouWillLearn: ['']
     });
 
-    const categories = [
-        'Development',
-        'Business',
-        'Design',
-        'Marketing',
-        'IT & Software',
-        'Personal Development',
-        'Photography',
-        'Music',
-        'Health & Fitness',
-        'Other'
+    const defaultCategories = [
+        'Development', 'Business', 'Design', 'Marketing',
+        'IT & Software', 'Personal Development', 'Photography',
+        'Music', 'Health & Fitness', 'Other'
     ];
+
+    const [categories, setCategories] = useState(defaultCategories);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/marketplace/categories');
+                if (res.data.length > 0) {
+                    // Merge fetched categories with defaults, keeping unique values
+                    const merged = [...new Set([...res.data, ...defaultCategories])].sort();
+                    setCategories(merged);
+                }
+            } catch (error) {
+                // Fall back to default categories
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const levels = ['Beginner', 'Intermediate', 'Advanced'];
 

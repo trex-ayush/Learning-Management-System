@@ -10,16 +10,17 @@ const CheckoutSuccess = () => {
     const [course, setCourse] = useState(null);
 
     const sessionId = searchParams.get('session_id');
+    const MAX_RETRIES = 15; // 15 retries * 2s = 30 seconds max
 
     useEffect(() => {
         if (sessionId) {
-            checkPaymentStatus();
+            checkPaymentStatus(0);
         } else {
             setStatus('error');
         }
     }, [sessionId]);
 
-    const checkPaymentStatus = async () => {
+    const checkPaymentStatus = async (retryCount) => {
         try {
             const res = await api.get(`/purchase/session/${sessionId}`);
             setCourse(res.data.course);
@@ -27,8 +28,11 @@ const CheckoutSuccess = () => {
             if (res.data.status === 'completed') {
                 setStatus('success');
             } else if (res.data.status === 'pending') {
-                // Poll for status
-                setTimeout(checkPaymentStatus, 2000);
+                if (retryCount >= MAX_RETRIES) {
+                    setStatus('error');
+                    return;
+                }
+                setTimeout(() => checkPaymentStatus(retryCount + 1), 2000);
             } else {
                 setStatus('error');
             }

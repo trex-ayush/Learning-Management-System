@@ -25,11 +25,19 @@ const CourseLanding = () => {
     const [couponApplied, setCouponApplied] = useState(null);
     const [expandedSections, setExpandedSections] = useState({});
     const [hasPurchased, setHasPurchased] = useState(false);
+    const [showPreviewVideo, setShowPreviewVideo] = useState(false);
+
+    // Review form state
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [myReview, setMyReview] = useState(null);
 
     useEffect(() => {
         fetchCourse();
         if (user) {
             checkPurchase();
+            fetchMyReview();
         }
     }, [id, user]);
 
@@ -56,6 +64,65 @@ const CourseLanding = () => {
             setHasPurchased(res.data.hasPurchased);
         } catch (error) {
             console.error('Error checking purchase:', error);
+        }
+    };
+
+    const fetchMyReview = async () => {
+        try {
+            const res = await api.get(`/reviews/my/${id}`);
+            if (res.data) {
+                setMyReview(res.data);
+                setReviewRating(res.data.rating);
+                setReviewComment(res.data.comment);
+            }
+        } catch (error) {
+            // No existing review - that's fine
+        }
+    };
+
+    const handleSubmitReview = async () => {
+        if (!user) {
+            navigate('/login', { state: { from: `/marketplace/course/${id}` } });
+            return;
+        }
+
+        if (!reviewComment.trim()) {
+            toast.error('Please write a comment');
+            return;
+        }
+
+        setSubmittingReview(true);
+        try {
+            if (myReview) {
+                await api.put(`/reviews/${myReview._id}`, {
+                    rating: reviewRating,
+                    comment: reviewComment
+                });
+                toast.success('Review updated!');
+            } else {
+                await api.post('/reviews', {
+                    courseId: id,
+                    rating: reviewRating,
+                    comment: reviewComment
+                });
+                toast.success('Review submitted!');
+            }
+            fetchCourse();
+            fetchMyReview();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to submit review');
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
+    const handleMarkHelpful = async (reviewId) => {
+        if (!user) return;
+        try {
+            await api.post(`/reviews/${reviewId}/helpful`);
+            fetchCourse();
+        } catch (error) {
+            toast.error('Failed to mark review as helpful');
         }
     };
 
@@ -185,22 +252,37 @@ const CourseLanding = () => {
                         <div className="lg:col-span-1">
                             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden sticky top-24">
                                 {/* Thumbnail */}
-                                {course.thumbnail && (
-                                    <div className="aspect-video relative">
-                                        <img
-                                            src={course.thumbnail}
-                                            alt={course.title}
-                                            className="w-full h-full object-cover"
+                                <div className="aspect-video relative bg-slate-900">
+                                    {showPreviewVideo && course.previewVideo ? (
+                                        <iframe
+                                            src={course.previewVideo.replace('watch?v=', 'embed/')}
+                                            title="Course Preview"
+                                            className="w-full h-full"
+                                            allowFullScreen
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                         />
-                                        {course.previewVideo && (
-                                            <button className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors">
-                                                <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
-                                                    <FaPlay className="text-indigo-500 text-xl ml-1" />
-                                                </div>
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
+                                    ) : (
+                                        <>
+                                            {course.thumbnail && (
+                                                <img
+                                                    src={course.thumbnail}
+                                                    alt={course.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            )}
+                                            {course.previewVideo && (
+                                                <button
+                                                    onClick={() => setShowPreviewVideo(true)}
+                                                    className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors"
+                                                >
+                                                    <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                                                        <FaPlay className="text-indigo-500 text-xl ml-1" />
+                                                    </div>
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
 
                                 <div className="p-6">
                                     {/* Price */}
@@ -393,6 +475,57 @@ const CourseLanding = () => {
                             </div>
                         </section>
 
+                        {/* Review Form - Show for purchased users */}
+                        {hasPurchased && (
+                            <section>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                                    {myReview ? 'Update Your Review' : 'Leave a Review'}
+                                </h2>
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                            Rating
+                                        </label>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => setReviewRating(star)}
+                                                    className="transition-colors"
+                                                >
+                                                    <FaStar
+                                                        className={`text-2xl ${star <= reviewRating
+                                                            ? 'text-yellow-400'
+                                                            : 'text-slate-300 dark:text-slate-600'
+                                                        }`}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                            Comment
+                                        </label>
+                                        <textarea
+                                            value={reviewComment}
+                                            onChange={(e) => setReviewComment(e.target.value)}
+                                            rows={4}
+                                            placeholder="Share your experience with this course..."
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 resize-none"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleSubmitReview}
+                                        disabled={submittingReview}
+                                        className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {submittingReview ? 'Submitting...' : myReview ? 'Update Review' : 'Submit Review'}
+                                    </button>
+                                </div>
+                            </section>
+                        )}
+
                         {/* Reviews */}
                         <section>
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
@@ -401,7 +534,11 @@ const CourseLanding = () => {
                             {reviews.length > 0 ? (
                                 <div className="space-y-4">
                                     {reviews.map(review => (
-                                        <ReviewCard key={review._id} review={review} />
+                                        <ReviewCard
+                                            key={review._id}
+                                            review={review}
+                                            onMarkHelpful={handleMarkHelpful}
+                                        />
                                     ))}
                                 </div>
                             ) : (
