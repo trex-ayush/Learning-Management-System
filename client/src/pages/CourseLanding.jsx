@@ -34,6 +34,7 @@ const CourseLanding = () => {
     const [myReview, setMyReview] = useState(null);
 
     useEffect(() => {
+        if (!id || id === 'undefined') return;
         fetchCourse();
         if (user) {
             checkPurchase();
@@ -156,7 +157,11 @@ const CourseLanding = () => {
             });
 
             // Redirect to Stripe checkout
-            window.location.href = res.data.url;
+            if (res.data.url) {
+                window.location.href = res.data.url;
+            } else {
+                throw new Error('Failed to get checkout URL');
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to start checkout');
             setPurchasing(false);

@@ -4,6 +4,7 @@ const Course = require('../models/Course');
 const Purchase = require('../models/Purchase');
 const Progress = require('../models/Progress');
 const Coupon = require('../models/Coupon');
+const { generateInvoicePDF } = require('../services/invoiceService');
 
 // @desc    Create Stripe checkout session
 // @route   POST /api/purchase/checkout
@@ -40,6 +41,15 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error('You cannot purchase your own course');
     }
+
+    // Remove any previous pending/failed purchase to avoid duplicate key error
+    await Purchase.deleteOne({
+        user: req.user.id,
+        course: courseId,
+        status: { $in: ['pending', 'failed'] }
+    });
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
     let finalPrice = course.price;
     let discountAmount = 0;
@@ -83,8 +93,9 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
             }
         ],
         mode: 'payment',
-        success_url: `${process.env.CLIENT_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/marketplace/course/${courseId}`,
+        billing_address_collection: 'required',
+        success_url: `${clientUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${clientUrl}/marketplace/course/${courseId}`,
         customer_email: req.user.email,
         metadata: {
             courseId: courseId,
@@ -95,17 +106,23 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
         }
     });
 
-    // Create pending purchase record
+    // Generate invoice number at checkout initiation
+    const invoiceNumber = await Purchase.generateInvoiceNumber();
+
+    // Create pending purchase record with invoice
     await Purchase.create({
         user: req.user.id,
         course: courseId,
         instructor: course.user,
         amount: finalPrice,
+        originalPrice: course.price,
         currency: course.currency,
         stripeSessionId: session.id,
         status: 'pending',
         couponApplied: couponApplied,
-        discountAmount: discountAmount
+        discountAmount: discountAmount,
+        invoiceNumber: invoiceNumber,
+        invoiceStatus: 'created'
     });
 
     res.status(200).json({
@@ -153,13 +170,14 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
 const handleSuccessfulPayment = async (session) => {
     const { courseId, userId, couponId } = session.metadata;
 
-    // Update purchase status
+    // Update purchase status and mark invoice as paid
     const purchase = await Purchase.findOneAndUpdate(
         { stripeSessionId: session.id },
         {
             status: 'completed',
             stripePaymentIntentId: session.payment_intent,
-            purchasedAt: new Date()
+            purchasedAt: new Date(),
+            invoiceStatus: 'paid'
         },
         { new: true }
     );
@@ -271,7 +289,7 @@ const verifyPurchase = asyncHandler(async (req, res) => {
 const getSessionStatus = asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
 
-    const purchase = await Purchase.findOne({
+    let purchase = await Purchase.findOne({
         stripeSessionId: sessionId,
         user: req.user.id
     }).populate('course', 'title');
@@ -281,10 +299,85 @@ const getSessionStatus = asyncHandler(async (req, res) => {
         throw new Error('Session not found');
     }
 
+    // If still pending, verify directly with Stripe (handles cases where webhook hasn't fired)
+    if (purchase.status === 'pending') {
+        try {
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
+            if (session.payment_status === 'paid') {
+                await handleSuccessfulPayment(session);
+                purchase = await Purchase.findOne({
+                    stripeSessionId: sessionId,
+                    user: req.user.id
+                }).populate('course', 'title');
+            }
+        } catch (err) {
+            console.error('Stripe session verification failed:', err.message);
+        }
+    }
+
     res.status(200).json({
         status: purchase.status,
         course: purchase.course
     });
+});
+
+// @desc    Get invoice data (shareable - public by invoice number)
+// @route   GET /api/purchase/invoice/:invoiceNumber
+// @access  Public
+const getInvoiceData = asyncHandler(async (req, res) => {
+    const { invoiceNumber } = req.params;
+
+    const purchase = await Purchase.findOne({ invoiceNumber })
+        .populate('user', 'name email')
+        .populate('course', 'title description category level')
+        .populate('instructor', 'name');
+
+    if (!purchase) {
+        res.status(404);
+        throw new Error('Invoice not found');
+    }
+
+    res.status(200).json({
+        invoiceNumber: purchase.invoiceNumber,
+        invoiceStatus: purchase.invoiceStatus,
+        date: purchase.purchasedAt || purchase.createdAt,
+        student: {
+            name: purchase.user?.name,
+            email: purchase.user?.email
+        },
+        course: {
+            title: purchase.course?.title,
+            category: purchase.course?.category,
+            level: purchase.course?.level
+        },
+        instructor: {
+            name: purchase.instructor?.name
+        },
+        amount: purchase.amount,
+        originalPrice: purchase.originalPrice,
+        discountAmount: purchase.discountAmount,
+        currency: purchase.currency,
+        paymentId: purchase.stripePaymentIntentId
+    });
+});
+
+// @desc    Download invoice as PDF
+// @route   GET /api/purchase/invoice/:invoiceNumber/pdf
+// @access  Public
+const downloadInvoicePDF = asyncHandler(async (req, res) => {
+    const { invoiceNumber } = req.params;
+
+    const purchase = await Purchase.findOne({ invoiceNumber })
+        .populate('user', 'name email')
+        .populate('course', 'title description category level')
+        .populate('instructor', 'name');
+
+    if (!purchase) {
+        res.status(404);
+        throw new Error('Invoice not found');
+    }
+
+    generateInvoicePDF(purchase, res);
 });
 
 module.exports = {
@@ -292,5 +385,7 @@ module.exports = {
     handleStripeWebhook,
     getMyPurchases,
     verifyPurchase,
-    getSessionStatus
+    getSessionStatus,
+    getInvoiceData,
+    downloadInvoicePDF
 };

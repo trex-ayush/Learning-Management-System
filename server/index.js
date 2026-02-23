@@ -14,7 +14,8 @@ const app = express();
 
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['Content-Disposition']
 }));
 
 // Stripe webhook needs raw body - must be before express.json()
@@ -46,9 +47,10 @@ app.use('/api/instructor', require('./routes/instructorRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 
-// Error handler middleware - need to create this file too
+// Error handler middleware
 app.use((err, req, res, next) => {
-    const statusCode = res.statusCode ? res.statusCode : 500;
+    // res.statusCode defaults to 200, so treat 200 as unset (use 500 for errors)
+    const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
     res.status(statusCode);
     res.json({
         message: err.message,

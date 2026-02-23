@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlay, FaBook, FaCalendar } from 'react-icons/fa';
+import { FaPlay, FaBook, FaCalendar, FaFileInvoice } from 'react-icons/fa';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -73,13 +73,12 @@ const MyPurchases = () => {
                             const totalLectures = course.sections?.reduce((acc, s) => acc + (s.lectures?.length || 0), 0) || 0;
 
                             return (
-                                <Link
+                                <div
                                     key={purchase._id}
-                                    to={`/course/${course._id}`}
                                     className="group bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 dark:border-slate-700"
                                 >
                                     {/* Thumbnail */}
-                                    <div className="relative aspect-video overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                    <Link to={`/course/${course._id}`} className="block relative aspect-video overflow-hidden bg-slate-200 dark:bg-slate-700">
                                         {course.thumbnail ? (
                                             <img
                                                 src={course.thumbnail}
@@ -96,13 +95,15 @@ const MyPurchases = () => {
                                                 <FaPlay className="text-indigo-500 text-xl ml-1" />
                                             </div>
                                         </div>
-                                    </div>
+                                    </Link>
 
                                     {/* Content */}
                                     <div className="p-4">
-                                        <h3 className="font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2 group-hover:text-indigo-500 transition-colors">
-                                            {course.title}
-                                        </h3>
+                                        <Link to={`/course/${course._id}`}>
+                                            <h3 className="font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2 group-hover:text-indigo-500 transition-colors">
+                                                {course.title}
+                                            </h3>
+                                        </Link>
 
                                         {purchase.instructor && (
                                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
@@ -120,8 +121,19 @@ const MyPurchases = () => {
                                                 {formatDate(purchase.purchasedAt)}
                                             </span>
                                         </div>
+
+                                        {/* Invoice Link */}
+                                        {purchase.invoiceNumber && (
+                                            <Link
+                                                to={`/invoice/${purchase.invoiceNumber}`}
+                                                className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors"
+                                            >
+                                                <FaFileInvoice />
+                                                View Invoice ({purchase.invoiceNumber})
+                                            </Link>
+                                        )}
                                     </div>
-                                </Link>
+                                </div>
                             );
                         })}
                     </div>
