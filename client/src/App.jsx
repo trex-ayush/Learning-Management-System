@@ -4,6 +4,7 @@ import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import FloatingAIChatButton from './components/ui/FloatingAIChatButton';
 import { Toaster } from 'react-hot-toast';
 
 // Lazy load all pages for better performance (code splitting)
@@ -28,6 +29,8 @@ const QuizAnalytics = lazy(() => import('./pages/quiz/QuizAnalytics'));
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const StudentDetail = lazy(() => import('./pages/student/StudentDetail'));
 const StudentProgressDetail = lazy(() => import('./pages/student/StudentProgressDetail'));
+const StudentAISettings = lazy(() => import('./pages/student/StudentAISettings'));
+const AIChatPage = lazy(() => import('./pages/student/AIChatPage'));
 
 // Marketplace
 const Marketplace = lazy(() => import('./pages/marketplace/Marketplace'));
@@ -114,6 +117,12 @@ const InstructorRoute = ({ children }) => {
   return children;
 };
 
+const AuthenticatedFloatingButton = () => {
+  const { user } = useContext(AuthContext);
+  if (!user) return null;
+  return <FloatingAIChatButton />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -177,6 +186,10 @@ function App() {
                   <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
                   <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
 
+                  {/* AI Chat - any logged-in user */}
+                  <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+                  <Route path="/ai-settings" element={<ProtectedRoute><StudentAISettings /></ProtectedRoute>} />
+
                   {/* Invoice - public (shareable via link) */}
                   <Route path="/invoice/:invoiceNumber" element={<InvoicePage />} />
 
@@ -196,6 +209,7 @@ function App() {
               </Suspense>
             </div>
             <Footer />
+            <AuthenticatedFloatingButton />
           </div>
         </Router>
       </ThemeProvider>
