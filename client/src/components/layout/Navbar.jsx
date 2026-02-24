@@ -282,7 +282,6 @@ const Navbar = () => {
                                             <FaShoppingBag size={14} />
                                             My Purchases
                                         </Link>
-
                                         {(user.role === 'instructor' || user.role === 'admin') && (
                                             <>
                                                 <Link

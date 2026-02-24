@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import api from '../../api/axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
-import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaStore } from 'react-icons/fa';
+import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaStore, FaRobot, FaArrowRight } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const StudentDashboard = ({ defaultTab }) => {
@@ -162,6 +162,27 @@ const StudentDashboard = ({ defaultTab }) => {
             </div>
 
             <div className="container mx-auto px-4 py-6 sm:py-8">
+                {/* AI Chat Banner */}
+                {activeTab === 'enrolled' && (
+                    <Link to="/ai-chat" className="block mb-6 group">
+                        <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg hover:shadow-xl transition-all">
+                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+                            <div className="relative flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+                                        <FaRobot className="text-2xl" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base sm:text-lg font-bold">AI Study Assistant</h3>
+                                        <p className="text-sm text-white/80 mt-0.5">Upload PDFs, images & ask questions — get instant AI-powered help</p>
+                                    </div>
+                                </div>
+                                <FaArrowRight className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0 hidden sm:block" />
+                            </div>
+                        </div>
+                    </Link>
+                )}
+
                 {activeTab === 'enrolled' ? (
                     // Enrolled Courses Tab
                     enrolledCourses.length > 0 ? (

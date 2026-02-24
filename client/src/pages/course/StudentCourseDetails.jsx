@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
+import AIChatPanel from '../../components/chat/AIChatPanel';
 import AuthContext from '../../context/AuthContext';
 
 const StudentCourseDetails = () => {
@@ -34,6 +35,7 @@ const StudentCourseDetails = () => {
         { id: 'content', label: 'Content', icon: FaBook },
         { id: 'quizzes', label: 'Quizzes', icon: FaClipboardList },
         { id: 'announcements', label: 'Announcements', icon: FaBullhorn },
+        { id: 'ai-assistant', label: 'AI Assistant', icon: FaRobot },
     ];
 
     // Tab change handler
@@ -649,6 +651,7 @@ const StudentCourseDetails = () => {
                 {activeTab === 'content' && renderContentTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}
                 {activeTab === 'announcements' && renderAnnouncementsTab()}
+                {activeTab === 'ai-assistant' && <AIChatPanel courseId={id} courseTitle={course?.title} />}
             </div>
         </div>
     );

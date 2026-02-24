@@ -172,6 +172,100 @@ async function generateNotes(apiKey, provider, model, options) {
     return callProvider(provider, apiKey, model, system, user);
 }
 
+// ─── Chat with Vision Support ──────────────────────────────────────
+
+async function callChat(provider, apiKey, model, systemPrompt, userText, imageData) {
+    // imageData: { base64: string, mimeType: string } or null
+    if (!imageData) {
+        return callProvider(provider, apiKey, model, systemPrompt, userText);
+    }
+
+    // Vision path — provider-specific formatting
+    switch (provider) {
+        case 'openai': {
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: [
+                            { type: 'text', text: userText },
+                            { type: 'image_url', image_url: { url: `data:${imageData.mimeType};base64,${imageData.base64}` } }
+                        ]}
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 4096
+                })
+            });
+            if (!res.ok) {
+                const errBody = await res.text().catch(() => '');
+                let errMsg;
+                try { errMsg = JSON.parse(errBody).error?.message; } catch {}
+                throw new Error(errMsg || `OpenAI API error: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.choices[0].message.content;
+        }
+        case 'gemini': {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    system_instruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ parts: [
+                        { text: userText },
+                        { inlineData: { mimeType: imageData.mimeType, data: imageData.base64 } }
+                    ]}],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+                })
+            });
+            if (!res.ok) {
+                const errBody = await res.text().catch(() => '');
+                let errMsg;
+                try { errMsg = JSON.parse(errBody).error?.message; } catch {}
+                throw new Error(errMsg || `Gemini API error: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+        case 'anthropic': {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model,
+                    max_tokens: 4096,
+                    system: systemPrompt,
+                    messages: [{ role: 'user', content: [
+                        { type: 'image', source: { type: 'base64', media_type: imageData.mimeType, data: imageData.base64 } },
+                        { type: 'text', text: userText }
+                    ]}]
+                })
+            });
+            if (!res.ok) {
+                const errBody = await res.text().catch(() => '');
+                let errMsg;
+                try { errMsg = JSON.parse(errBody).error?.message; } catch {}
+                throw new Error(errMsg || `Anthropic API error: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.content[0].text;
+        }
+        default:
+            throw new Error(`Unsupported provider: ${provider}`);
+    }
+}
+
 // ─── Test Connection ────────────────────────────────────────────────
 
 async function testConnection(apiKey, provider, model) {
@@ -179,4 +273,4 @@ async function testConnection(apiKey, provider, model) {
     return raw.trim().toLowerCase().includes('ok');
 }
 
-module.exports = { generateQuiz, generateNotes, testConnection };
+module.exports = { generateQuiz, generateNotes, testConnection, callChat };
