@@ -47,6 +47,9 @@ app.use('/api/instructor', require('./routes/instructorRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 
+// AI generation routes
+app.use('/api/ai', require('./routes/aiRoutes'));
+
 // Error handler middleware
 app.use((err, req, res, next) => {
     // res.statusCode defaults to 200, so treat 200 as unset (use 500 for errors)
