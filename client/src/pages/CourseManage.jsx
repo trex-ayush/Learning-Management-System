@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot } from 'react-icons/fa';
 import Modal from '../components/Modal';
 import BroadcastList from '../components/BroadcastList';
 import TeacherManagement from '../components/TeacherManagement';
 import Pagination from '../components/Pagination';
+import AINotesGenerator from '../components/AINotesGenerator';
 import toast from 'react-hot-toast';
 import AuthContext from '../context/AuthContext';
 
@@ -77,12 +78,13 @@ const CourseManage = () => {
     // State for dismissing teacher permissions banner
     const [showPermissionsBanner, setShowPermissionsBanner] = useState(true);
 
-    // Tab configuration - Curriculum, Broadcasts, Students, Teachers
+    // Tab configuration - Curriculum, Broadcasts, Students, Teachers, AI Notes
     const tabs = [
         { id: 'curriculum', label: 'Curriculum', icon: FaBook },
         { id: 'broadcasts', label: 'Broadcasts', icon: FaBullhorn },
         { id: 'students', label: 'Students', icon: FaUsers },
         { id: 'teachers', label: 'Teachers', icon: FaUserTie },
+        { id: 'ai-notes', label: 'AI Notes', icon: FaRobot },
     ];
 
     const setActiveTab = (tabId) => {
@@ -881,6 +883,7 @@ const CourseManage = () => {
                 {activeTab === 'broadcasts' && renderBroadcastsTab()}
                 {activeTab === 'students' && renderStudentsTab()}
                 {activeTab === 'teachers' && renderTeachersTab()}
+                {activeTab === 'ai-notes' && <AINotesGenerator courseId={id} />}
             </div>
 
             {/* Section Modal */}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaChartBar, FaClock, FaCheckCircle, FaTimesCircle, FaQuestionCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaChartBar, FaClock, FaCheckCircle, FaTimesCircle, FaQuestionCircle, FaRobot, FaSpinner } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const QuizManage = () => {
@@ -35,6 +35,16 @@ const QuizManage = () => {
         options: ['', '', '', ''],
         correctAnswer: 0,
         points: 1
+    });
+
+    // AI Generate state
+    const [showAIModal, setShowAIModal] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiForm, setAiForm] = useState({
+        topic: '',
+        numQuestions: 5,
+        difficulty: 'intermediate',
+        questionTypes: ['mcq']
     });
 
     useEffect(() => {
@@ -221,6 +231,58 @@ const QuizManage = () => {
         });
     };
 
+    // AI Generate handler
+    const handleAIGenerate = async () => {
+        if (!aiForm.topic.trim()) {
+            toast.error('Please enter a topic');
+            return;
+        }
+        setAiGenerating(true);
+        try {
+            const res = await api.post('/ai/generate-quiz', {
+                courseId,
+                topic: aiForm.topic,
+                numQuestions: aiForm.numQuestions,
+                questionTypes: aiForm.questionTypes,
+                difficulty: aiForm.difficulty
+            });
+            const generated = res.data.questions || [];
+            if (generated.length === 0) {
+                toast.error('AI returned no questions. Try a different topic.');
+                return;
+            }
+            // Open quiz creation modal pre-filled with AI questions
+            resetForm();
+            setFormData(prev => ({
+                ...prev,
+                title: `${aiForm.topic} Quiz`,
+                description: `AI-generated quiz on ${aiForm.topic} (${aiForm.difficulty})`,
+                questions: generated
+            }));
+            setShowAIModal(false);
+            setShowModal(true);
+            toast.success(`${generated.length} questions generated! Review and save.`);
+        } catch (err) {
+            const msg = err.response?.data?.message || 'AI generation failed';
+            if (msg.includes('No AI configuration')) {
+                toast.error('Set up your AI key first in AI Settings');
+            } else {
+                toast.error(msg);
+            }
+        } finally {
+            setAiGenerating(false);
+        }
+    };
+
+    const toggleQuestionType = (type) => {
+        setAiForm(prev => {
+            const types = prev.questionTypes.includes(type)
+                ? prev.questionTypes.filter(t => t !== type)
+                : [...prev.questionTypes, type];
+            return { ...prev, questionTypes: types.length > 0 ? types : [type] };
+        });
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
@@ -246,12 +308,20 @@ const QuizManage = () => {
                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{course?.title}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleOpenCreate}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-                    >
-                        <FaPlus className="text-xs" /> Create Quiz
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowAIModal(true)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                        >
+                            <FaRobot className="text-xs" /> AI Generate
+                        </button>
+                        <button
+                            onClick={handleOpenCreate}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                        >
+                            <FaPlus className="text-xs" /> Create Quiz
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -516,6 +586,123 @@ const QuizManage = () => {
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
                             >
                                 {editingQuiz ? 'Save Changes' : 'Create Quiz'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* AI Generate Modal */}
+            {showAIModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-slate-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800">
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                                <FaRobot className="text-purple-500" /> Generate Quiz with AI
+                            </h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                AI will create questions that you can review and edit before saving.
+                            </p>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Topic */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Topic *</label>
+                                <input
+                                    type="text"
+                                    value={aiForm.topic}
+                                    onChange={(e) => setAiForm({ ...aiForm, topic: e.target.value })}
+                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                    placeholder="e.g. React Hooks, Python OOP, Cell Biology..."
+                                />
+                            </div>
+
+                            {/* Number of Questions */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Number of Questions: <span className="text-purple-600 font-bold">{aiForm.numQuestions}</span>
+                                </label>
+                                <input
+                                    type="range"
+                                    min="3"
+                                    max="20"
+                                    value={aiForm.numQuestions}
+                                    onChange={(e) => setAiForm({ ...aiForm, numQuestions: parseInt(e.target.value) })}
+                                    className="w-full accent-purple-600"
+                                />
+                                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>3</span><span>20</span>
+                                </div>
+                            </div>
+
+                            {/* Difficulty */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Difficulty</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['easy', 'intermediate', 'hard'].map(d => (
+                                        <button
+                                            key={d}
+                                            onClick={() => setAiForm({ ...aiForm, difficulty: d })}
+                                            className={`py-2 rounded-lg text-sm font-medium border-2 transition-all capitalize ${
+                                                aiForm.difficulty === d
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                                                    : 'border-gray-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Question Types */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Question Types</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { value: 'mcq', label: 'Multiple Choice' },
+                                        { value: 'true-false', label: 'True/False' },
+                                        { value: 'short-answer', label: 'Short Answer' }
+                                    ].map(type => (
+                                        <button
+                                            key={type.value}
+                                            onClick={() => toggleQuestionType(type.value)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${
+                                                aiForm.questionTypes.includes(type.value)
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                                                    : 'border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                                            }`}
+                                        >
+                                            {type.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex gap-3">
+                            <button
+                                onClick={() => setShowAIModal(false)}
+                                disabled={aiGenerating}
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAIGenerate}
+                                disabled={aiGenerating || !aiForm.topic.trim()}
+                                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {aiGenerating ? (
+                                    <>
+                                        <FaSpinner className="animate-spin" /> Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaRobot /> Generate Questions
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

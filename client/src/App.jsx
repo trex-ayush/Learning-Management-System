@@ -35,6 +35,7 @@ const BecomeInstructor = lazy(() => import('./pages/BecomeInstructor'));
 const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
 const MyPurchases = lazy(() => import('./pages/MyPurchases'));
 const InvoicePage = lazy(() => import('./pages/InvoicePage'));
+const AISettings = lazy(() => import('./pages/AISettings'));
 
 
 // Loading spinner component for Suspense fallback
@@ -174,6 +175,7 @@ function App() {
                   <Route path="/instructor/courses" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
                   <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
                   <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
+                  <Route path="/instructor/ai-settings" element={<InstructorRoute><AISettings /></InstructorRoute>} />
 
                   {/* 404 Not Found - Catch all undefined routes */}
                   <Route path="*" element={<NotFound />} />
