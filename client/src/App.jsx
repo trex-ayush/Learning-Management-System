@@ -2,40 +2,53 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useContext, lazy, Suspense } from 'react';
 import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 import { Toaster } from 'react-hot-toast';
 
 // Lazy load all pages for better performance (code splitting)
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
-const CourseManage = lazy(() => import('./pages/CourseManage'));
-const CourseView = lazy(() => import('./pages/CourseView'));
-const StudentDetail = lazy(() => import('./pages/StudentDetail'));
-const StudentCourseDetails = lazy(() => import('./pages/StudentCourseDetails'));
-const Profile = lazy(() => import('./pages/Profile'));
-const CourseSettings = lazy(() => import('./pages/CourseSettings'));
-const GlobalActivity = lazy(() => import('./pages/GlobalActivity'));
-const CourseAnalytics = lazy(() => import('./pages/CourseAnalytics'));
-const QuizManage = lazy(() => import('./pages/QuizManage'));
-const QuizTake = lazy(() => import('./pages/QuizTake'));
-const QuizAnalytics = lazy(() => import('./pages/QuizAnalytics'));
-const StudentProgressDetail = lazy(() => import('./pages/StudentProgressDetail'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// Auth
+const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
 
-// Marketplace pages
-const Marketplace = lazy(() => import('./pages/Marketplace'));
-const CourseLanding = lazy(() => import('./pages/CourseLanding'));
-const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
-const CreateMarketplaceCourse = lazy(() => import('./pages/CreateMarketplaceCourse'));
-const ManageCoupons = lazy(() => import('./pages/ManageCoupons'));
-const InstructorCoupons = lazy(() => import('./pages/InstructorCoupons'));
-const BecomeInstructor = lazy(() => import('./pages/BecomeInstructor'));
-const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
-const MyPurchases = lazy(() => import('./pages/MyPurchases'));
-const InvoicePage = lazy(() => import('./pages/InvoicePage'));
-const AISettings = lazy(() => import('./pages/AISettings'));
+// Course management
+const CourseManage = lazy(() => import('./pages/course/CourseManage'));
+const CourseView = lazy(() => import('./pages/course/CourseView'));
+const CourseSettings = lazy(() => import('./pages/course/CourseSettings'));
+const CourseAnalytics = lazy(() => import('./pages/course/CourseAnalytics'));
+const StudentCourseDetails = lazy(() => import('./pages/course/StudentCourseDetails'));
+const ManageCoupons = lazy(() => import('./pages/course/ManageCoupons'));
+
+// Quiz
+const QuizManage = lazy(() => import('./pages/quiz/QuizManage'));
+const QuizTake = lazy(() => import('./pages/quiz/QuizTake'));
+const QuizAnalytics = lazy(() => import('./pages/quiz/QuizAnalytics'));
+
+// Student
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const StudentDetail = lazy(() => import('./pages/student/StudentDetail'));
+const StudentProgressDetail = lazy(() => import('./pages/student/StudentProgressDetail'));
+
+// Marketplace
+const Marketplace = lazy(() => import('./pages/marketplace/Marketplace'));
+const CourseLanding = lazy(() => import('./pages/marketplace/CourseLanding'));
+const CheckoutSuccess = lazy(() => import('./pages/marketplace/CheckoutSuccess'));
+const MyPurchases = lazy(() => import('./pages/marketplace/MyPurchases'));
+const InvoicePage = lazy(() => import('./pages/marketplace/InvoicePage'));
+
+// Instructor
+const InstructorDashboard = lazy(() => import('./pages/instructor/InstructorDashboard'));
+const InstructorCoupons = lazy(() => import('./pages/instructor/InstructorCoupons'));
+const CreateMarketplaceCourse = lazy(() => import('./pages/instructor/CreateMarketplaceCourse'));
+const BecomeInstructor = lazy(() => import('./pages/instructor/BecomeInstructor'));
+const AISettings = lazy(() => import('./pages/instructor/AISettings'));
+
+// Admin
+const GlobalActivity = lazy(() => import('./pages/admin/GlobalActivity'));
+
+// Shared
+const Profile = lazy(() => import('./pages/Profile'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 
 // Loading spinner component for Suspense fallback
