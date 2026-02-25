@@ -8,7 +8,10 @@ const {
     updateMarketplaceCourse,
     getInstructorProfile,
     updateInstructorProfile,
-    getCourseSales
+    getCourseSales,
+    getBankDetails,
+    saveBankDetails,
+    getEarnings
 } = require('../controllers/instructorController');
 const { protect, instructorOnly } = require('../middleware/authMiddleware');
 
@@ -23,5 +26,8 @@ router.put('/course/:id', protect, instructorOnly, updateMarketplaceCourse);
 router.get('/course/:id/sales', protect, instructorOnly, getCourseSales);
 router.get('/profile', protect, instructorOnly, getInstructorProfile);
 router.put('/profile', protect, instructorOnly, updateInstructorProfile);
+router.get('/bank-details', protect, instructorOnly, getBankDetails);
+router.post('/bank-details', protect, instructorOnly, saveBankDetails);
+router.get('/earnings', protect, instructorOnly, getEarnings);
 
 module.exports = router;

@@ -53,6 +53,9 @@ app.use('/api/ai', require('./routes/aiRoutes'));
 // Student AI chatbot routes
 app.use('/api/student-ai', require('./routes/studentAiRoutes'));
 
+// Admin routes
+app.use('/api/admin', require('./routes/adminRoutes'));
+
 // Error handler middleware
 app.use((err, req, res, next) => {
     // res.statusCode defaults to 200, so treat 200 as unset (use 500 for errors)

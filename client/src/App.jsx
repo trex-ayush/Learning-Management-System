@@ -45,9 +45,11 @@ const InstructorCoupons = lazy(() => import('./pages/instructor/InstructorCoupon
 const CreateMarketplaceCourse = lazy(() => import('./pages/instructor/CreateMarketplaceCourse'));
 const BecomeInstructor = lazy(() => import('./pages/instructor/BecomeInstructor'));
 const AISettings = lazy(() => import('./pages/instructor/AISettings'));
+const InstructorPaymentSettings = lazy(() => import('./pages/instructor/InstructorPaymentSettings'));
 
 // Admin
 const GlobalActivity = lazy(() => import('./pages/admin/GlobalActivity'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
 // Shared
 const Profile = lazy(() => import('./pages/Profile'));
@@ -156,6 +158,7 @@ function App() {
                   <Route path="/register" element={<Register />} />
 
                   {/* Admin-only routes */}
+                  <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
                   <Route path="/admin/activities" element={<ProtectedRoute adminOnly={true}><GlobalActivity /></ProtectedRoute>} />
 
                   {/* Course owner routes (admin OR course owner - backend verifies ownership) */}
@@ -202,6 +205,7 @@ function App() {
                   <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
                   <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
                   <Route path="/instructor/ai-settings" element={<InstructorRoute><AISettings /></InstructorRoute>} />
+                  <Route path="/instructor/payment-settings" element={<InstructorRoute><InstructorPaymentSettings /></InstructorRoute>} />
 
                   {/* 404 Not Found - Catch all undefined routes */}
                   <Route path="*" element={<NotFound />} />

@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Purchase = require('../models/Purchase');
 const Lecture = require('../models/Lecture');
+const BankDetail = require('../models/BankDetail');
+const Payout = require('../models/Payout');
 
 // @desc    Become an instructor (upgrade from student)
 // @route   POST /api/instructor/become
@@ -286,6 +288,89 @@ const getCourseSales = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get instructor bank details
+// @route   GET /api/instructor/bank-details
+// @access  Private (Instructor)
+const getBankDetails = asyncHandler(async (req, res) => {
+    const bankDetail = await BankDetail.findOne({ user: req.user.id });
+    res.status(200).json(bankDetail || null);
+});
+
+// @desc    Save/update instructor bank details
+// @route   POST /api/instructor/bank-details
+// @access  Private (Instructor)
+const saveBankDetails = asyncHandler(async (req, res) => {
+    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, paypalEmail, preferredMethod } = req.body;
+
+    if (!accountHolderName) {
+        res.status(400);
+        throw new Error('Account holder name is required');
+    }
+
+    const bankDetail = await BankDetail.findOneAndUpdate(
+        { user: req.user.id },
+        {
+            user: req.user.id,
+            accountHolderName,
+            bankName: bankName || '',
+            accountNumber: accountNumber || '',
+            ifscCode: ifscCode || '',
+            upiId: upiId || '',
+            paypalEmail: paypalEmail || '',
+            preferredMethod: preferredMethod || 'bank_transfer'
+        },
+        { upsert: true, new: true, runValidators: true }
+    );
+
+    res.status(200).json(bankDetail);
+});
+
+// @desc    Get instructor earnings & payout history
+// @route   GET /api/instructor/earnings
+// @access  Private (Instructor)
+const getEarnings = asyncHandler(async (req, res) => {
+    const instructorId = req.user.id;
+
+    const [earningsResult, payoutResult, payouts, monthlyEarnings] = await Promise.all([
+        Purchase.aggregate([
+            { $match: { instructor: req.user._id, status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' }, sales: { $sum: 1 } } }
+        ]),
+        Payout.aggregate([
+            { $match: { instructor: req.user._id, status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]),
+        Payout.find({ instructor: instructorId })
+            .populate('processedBy', 'name')
+            .sort({ createdAt: -1 })
+            .limit(20),
+        Purchase.aggregate([
+            { $match: { instructor: req.user._id, status: 'completed' } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m', date: '$purchasedAt' } },
+                    total: { $sum: '$amount' },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: -1 } },
+            { $limit: 6 }
+        ])
+    ]);
+
+    const earnings = earningsResult[0] || { total: 0, sales: 0 };
+    const paidOut = payoutResult[0]?.total || 0;
+
+    res.status(200).json({
+        totalEarnings: earnings.total,
+        totalSales: earnings.sales,
+        totalPaidOut: paidOut,
+        pendingAmount: earnings.total - paidOut,
+        payouts,
+        monthlyEarnings: monthlyEarnings.reverse()
+    });
+});
+
 module.exports = {
     becomeInstructor,
     getInstructorDashboard,
@@ -294,5 +379,8 @@ module.exports = {
     updateMarketplaceCourse,
     getInstructorProfile,
     updateInstructorProfile,
-    getCourseSales
+    getCourseSales,
+    getBankDetails,
+    saveBankDetails,
+    getEarnings
 };
