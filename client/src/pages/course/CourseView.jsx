@@ -123,11 +123,12 @@ const CourseView = () => {
         }
     };
 
-    const handleSelectLecture = (lecture) => {
-        // Remind student to update status of previous lecture
-        if (isEnrolled && selectedLecture && selectedLecture._id !== lecture._id) {
-            const prevStatus = progressMap[selectedLecture._id]?.status || 'Not Started';
-            if (prevStatus === 'Not Started') {
+    // Show toast reminder when a lecture is opened and its status hasn't been updated
+    useEffect(() => {
+        if (user && selectedLecture) {
+            const status = progressMap[selectedLecture._id]?.status;
+            const defaultStatus = course?.lectureStatuses?.[0]?.label || 'Not Started';
+            if (!status || status === defaultStatus) {
                 toast('Don\'t forget to update your lecture status!', {
                     icon: '⏰',
                     duration: 4000,
@@ -144,7 +145,9 @@ const CourseView = () => {
                 });
             }
         }
+    }, [selectedLecture?._id]);
 
+    const handleSelectLecture = (lecture) => {
         setSelectedLecture(lecture);
         setCurrentPage(1);
         fetchComments(lecture._id);
