@@ -8,6 +8,22 @@ import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
 import toast from 'react-hot-toast';
 
+const getYouTubeEmbedUrl = (url) => {
+    try {
+        const parsed = new URL(url);
+        let videoId = null;
+        if (parsed.hostname === 'youtu.be') {
+            videoId = parsed.pathname.slice(1);
+        } else {
+            videoId = parsed.searchParams.get('v');
+        }
+        if (!videoId) return null;
+        return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&iv_load_policy=3`;
+    } catch {
+        return null;
+    }
+};
+
 const CourseView = () => {
     const { id, lectureId } = useParams(); // Get lectureId from URL
     const navigate = useNavigate();
@@ -475,9 +491,10 @@ const CourseView = () => {
                                                 selectedLecture.resourceUrl ? (
                                                     selectedLecture.resourceUrl.includes('youtube') || selectedLecture.resourceUrl.includes('youtu.be') ? (
                                                         <iframe
-                                                            src={selectedLecture.resourceUrl.replace('watch?v=', 'embed/').split('&')[0]}
+                                                            src={getYouTubeEmbedUrl(selectedLecture.resourceUrl)}
                                                             className="w-full h-full"
                                                             frameBorder="0"
+                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                             allowFullScreen
                                                             title="Video"
                                                         ></iframe>
