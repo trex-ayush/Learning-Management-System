@@ -14,6 +14,9 @@ connectDB();
 
 const app = express();
 
+// Trust proxy (required for Render, rate-limiting, and correct client IP)
+app.set('trust proxy', 1);
+
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true,

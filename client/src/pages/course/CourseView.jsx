@@ -124,6 +124,27 @@ const CourseView = () => {
     };
 
     const handleSelectLecture = (lecture) => {
+        // Remind student to update status of previous lecture
+        if (isEnrolled && selectedLecture && selectedLecture._id !== lecture._id) {
+            const prevStatus = progressMap[selectedLecture._id]?.status || 'Not Started';
+            if (prevStatus === 'Not Started') {
+                toast('Don\'t forget to update your lecture status!', {
+                    icon: '⏰',
+                    duration: 4000,
+                    style: {
+                        background: '#0f172a',
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        padding: '14px 20px',
+                        borderRadius: '12px',
+                        border: '1px solid #f59e0b',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                    },
+                });
+            }
+        }
+
         setSelectedLecture(lecture);
         setCurrentPage(1);
         fetchComments(lecture._id);
@@ -201,20 +222,21 @@ const CourseView = () => {
         }
     };
 
-    const handleUpdateProgress = async (newStatus) => {
-        if (!selectedLecture) return;
+    const handleUpdateProgress = async (newStatus, targetLectureId) => {
+        const lecId = targetLectureId || selectedLecture?._id;
+        if (!lecId) return;
         if (!isEnrolled) {
             toast.error("You are in Preview Mode (Not Enrolled). Progress cannot be saved.");
             return;
         }
         try {
-            const existingNotes = progressMap[selectedLecture._id]?.notes || '';
+            const existingNotes = progressMap[lecId]?.notes || '';
             const payload = { courseId: id, status: newStatus, notes: existingNotes };
-            await api.put(`/courses/lectures/${selectedLecture._id}/progress`, payload);
+            await api.put(`/courses/lectures/${lecId}/progress`, payload);
 
             setProgressMap(prev => ({
                 ...prev,
-                [selectedLecture._id]: { status: newStatus, notes: existingNotes }
+                [lecId]: { status: newStatus, notes: existingNotes }
             }));
             toast.success('Progress saved!');
         } catch (err) {
