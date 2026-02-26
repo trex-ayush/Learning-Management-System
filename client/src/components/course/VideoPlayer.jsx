@@ -92,7 +92,40 @@ const VideoPlayer = ({ url, onProgress, onDuration, onEnded }) => {
         );
     }
 
-    // Default: Use ReactPlayer (Handles YouTube, Direct Files, SoundCloud, Twitch, etc.)
+    // YouTube: Use ReactPlayer with clean embed config
+    if (type === 'youtube') {
+        return (
+            <PlayerWrapper>
+                <div className="relative w-full h-full bg-black flex items-center justify-center">
+                    <ReactPlayer
+                        url={url}
+                        width="100%"
+                        height="100%"
+                        controls={true}
+                        playing={false}
+                        onProgress={onProgress}
+                        onDuration={onDuration}
+                        onEnded={onEnded}
+                        onError={(e) => console.log('ReactPlayer Error:', e)}
+                        config={{
+                            youtube: {
+                                playerVars: {
+                                    rel: 0,
+                                    modestbranding: 1,
+                                    iv_load_policy: 3,
+                                    fs: 1,
+                                    cc_load_policy: 0,
+                                    origin: window.location.origin,
+                                },
+                            },
+                        }}
+                    />
+                </div>
+            </PlayerWrapper>
+        );
+    }
+
+    // Default: Use ReactPlayer (Handles Direct Files, SoundCloud, Twitch, etc.)
     return (
         <PlayerWrapper>
             <div className="relative w-full h-full bg-black flex items-center justify-center">
@@ -102,6 +135,8 @@ const VideoPlayer = ({ url, onProgress, onDuration, onEnded }) => {
                     height="100%"
                     controls={true}
                     playing={false}
+                    onProgress={onProgress}
+                    onDuration={onDuration}
                     onEnded={onEnded}
                     onError={(e) => console.log('ReactPlayer Error:', e)}
                 />
