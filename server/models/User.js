@@ -32,7 +32,19 @@ const userSchema = new mongoose.Schema({
     stripeAccountId: {
         type: String,
         default: ''
-    }
+    },
+    // Block fields
+    isBlocked: { type: Boolean, default: false },
+    blockReason: { type: String, default: '' },
+    blockedAt: { type: Date, default: null },
+    blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Warning fields
+    warnings: [{
+        reason: { type: String, required: true },
+        issuedAt: { type: Date, default: Date.now },
+        issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    maxWarnings: { type: Number, default: 2 }
 }, {
     timestamps: true
 });
@@ -43,9 +55,9 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

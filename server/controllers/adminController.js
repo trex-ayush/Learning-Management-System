@@ -232,10 +232,188 @@ const getPayouts = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all users
+// @route   GET /api/admin/users
+// @access  Private (Admin)
+const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({ role: { $ne: 'admin' } })
+        .select('-password')
+        .sort({ createdAt: -1 });
+    res.status(200).json(users);
+});
+
+// @desc    Warn a user
+// @route   POST /api/admin/users/:id/warn
+// @access  Private (Admin)
+const warnUser = asyncHandler(async (req, res) => {
+    const { reason } = req.body;
+    if (!reason) { res.status(400); throw new Error('Warning reason is required'); }
+
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    user.warnings.push({ reason, issuedBy: req.user.id });
+
+    if (user.warnings.length >= user.maxWarnings && !user.isBlocked) {
+        user.isBlocked = true;
+        user.blockReason = 'Maximum warnings reached. Account has been blocked.';
+        user.blockedAt = new Date();
+        user.blockedBy = req.user.id;
+    }
+
+    await user.save();
+    const updated = await User.findById(user._id).select('-password').populate('warnings.issuedBy', 'name');
+    res.status(200).json(updated);
+});
+
+// @desc    Remove a warning from a user
+// @route   DELETE /api/admin/users/:id/warnings/:index
+// @access  Private (Admin)
+const removeWarning = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    const index = parseInt(req.params.index);
+    if (index < 0 || index >= user.warnings.length) { res.status(400); throw new Error('Invalid warning index'); }
+
+    user.warnings.splice(index, 1);
+
+    // If user was auto-blocked due to warnings and count is now below limit, unblock
+    if (user.isBlocked && user.blockReason === 'Maximum warnings reached. Account has been blocked.' && user.warnings.length < user.maxWarnings) {
+        user.isBlocked = false;
+        user.blockReason = '';
+        user.blockedAt = null;
+        user.blockedBy = null;
+    }
+
+    await user.save();
+    const updated = await User.findById(user._id).select('-password').populate('warnings.issuedBy', 'name');
+    res.status(200).json(updated);
+});
+
+// @desc    Set max warnings for a user
+// @route   POST /api/admin/users/:id/max-warnings
+// @access  Private (Admin)
+const setMaxWarnings = asyncHandler(async (req, res) => {
+    const { maxWarnings } = req.body;
+    if (!maxWarnings || maxWarnings < 1) { res.status(400); throw new Error('maxWarnings must be at least 1'); }
+
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    user.maxWarnings = maxWarnings;
+    await user.save();
+    res.status(200).json({ maxWarnings: user.maxWarnings });
+});
+
+// @desc    Block a user
+// @route   POST /api/admin/users/:id/block
+// @access  Private (Admin)
+const blockUser = asyncHandler(async (req, res) => {
+    const { reason, hideCourses } = req.body;
+    if (!reason) { res.status(400); throw new Error('Block reason is required'); }
+
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    user.isBlocked = true;
+    user.blockReason = reason;
+    user.blockedAt = new Date();
+    user.blockedBy = req.user.id;
+    await user.save();
+
+    if (hideCourses) {
+        await Course.updateMany({ user: user._id }, { isAdminBlocked: true, adminBlockReason: `Instructor account blocked: ${reason}` });
+    }
+
+    const updated = await User.findById(user._id).select('-password');
+    res.status(200).json(updated);
+});
+
+// @desc    Unblock a user
+// @route   POST /api/admin/users/:id/unblock
+// @access  Private (Admin)
+const unblockUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    user.isBlocked = false;
+    user.blockReason = '';
+    user.blockedAt = null;
+    user.blockedBy = null;
+    await user.save();
+
+    // Restore courses that were hidden due to this user ban
+    await Course.updateMany(
+        { user: user._id, adminBlockReason: { $regex: /^Instructor account blocked:/ } },
+        { isAdminBlocked: false, adminBlockReason: '' }
+    );
+
+    const updated = await User.findById(user._id).select('-password');
+    res.status(200).json(updated);
+});
+
+// @desc    Change user role
+// @route   POST /api/admin/users/:id/role
+// @access  Private (Admin)
+const changeUserRole = asyncHandler(async (req, res) => {
+    const { role } = req.body;
+    if (!['student', 'instructor'].includes(role)) { res.status(400); throw new Error('Role must be student or instructor'); }
+
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); throw new Error('User not found'); }
+
+    user.role = role;
+    await user.save();
+
+    const updated = await User.findById(user._id).select('-password');
+    res.status(200).json(updated);
+});
+
+// @desc    Block a course
+// @route   POST /api/admin/courses/:id/block
+// @access  Private (Admin)
+const blockCourse = asyncHandler(async (req, res) => {
+    const { reason } = req.body;
+    if (!reason) { res.status(400); throw new Error('Block reason is required'); }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+
+    course.isAdminBlocked = true;
+    course.adminBlockReason = reason;
+    await course.save();
+
+    res.status(200).json({ _id: course._id, isAdminBlocked: true, adminBlockReason: reason });
+});
+
+// @desc    Unblock a course
+// @route   POST /api/admin/courses/:id/unblock
+// @access  Private (Admin)
+const unblockCourse = asyncHandler(async (req, res) => {
+    const course = await Course.findById(req.params.id);
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+
+    course.isAdminBlocked = false;
+    course.adminBlockReason = '';
+    await course.save();
+
+    res.status(200).json({ _id: course._id, isAdminBlocked: false });
+});
+
 module.exports = {
     getAdminDashboard,
     getInstructors,
     getInstructorDetail,
     createPayout,
-    getPayouts
+    getPayouts,
+    getAllUsers,
+    warnUser,
+    removeWarning,
+    setMaxWarnings,
+    blockUser,
+    unblockUser,
+    changeUserRole,
+    blockCourse,
+    unblockCourse
 };

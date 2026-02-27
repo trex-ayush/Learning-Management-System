@@ -106,7 +106,10 @@ const courseSchema = new mongoose.Schema({
     rating: {
         average: { type: Number, default: 0 },
         count: { type: Number, default: 0 }
-    }
+    },
+    // Admin moderation fields
+    isAdminBlocked: { type: Boolean, default: false },
+    adminBlockReason: { type: String, default: '' }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

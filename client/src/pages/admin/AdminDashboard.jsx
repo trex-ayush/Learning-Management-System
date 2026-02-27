@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import {
     FaUsers, FaChalkboardTeacher, FaGraduationCap, FaBook,
     FaRupeeSign, FaChartLine, FaMoneyCheckAlt, FaHistory,
-    FaArrowRight, FaExclamationCircle, FaCheckCircle, FaSearch
+    FaArrowRight, FaExclamationCircle, FaCheckCircle, FaSearch,
+    FaBan, FaUnlock, FaExclamationTriangle, FaTimes, FaUserCog, FaChevronDown, FaChevronUp, FaEdit
 } from 'react-icons/fa';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -102,7 +103,8 @@ const AdminDashboard = () => {
                     {[
                         { id: 'overview', label: 'Overview' },
                         { id: 'instructors', label: 'Instructors' },
-                        { id: 'payouts', label: 'Payouts' }
+                        { id: 'payouts', label: 'Payouts' },
+                        { id: 'users', label: 'Users' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -331,6 +333,11 @@ const AdminDashboard = () => {
                 {activeTab === 'payouts' && (
                     <PayoutsTab formatCurrency={formatCurrency} />
                 )}
+
+                {/* Users Tab */}
+                {activeTab === 'users' && (
+                    <UsersTab />
+                )}
             </div>
 
             {/* Payout Modal */}
@@ -534,6 +541,488 @@ const PayoutsTab = ({ formatCurrency }) => {
                     >
                         Next
                     </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Users management tab
+const UsersTab = () => {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState('all');
+
+    // Warn modal
+    const [warnModal, setWarnModal] = useState({ open: false, user: null });
+    const [warnReason, setWarnReason] = useState('');
+    const [warnLoading, setWarnLoading] = useState(false);
+
+    // Block modal
+    const [blockModal, setBlockModal] = useState({ open: false, user: null });
+    const [blockReason, setBlockReason] = useState('');
+    const [hideCourses, setHideCourses] = useState(false);
+    const [blockLoading, setBlockLoading] = useState(false);
+
+    // Expanded warnings per user
+    const [expandedWarnings, setExpandedWarnings] = useState({});
+    // Inline max-warnings editing
+    const [editMaxWarnings, setEditMaxWarnings] = useState({});
+    const [maxWarningsInput, setMaxWarningsInput] = useState({});
+
+    useEffect(() => { fetchUsers(); }, []);
+
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/admin/users');
+            setUsers(res.data);
+        } catch {
+            toast.error('Failed to load users');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredUsers = users.filter(u => {
+        const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+        const matchFilter =
+            filter === 'all' ||
+            (filter === 'students' && u.role === 'student') ||
+            (filter === 'instructors' && u.role === 'instructor') ||
+            (filter === 'blocked' && u.isBlocked) ||
+            (filter === 'warned' && (u.warnings?.length > 0) && !u.isBlocked);
+        return matchSearch && matchFilter;
+    });
+
+    const isLastWarning = (user) => (user.warnings?.length || 0) + 1 >= (user.maxWarnings || 2);
+
+    const handleWarn = async () => {
+        if (!warnReason.trim()) { toast.error('Please provide a reason'); return; }
+        setWarnLoading(true);
+        try {
+            const res = await api.post(`/admin/users/${warnModal.user._id}/warn`, { reason: warnReason });
+            setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
+            toast.success(res.data.isBlocked ? 'Warning issued — user auto-blocked' : 'Warning issued');
+            setWarnModal({ open: false, user: null });
+            setWarnReason('');
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to warn user');
+        } finally {
+            setWarnLoading(false);
+        }
+    };
+
+    const handleBlock = async () => {
+        if (!blockReason.trim()) { toast.error('Please provide a reason'); return; }
+        setBlockLoading(true);
+        try {
+            const res = await api.post(`/admin/users/${blockModal.user._id}/block`, { reason: blockReason, hideCourses });
+            setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
+            toast.success('User blocked');
+            setBlockModal({ open: false, user: null });
+            setBlockReason('');
+            setHideCourses(false);
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to block user');
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleUnblock = async (userId) => {
+        try {
+            const res = await api.post(`/admin/users/${userId}/unblock`);
+            setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
+            toast.success('User unblocked');
+        } catch {
+            toast.error('Failed to unblock user');
+        }
+    };
+
+    const handleChangeRole = async (userId, role) => {
+        try {
+            const res = await api.post(`/admin/users/${userId}/role`, { role });
+            setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
+            toast.success(`Role changed to ${role}`);
+        } catch {
+            toast.error('Failed to change role');
+        }
+    };
+
+    const handleRemoveWarning = async (userId, index) => {
+        try {
+            const res = await api.delete(`/admin/users/${userId}/warnings/${index}`);
+            setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
+            toast.success('Warning removed');
+        } catch {
+            toast.error('Failed to remove warning');
+        }
+    };
+
+    const handleSetMaxWarnings = async (userId) => {
+        const val = parseInt(maxWarningsInput[userId]);
+        if (!val || val < 1) { toast.error('Must be at least 1'); return; }
+        try {
+            await api.post(`/admin/users/${userId}/max-warnings`, { maxWarnings: val });
+            setUsers(prev => prev.map(u => u._id === userId ? { ...u, maxWarnings: val } : u));
+            setEditMaxWarnings(prev => ({ ...prev, [userId]: false }));
+            toast.success('Max warnings updated');
+        } catch {
+            toast.error('Failed to update');
+        }
+    };
+
+    if (loading) return <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading users...</div>;
+
+    const filterOptions = [
+        { id: 'all', label: 'All' },
+        { id: 'students', label: 'Students' },
+        { id: 'instructors', label: 'Instructors' },
+        { id: 'warned', label: 'Warned' },
+        { id: 'blocked', label: 'Blocked' },
+    ];
+
+    return (
+        <div>
+            {/* Search + Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <div className="relative flex-1 max-w-md">
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                    <input
+                        type="text"
+                        placeholder="Search by name or email..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    {filterOptions.map(f => (
+                        <button
+                            key={f.id}
+                            onClick={() => setFilter(f.id)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                                filter === f.id
+                                    ? f.id === 'blocked' ? 'bg-red-500 border-red-500 text-white'
+                                    : f.id === 'warned' ? 'bg-amber-500 border-amber-500 text-white'
+                                    : 'bg-indigo-500 border-indigo-500 text-white'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
+                            }`}
+                        >
+                            {f.label}
+                            {f.id === 'blocked' && ` (${users.filter(u => u.isBlocked).length})`}
+                            {f.id === 'warned' && ` (${users.filter(u => u.warnings?.length > 0 && !u.isBlocked).length})`}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                                <th className="text-left px-5 py-3 font-medium text-slate-500 dark:text-slate-400">User</th>
+                                <th className="text-left px-5 py-3 font-medium text-slate-500 dark:text-slate-400">Role</th>
+                                <th className="text-left px-5 py-3 font-medium text-slate-500 dark:text-slate-400">Warnings</th>
+                                <th className="text-left px-5 py-3 font-medium text-slate-500 dark:text-slate-400">Status</th>
+                                <th className="text-right px-5 py-3 font-medium text-slate-500 dark:text-slate-400">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                            {filteredUsers.map(user => {
+                                const warnCount = user.warnings?.length || 0;
+                                const maxWarn = user.maxWarnings || 2;
+                                const isExpanded = expandedWarnings[user._id];
+                                const isEditingMax = editMaxWarnings[user._id];
+
+                                return (
+                                    <>
+                                        <tr key={user._id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${user.isBlocked ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
+                                            {/* User info */}
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${user.isBlocked ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                                                        {user.name?.charAt(0)?.toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-slate-900 dark:text-white">{user.name}</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+                                                        {user.isBlocked && (
+                                                            <p className="text-xs text-red-500 mt-0.5 truncate max-w-[200px]" title={user.blockReason}>
+                                                                Reason: {user.blockReason}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Role with change dropdown */}
+                                            <td className="px-5 py-3">
+                                                <select
+                                                    value={user.role}
+                                                    onChange={e => handleChangeRole(user._id, e.target.value)}
+                                                    className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                >
+                                                    <option value="student">Student</option>
+                                                    <option value="instructor">Instructor</option>
+                                                </select>
+                                            </td>
+
+                                            {/* Warnings */}
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                        warnCount === 0 ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                                        : warnCount >= maxWarn ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                                    }`}>
+                                                        {warnCount > 0 && <FaExclamationTriangle className="text-[9px]" />}
+                                                        {warnCount}/{maxWarn}
+                                                    </span>
+
+                                                    {/* Edit max warnings */}
+                                                    {isEditingMax ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={maxWarningsInput[user._id] || maxWarn}
+                                                                onChange={e => setMaxWarningsInput(prev => ({ ...prev, [user._id]: e.target.value }))}
+                                                                className="w-12 text-xs px-1 py-0.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                                                            />
+                                                            <button onClick={() => handleSetMaxWarnings(user._id)} className="text-xs text-green-600 dark:text-green-400 hover:text-green-700 font-medium">✓</button>
+                                                            <button onClick={() => setEditMaxWarnings(prev => ({ ...prev, [user._id]: false }))} className="text-xs text-slate-400 hover:text-slate-600">✗</button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setEditMaxWarnings(prev => ({ ...prev, [user._id]: true })); setMaxWarningsInput(prev => ({ ...prev, [user._id]: maxWarn })); }}
+                                                            className="text-slate-400 hover:text-indigo-500 transition-colors"
+                                                            title="Edit max warnings"
+                                                        >
+                                                            <FaEdit className="text-[10px]" />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Toggle warning history */}
+                                                    {warnCount > 0 && (
+                                                        <button
+                                                            onClick={() => setExpandedWarnings(prev => ({ ...prev, [user._id]: !prev[user._id] }))}
+                                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                                        >
+                                                            {isExpanded ? <FaChevronUp className="text-[10px]" /> : <FaChevronDown className="text-[10px]" />}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Status badge */}
+                                            <td className="px-5 py-3">
+                                                {user.isBlocked ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                                        <FaBan className="text-[9px]" /> Blocked
+                                                    </span>
+                                                ) : warnCount > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                                        <FaExclamationTriangle className="text-[9px]" /> Warned
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                                                        <FaCheckCircle className="text-[9px]" /> Active
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {!user.isBlocked && (
+                                                        <button
+                                                            onClick={() => { setWarnModal({ open: true, user }); setWarnReason(''); }}
+                                                            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                                                        >
+                                                            Warn
+                                                        </button>
+                                                    )}
+                                                    {user.isBlocked ? (
+                                                        <button
+                                                            onClick={() => handleUnblock(user._id)}
+                                                            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <FaUnlock className="text-[9px]" /> Unblock
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setBlockModal({ open: true, user }); setBlockReason(''); setHideCourses(false); }}
+                                                            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <FaBan className="text-[9px]" /> Block
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        {/* Warning history expanded row */}
+                                        {isExpanded && warnCount > 0 && (
+                                            <tr key={`${user._id}-warnings`} className="bg-amber-50/50 dark:bg-amber-900/10">
+                                                <td colSpan={5} className="px-5 py-3">
+                                                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">Warning History</p>
+                                                    <div className="space-y-2">
+                                                        {user.warnings.map((w, i) => (
+                                                            <div key={i} className="flex items-start justify-between gap-3 p-2 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-900/40">
+                                                                <div>
+                                                                    <p className="text-xs text-slate-700 dark:text-slate-300">{w.reason}</p>
+                                                                    <p className="text-[10px] text-slate-400 mt-0.5">{new Date(w.issuedAt).toLocaleDateString()}</p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleRemoveWarning(user._id, i)}
+                                                                    className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                                                    title="Remove warning"
+                                                                >
+                                                                    <FaTimes className="text-xs" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
+                                );
+                            })}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
+                                        No users found
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Warn Modal */}
+            {warnModal.open && warnModal.user && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-full max-w-md shadow-xl">
+                        <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 dark:text-white">Issue Warning</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{warnModal.user.name}</p>
+                            </div>
+                            <button onClick={() => setWarnModal({ open: false, user: null })} className="text-slate-400 hover:text-slate-600"><FaTimes /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            {/* Warning count progress */}
+                            <div className="flex items-center justify-between text-xs mb-1">
+                                <span className="text-slate-500 dark:text-slate-400">Current warnings</span>
+                                <span className={`font-medium ${isLastWarning(warnModal.user) ? 'text-red-500' : 'text-amber-500'}`}>
+                                    {warnModal.user.warnings?.length || 0} / {warnModal.user.maxWarnings || 2}
+                                </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all ${isLastWarning(warnModal.user) ? 'bg-red-500' : 'bg-amber-400'}`}
+                                    style={{ width: `${Math.min(100, (((warnModal.user.warnings?.length || 0) + 1) / (warnModal.user.maxWarnings || 2)) * 100)}%` }}
+                                />
+                            </div>
+
+                            {/* Final warning alert */}
+                            {isLastWarning(warnModal.user) && (
+                                <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                    <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" />
+                                    <p className="text-xs text-red-700 dark:text-red-400">
+                                        <strong>Final warning!</strong> After this warning, the user will be automatically blocked.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Reason <span className="text-red-500">*</span></label>
+                                <textarea
+                                    rows={3}
+                                    value={warnReason}
+                                    onChange={e => setWarnReason(e.target.value)}
+                                    placeholder="Explain why this warning is being issued..."
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setWarnModal({ open: false, user: null })}
+                                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleWarn}
+                                    disabled={warnLoading}
+                                    className={`flex-1 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${isLastWarning(warnModal.user) ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                                >
+                                    {warnLoading ? 'Issuing...' : isLastWarning(warnModal.user) ? 'Warn & Block User' : 'Issue Warning'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Block Modal */}
+            {blockModal.open && blockModal.user && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-full max-w-md shadow-xl">
+                        <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 dark:text-white">Block User</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{blockModal.user.name}</p>
+                            </div>
+                            <button onClick={() => setBlockModal({ open: false, user: null })} className="text-slate-400 hover:text-slate-600"><FaTimes /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Block Reason <span className="text-red-500">*</span></label>
+                                <textarea
+                                    rows={3}
+                                    value={blockReason}
+                                    onChange={e => setBlockReason(e.target.value)}
+                                    placeholder="This reason will be shown to the user when they try to log in..."
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                                />
+                            </div>
+                            {blockModal.user.role === 'instructor' && (
+                                <label className="flex items-center gap-2.5 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={hideCourses}
+                                        onChange={e => setHideCourses(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-red-500 focus:ring-red-500"
+                                    />
+                                    <span className="text-sm text-slate-700 dark:text-slate-300">Also hide this instructor's courses from marketplace</span>
+                                </label>
+                            )}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setBlockModal({ open: false, user: null })}
+                                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleBlock}
+                                    disabled={blockLoading}
+                                    className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    <FaBan className="text-xs" />
+                                    {blockLoading ? 'Blocking...' : 'Block User'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
