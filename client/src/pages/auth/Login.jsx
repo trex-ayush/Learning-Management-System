@@ -29,9 +29,40 @@ const Login = () => {
         try {
             const user = await login(email, password);
             navigate('/');
-            toast.success('Logged in successfully');
+            if (user.warnings?.length > 0) {
+                toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
+                    duration: 6000,
+                    style: {
+                        background: '#78350f',
+                        color: '#fef3c7',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '10px',
+                        padding: '12px 16px',
+                    },
+                });
+            } else {
+                toast.success('Logged in successfully');
+            }
         } catch (error) {
-            toast.error(error.message || 'Invalid credentials');
+            const isBlocked = error.response?.status === 403;
+            if (isBlocked) {
+                toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'} Contact admin for more information.`, {
+                    duration: 8000,
+                    style: {
+                        background: '#450a0a',
+                        color: '#fecaca',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        border: '1px solid #ef4444',
+                        borderRadius: '10px',
+                        padding: '14px 16px',
+                    },
+                });
+            } else {
+                toast.error(error.response?.data?.message || error.message || 'Invalid credentials');
+            }
         } finally {
             setIsLoading(false);
         }

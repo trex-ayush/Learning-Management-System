@@ -55,6 +55,11 @@ const loginUser = asyncHandler(async (req, res) => {
     // Check for user email
     const user = await User.findOne({ email });
 
+    if (user && user.isBlocked) {
+        res.status(403);
+        throw new Error(user.blockReason || 'Your account has been blocked. Please contact support.');
+    }
+
     if (user && (await user.matchPassword(password))) {
         res.locals.user = user; // For Activity Logger
         res.json({
@@ -62,6 +67,8 @@ const loginUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            warnings: user.warnings || [],
+            maxWarnings: user.maxWarnings || 2,
             token: generateToken(user._id),
         });
     } else {

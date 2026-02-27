@@ -21,7 +21,8 @@ const getMarketplaceCourses = asyncHandler(async (req, res) => {
     // Build filter query
     const filter = {
         isMarketplace: true,
-        status: 'Published'
+        status: 'Published',
+        isAdminBlocked: { $ne: true }
     };
 
     if (category) filter.category = category;
@@ -83,7 +84,8 @@ const getMarketplaceCourses = asyncHandler(async (req, res) => {
 const getMarketplaceCourse = asyncHandler(async (req, res) => {
     const course = await Course.findOne({
         _id: req.params.id,
-        isMarketplace: true
+        isMarketplace: true,
+        isAdminBlocked: { $ne: true }
     })
         .populate('user', 'name bio profileImage')
         .populate({
@@ -152,6 +154,7 @@ const searchMarketplace = asyncHandler(async (req, res) => {
     const filter = {
         isMarketplace: true,
         status: 'Published',
+        isAdminBlocked: { $ne: true },
         $or: [
             { title: searchRegex },
             { description: searchRegex },
@@ -190,6 +193,7 @@ const getCategories = asyncHandler(async (req, res) => {
     const categories = await Course.distinct('category', {
         isMarketplace: true,
         status: 'Published',
+        isAdminBlocked: { $ne: true },
         category: { $ne: '' }
     });
 

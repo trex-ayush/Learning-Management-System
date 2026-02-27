@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { FaUserCircle, FaVideo, FaKey, FaChartLine, FaFire, FaCalendarAlt, FaAward } from 'react-icons/fa';
+import { FaUserCircle, FaVideo, FaKey, FaChartLine, FaFire, FaCalendarAlt, FaAward, FaExclamationTriangle } from 'react-icons/fa';
 
 const Profile = () => {
     const { user } = useContext(AuthContext);
@@ -308,6 +308,58 @@ const Profile = () => {
                                 </div>
                             </form>
                         </div>
+
+                        {/* Warnings Section - only show if user has warnings */}
+                        {user?.warnings?.length > 0 && (
+                            <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] p-8 md:p-10 border border-amber-200 dark:border-amber-800/50 shadow-2xl shadow-amber-100/40 dark:shadow-none">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700">
+                                        <FaExclamationTriangle size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 tracking-tight uppercase">Account Warnings</h3>
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                            {user.warnings.length} of {user.maxWarnings || 2} warnings issued. Further violations may result in account suspension.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Warning progress bar */}
+                                <div className="mb-6">
+                                    <div className="flex justify-between text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-2">
+                                        <span>Warning Level</span>
+                                        <span>{user.warnings.length}/{user.maxWarnings || 2}</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-700 ${user.warnings.length >= (user.maxWarnings || 2) ? 'bg-red-500' : 'bg-amber-400'}`}
+                                            style={{ width: `${Math.min(100, (user.warnings.length / (user.maxWarnings || 2)) * 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Warning list */}
+                                <div className="space-y-3">
+                                    {user.warnings.map((w, i) => (
+                                        <div key={i} className="flex items-start gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                            <span className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                                                {i + 1}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{w.reason}</p>
+                                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">
+                                                    {new Date(w.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <p className="text-xs text-amber-600 dark:text-amber-500 mt-5 text-center font-medium">
+                                    If you believe this is a mistake, please contact the admin.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
