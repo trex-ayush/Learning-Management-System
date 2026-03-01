@@ -158,38 +158,6 @@ const Marketplace = () => {
                 </div>
             )}
 
-            {/* Hero Section */}
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 py-16 px-4">
-                <div className="max-w-6xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                        Explore Our Course Marketplace
-                    </h1>
-                    <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-                        Discover courses from expert instructors and start learning today
-                    </p>
-
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search for courses..."
-                                className="w-full px-6 py-4 pl-12 rounded-full text-slate-900 dark:text-white bg-white dark:bg-slate-800 shadow-lg focus:outline-none focus:ring-4 focus:ring-white/30"
-                            />
-                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <button
-                                type="submit"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-full transition-colors"
-                            >
-                                Search
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* Filter Bar */}

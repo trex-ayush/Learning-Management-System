@@ -201,38 +201,18 @@ const StudentDashboard = ({ defaultTab }) => {
                                         to={`/course/${item.course._id}`}
                                         className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group"
                                     >
-                                        {/* Card Header with Progress Ring */}
-                                        <div className="h-28 sm:h-32 bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 flex items-center justify-between px-5 relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
-                                            <FaGraduationCap className="text-white/20 text-5xl transform group-hover:scale-110 transition-transform duration-500" />
-
-                                            {/* Progress Circle */}
-                                            <div className="relative w-14 h-14 sm:w-16 sm:h-16">
-                                                <svg className="w-full h-full transform -rotate-90">
-                                                    <circle
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        r="45%"
-                                                        stroke="rgba(255,255,255,0.2)"
-                                                        strokeWidth="4"
-                                                        fill="none"
-                                                    />
-                                                    <circle
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        r="45%"
-                                                        stroke="white"
-                                                        strokeWidth="4"
-                                                        fill="none"
-                                                        strokeLinecap="round"
-                                                        strokeDasharray={`${percent * 2.83} 283`}
-                                                        className="transition-all duration-500"
-                                                    />
-                                                </svg>
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <span className="text-white text-sm font-bold">{percent}%</span>
-                                                </div>
-                                            </div>
+                                        {/* Card Header - Thumbnail */}
+                                        <div className="h-28 sm:h-32 bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 relative overflow-hidden">
+                                            {item.course.thumbnail ? (
+                                                <img src={item.course.thumbnail} alt={item.course.title} className="absolute inset-0 w-full h-full object-cover" />
+                                            ) : (
+                                                <>
+                                                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <FaGraduationCap className="text-white/20 text-5xl transform group-hover:scale-110 transition-transform duration-500" />
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="p-4 sm:p-5 flex-1 flex flex-col">
@@ -245,21 +225,24 @@ const StudentDashboard = ({ defaultTab }) => {
 
                                             {/* Progress Info */}
                                             <div className="mt-auto">
-                                                <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center justify-between mb-1.5">
                                                     <span className="text-xs text-slate-500 dark:text-slate-400">
                                                         {completedCount} of {totalLectures} lectures
                                                     </span>
-                                                    {percent === 100 && (
-                                                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-                                                            <FaCheckCircle className="text-[10px]" /> Complete
-                                                        </span>
-                                                    )}
+                                                    <span className={`text-xs font-semibold ${percent === 100 ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                                        {percent === 100 ? (
+                                                            <span className="flex items-center gap-1">
+                                                                <FaCheckCircle className="text-[10px]" /> Complete
+                                                            </span>
+                                                        ) : (
+                                                            `${percent}%`
+                                                        )}
+                                                    </span>
                                                 </div>
 
                                                 <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                                     <div
-                                                        className={`h-1.5 rounded-full transition-all duration-500 ${percent === 100 ? 'bg-green-500' : 'bg-blue-500'
-                                                            }`}
+                                                        className={`h-1.5 rounded-full transition-all duration-500 ${percent === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
                                                         style={{ width: `${percent}%` }}
                                                     />
                                                 </div>
@@ -312,14 +295,22 @@ const StudentDashboard = ({ defaultTab }) => {
                                     return (
                                         <div key={course._id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group">
                                             {/* Card Header */}
-                                            <div className="h-28 sm:h-32 bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-700 dark:to-teal-800 flex items-center justify-between px-5 relative overflow-hidden">
-                                                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
-                                                <FaChalkboardTeacher className="text-white/20 text-5xl transform group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="h-28 sm:h-32 bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-700 dark:to-teal-800 relative overflow-hidden">
+                                                {course.thumbnail ? (
+                                                    <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                                                ) : (
+                                                    <>
+                                                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <FaChalkboardTeacher className="text-white/20 text-5xl transform group-hover:scale-110 transition-transform duration-500" />
+                                                        </div>
+                                                    </>
+                                                )}
 
                                                 {/* Status Badge */}
-                                                <div className="flex flex-col items-end gap-2">
-                                                    <span className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${course.status === 'Published' ? 'bg-white/25' :
-                                                        course.status === 'Archived' ? 'bg-red-500/50' : 'bg-yellow-500/50'
+                                                <div className="absolute top-3 right-3">
+                                                    <span className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm ${course.status === 'Published' ? 'bg-green-600/70' :
+                                                        course.status === 'Archived' ? 'bg-red-500/70' : 'bg-yellow-500/70'
                                                         }`}>
                                                         {course.status === 'Published' ? (
                                                             <span className="flex items-center gap-1">

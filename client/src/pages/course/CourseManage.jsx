@@ -461,7 +461,8 @@ const CourseManage = () => {
                                         onClick={() => {
                                             setActiveSectionId(section._id);
                                             setEditingLectureId(null);
-                                            setNewLecture({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true });
+                                            const nextNum = (section.lectures?.length || 0) + 1;
+                                            setNewLecture({ title: '', number: nextNum, resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true });
                                             setIsLectureModalOpen(true);
                                         }}
                                         className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium transition-colors bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-sm whitespace-nowrap"
