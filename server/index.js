@@ -68,10 +68,11 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Error handler middleware
 app.use((err, req, res, next) => {
-    // res.statusCode defaults to 200, so treat 200 as unset (use 500 for errors)
+    if (res.headersSent) {
+        return next(err);
+    }
     const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
-    res.status(statusCode);
-    res.json({
+    res.status(statusCode).json({
         message: err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });

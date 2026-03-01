@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useContext, lazy, Suspense } from 'react';
+import { useContext, useState, useEffect, lazy, Suspense } from 'react';
 import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import FloatingAIChatButton from './components/ui/FloatingAIChatButton';
 import { Toaster } from 'react-hot-toast';
+import api from './api/axios';
 
 // Lazy load all pages for better performance (code splitting)
 // Auth
@@ -65,6 +66,27 @@ const PageLoader = () => (
     </div>
   </div>
 );
+
+// Home page: redirect enrolled users to My Learning, otherwise show Marketplace
+const HomePage = () => {
+  const { user } = useContext(AuthContext);
+  const [redirect, setRedirect] = useState(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setChecked(true); return; }
+    let cancelled = false;
+    api.get('/courses/my/enrolled').then(res => {
+      if (!cancelled && res.data && res.data.length > 0) setRedirect('/my-learning');
+      if (!cancelled) setChecked(true);
+    }).catch(() => { if (!cancelled) setChecked(true); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (redirect) return <Navigate to={redirect} replace />;
+  if (!checked) return <PageLoader />;
+  return <Marketplace />;
+};
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useContext(AuthContext);
@@ -170,8 +192,8 @@ function App() {
                   <Route path="/admin/course/:courseId/quizzes" element={<CourseOwnerRoute><QuizManage /></CourseOwnerRoute>} />
                   <Route path="/admin/course/:courseId/quiz/:quizId/analytics" element={<CourseOwnerRoute><QuizAnalytics /></CourseOwnerRoute>} />
 
-                  {/* Home - Marketplace */}
-                  <Route path="/" element={<Marketplace />} />
+                  {/* Home - redirects to My Learning if enrolled, otherwise Marketplace */}
+                  <Route path="/" element={<HomePage />} />
                   <Route path="/marketplace" element={<Marketplace />} />
                   <Route path="/marketplace/course/:id" element={<CourseLanding />} />
 

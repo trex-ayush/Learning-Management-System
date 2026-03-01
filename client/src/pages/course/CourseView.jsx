@@ -139,13 +139,14 @@ const CourseView = () => {
         }
     };
 
-    // Show toast reminder when a lecture is opened and its status hasn't been updated
+    // Show toast reminder once when a lecture is manually selected and its status hasn't been updated
     useEffect(() => {
-        if (user && selectedLecture) {
+        if (user && selectedLecture && isEnrolled) {
             const status = progressMap[selectedLecture._id]?.status;
             const defaultStatus = course?.lectureStatuses?.[0]?.label || 'Not Started';
             if (!status || status === defaultStatus) {
                 toast('Don\'t forget to update your lecture status!', {
+                    id: 'lecture-status-reminder',
                     icon: '⏰',
                     duration: 4000,
                     style: {

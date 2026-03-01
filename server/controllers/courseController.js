@@ -323,7 +323,7 @@ const getEnrolledCourses = asyncHandler(async (req, res) => {
     const progresses = await Progress.find({ student: req.user.id })
         .populate({
             path: 'course',
-            select: 'title description status completedStatus sections'
+            select: 'title description status completedStatus sections thumbnail'
         });
 
     // Only show Published courses to students (hide Draft and Archived)
@@ -354,6 +354,7 @@ const getEnrolledCourses = asyncHandler(async (req, res) => {
                 description: course.description,
                 status: course.status,
                 completedStatus: course.completedStatus,
+                thumbnail: course.thumbnail,
                 totalLectures // Pre-computed count
             }
         };
@@ -781,7 +782,7 @@ const removeStudent = asyncHandler(async (req, res) => {
 const getCreatedCourses = asyncHandler(async (req, res) => {
     // Get courses created by user (only select necessary fields)
     const ownedCourses = await Course.find({ user: req.user.id })
-        .select('title description status sections createdAt')
+        .select('title description status sections createdAt thumbnail')
         .sort({ createdAt: -1 });
 
     // Get courses where user is a teacher
@@ -789,7 +790,7 @@ const getCreatedCourses = asyncHandler(async (req, res) => {
     const teacherCourseIds = teacherAssignments.map(t => t.course);
 
     const teachingCourses = await Course.find({ _id: { $in: teacherCourseIds } })
-        .select('title description status sections createdAt')
+        .select('title description status sections createdAt thumbnail')
         .sort({ createdAt: -1 });
 
     // Get all course IDs to fetch student counts
@@ -821,6 +822,7 @@ const getCreatedCourses = asyncHandler(async (req, res) => {
             description: courseObj.description,
             status: courseObj.status,
             createdAt: courseObj.createdAt,
+            thumbnail: courseObj.thumbnail,
             totalLectures,
             sectionCount,
             studentCount,
@@ -841,6 +843,7 @@ const getCreatedCourses = asyncHandler(async (req, res) => {
             description: courseObj.description,
             status: courseObj.status,
             createdAt: courseObj.createdAt,
+            thumbnail: courseObj.thumbnail,
             totalLectures,
             sectionCount,
             studentCount,
