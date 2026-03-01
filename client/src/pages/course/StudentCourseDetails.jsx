@@ -177,6 +177,50 @@ const StudentCourseDetails = () => {
         }
     };
 
+    // Find the lecture to resume from (last accessed, then next if completed)
+    const getResumeLecture = () => {
+        if (!course?.sections) return null;
+        const completionLabel = course.completedStatus || 'Completed';
+        const allLectures = [];
+        for (const sec of course.sections) {
+            if (!sec.isPublic) continue;
+            for (const lec of sec.lectures) {
+                allLectures.push(lec);
+            }
+        }
+        if (allLectures.length === 0) return null;
+
+        // No progress yet — start from first lecture
+        if (Object.keys(progressMap).length === 0) return allLectures[0];
+
+        // Find the most recently accessed lecture by completedAt timestamp
+        let lastAccessedId = null;
+        let latestTime = 0;
+        for (const [lecId, progress] of Object.entries(progressMap)) {
+            const t = progress.completedAt ? new Date(progress.completedAt).getTime() : 0;
+            if (t >= latestTime) {
+                latestTime = t;
+                lastAccessedId = lecId;
+            }
+        }
+
+        const lastIdx = allLectures.findIndex(l => l._id === lastAccessedId);
+        if (lastIdx === -1) return allLectures[0];
+
+        // If that lecture is fully completed, go to the next one
+        const lastStatus = progressMap[lastAccessedId]?.status;
+        if (lastStatus === completionLabel && lastIdx < allLectures.length - 1) {
+            return allLectures[lastIdx + 1];
+        }
+
+        // Otherwise resume at that lecture
+        return allLectures[lastIdx];
+    };
+
+    const hasAnyProgress = () => {
+        return Object.keys(progressMap).length > 0;
+    };
+
     const getProgressStats = () => {
         if (!course) return { completed: 0, total: 0, percent: 0 };
         let totalLectures = 0;
@@ -606,13 +650,14 @@ const StudentCourseDetails = () => {
                     </div>
                     <button
                         onClick={() => {
-                            if (course.sections.length > 0 && course.sections[0].lectures.length > 0) {
-                                navigate(`/course/${id}/lecture/${course.sections[0].lectures[0]._id}`);
+                            const resumeLec = getResumeLecture();
+                            if (resumeLec) {
+                                navigate(`/course/${id}/lecture/${resumeLec._id}`);
                             }
                         }}
-                        className="shrink-0 flex items-center gap-1.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow hover:opacity-90 transition-all"
+                        className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all"
                     >
-                        <FaPlayCircle size={12} /> <span className="hidden xs:inline">Start</span>
+                        <FaPlayCircle size={14} /> {hasAnyProgress() ? 'Continue' : 'Start'}
                     </button>
                 </div>
 
