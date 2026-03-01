@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUnlock } from 'react-icons/fa';
+import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock } from 'react-icons/fa';
 import StatusSelector from '../../components/ui/StatusSelector';
 import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
@@ -44,7 +44,8 @@ const CourseView = () => {
     // State to toggle section accordion
     const [expandedSections, setExpandedSections] = useState({});
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar
-    const [isSidebarVisible, setIsSidebarVisible] = useState(false); // Desktop sidebar toggle - minimized by default
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true); // Desktop sidebar toggle - open by default
+    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion'
 
     // Navigation Helpers
     const getFlattenedLectures = () => {
@@ -177,10 +178,7 @@ const CourseView = () => {
         if (course && course.sections) {
             const section = course.sections.find(s => s.lectures.some(l => l._id === lecture._id));
             if (section) {
-                setExpandedSections(prev => ({
-                    ...prev,
-                    [section._id]: true
-                }));
+                setExpandedSections({ [section._id]: true });
             }
         }
     };
@@ -213,7 +211,7 @@ const CourseView = () => {
             if (targetLecture && (!selectedLecture || selectedLecture._id !== targetLecture._id)) {
                 setSelectedLecture(targetLecture);
                 fetchComments(targetLecture._id);
-                setExpandedSections(prev => ({ ...prev, [targetSectionId]: true }));
+                setExpandedSections({ [targetSectionId]: true });
             }
         }
     }, [course, lectureId]);
@@ -292,17 +290,16 @@ const CourseView = () => {
 
     if (!course) return <div className="flex justify-center items-center h-screen text-slate-500 font-medium bg-gray-50 dark:bg-slate-950 dark:text-slate-400">Loading Experience...</div>;
 
-    const currentProgress = selectedLecture ? progressMap[selectedLecture._id] || { status: 'Not Started', notes: '' } : {};
 
     // Check access
     const hasAccess = isEnrolled || (user && user.role === 'admin') || (course && user && course.user === user._id) || (selectedLecture && selectedLecture.isPreview);
 
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
+        <div className="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 min-h-screen">
 
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-3 flex items-center justify-between z-20 sticky top-0">
+            <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-3 flex items-center justify-between z-50 sticky top-0">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(`/course/${id}`)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
                         <FaArrowLeft size={16} />
@@ -317,7 +314,7 @@ const CourseView = () => {
                 </button>
             </div>
 
-            <div className="flex flex-1 overflow-hidden relative">
+            <div className="flex relative">
                 {/* Mobile Sidebar Overlay (Backdrop) */}
                 <div
                     className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -326,8 +323,9 @@ const CourseView = () => {
 
                 {/* Sidebar (Sheet-like) */}
                 <div className={`
-                        absolute lg:static inset-y-0 left-0 z-40 bg-white dark:bg-slate-900 lg:border-r border-gray-100 dark:border-slate-800 shadow-2xl lg:shadow-none
-                        transform transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) flex flex-col
+                        fixed lg:sticky top-0 inset-y-0 left-0 h-screen z-40 lg:z-10 shrink-0
+                        bg-white dark:bg-slate-900 lg:border-r border-gray-100 dark:border-slate-800 shadow-2xl lg:shadow-none
+                        flex flex-col transform transition-all duration-300
                         ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0 w-[280px]'}
                         ${!isSidebarVisible ? 'lg:w-16' : 'lg:w-80'}
                     `}>
@@ -479,145 +477,84 @@ const CourseView = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-950 transition-colors duration-300 w-full">
+                <div className="flex-1 min-w-0 bg-white dark:bg-slate-950 transition-colors duration-300">
                     {selectedLecture ? (
                         <div className="w-full max-w-[1800px] mx-auto">
-                            {/* Top Section: Video + Notes (Side by Side on Desktop) */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-4 p-0 lg:p-4">
-                                {/* Video Player */}
-                                <div className="lg:col-span-2">
-                                    <div className="bg-black w-full" style={{ aspectRatio: '16/9', maxHeight: '65vh' }}>
-                                        <div className="w-full h-full relative group">
-                                            {hasAccess ? (
-                                                selectedLecture.resourceUrl ? (
-                                                    selectedLecture.resourceUrl.includes('youtube') || selectedLecture.resourceUrl.includes('youtu.be') ? (
-                                                        <iframe
-                                                            src={getYouTubeEmbedUrl(selectedLecture.resourceUrl)}
-                                                            className="w-full h-full"
-                                                            frameBorder="0"
-                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                            allowFullScreen
-                                                            title="Video"
-                                                        ></iframe>
-                                                    ) : (
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-                                                            <a href={selectedLecture.resourceUrl} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 flex flex-col items-center gap-3 transition-colors p-4">
-                                                                <FaPlayCircle className="text-5xl" />
-                                                                <span className="text-base font-medium text-center">Open External Resource</span>
-                                                            </a>
-                                                        </div>
-                                                    )
-                                                ) : (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 flex-col p-4">
-                                                        <span className="text-5xl mb-3">📚</span>
-                                                        <span className="font-medium text-base">No Video Resource</span>
-                                                    </div>
-                                                )
-                                            ) : (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 p-6 text-center">
-                                                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500">
-                                                        <FaLock size={24} />
-                                                    </div>
-                                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Content Locked</h3>
-                                                    <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md text-sm">
-                                                        This lecture is part of the full course. Enroll now to unlock all content.
-                                                    </p>
 
-                                                    {!user ? (
-                                                        <button
-                                                            onClick={() => navigate('/login')}
-                                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm"
-                                                        >
-                                                            Login to Enroll
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => navigate(`/marketplace/course/${id}`)}
-                                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm"
-                                                        >
-                                                            View Course
-                                                        </button>
-                                                    )}
+                            {/* Video Player - Full Width */}
+                            <div className="bg-black w-full" style={{ aspectRatio: '16/9', maxHeight: '65vh' }}>
+                                <div className="w-full h-full relative">
+                                    {hasAccess ? (
+                                        selectedLecture.resourceUrl ? (
+                                            selectedLecture.resourceUrl.includes('youtube') || selectedLecture.resourceUrl.includes('youtu.be') ? (
+                                                <iframe
+                                                    src={getYouTubeEmbedUrl(selectedLecture.resourceUrl)}
+                                                    className="w-full h-full"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                    title="Video"
+                                                ></iframe>
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                                                    <a href={selectedLecture.resourceUrl} target="_blank" rel="noreferrer" className="text-white hover:text-blue-400 flex flex-col items-center gap-3 transition-colors p-4">
+                                                        <FaPlayCircle className="text-5xl" />
+                                                        <span className="text-base font-medium text-center">Open External Resource</span>
+                                                    </a>
                                                 </div>
+                                            )
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 flex-col p-4">
+                                                <span className="text-5xl mb-3">📚</span>
+                                                <span className="font-medium text-base">No Video Resource</span>
+                                            </div>
+                                        )
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 p-6 text-center">
+                                            <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500">
+                                                <FaLock size={24} />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Content Locked</h3>
+                                            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md text-sm">
+                                                This lecture is part of the full course. Enroll now to unlock all content.
+                                            </p>
+                                            {!user ? (
+                                                <button onClick={() => navigate('/login')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm">
+                                                    Login to Enroll
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => navigate(`/marketplace/course/${id}`)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm">
+                                                    View Course
+                                                </button>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Notes Section - Right Side */}
-                                <div className="lg:col-span-1 p-4 lg:p-0">
-                                    <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-gray-100 dark:border-slate-800 shadow-sm" style={{ maxHeight: '65vh' }}>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                                                    <FaStickyNote className="text-amber-500 text-sm" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">My Notes</h3>
-                                                    <p className="text-[9px] text-slate-400 uppercase tracking-wide">Private</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={handleSaveNotes}
-                                                disabled={isSavingNotes}
-                                                className="flex items-center gap-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all"
-                                            >
-                                                {isSavingNotes ? (
-                                                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                                ) : (
-                                                    <FaSave className="text-xs" />
-                                                )}
-                                                <span>{isSavingNotes ? 'Saving' : 'Save'}</span>
-                                            </button>
-                                        </div>
-
-                                        <textarea
-                                            className="w-full bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all resize-none placeholder:text-slate-400 border border-transparent focus:border-amber-200 dark:focus:border-amber-800/50 leading-relaxed"
-                                            style={{ height: 'calc(65vh - 100px)' }}
-                                            placeholder="Write notes, timestamps, key points..."
-                                            value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
-                                        ></textarea>
-
-                                        <div className="mt-2 text-[10px] text-slate-400 text-right">
-                                            {notes.length > 0 && `${notes.length.toLocaleString()} chars`}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Title, Details and Status Section - All in one line */}
-                            <div className="px-4 sm:px-6 lg:px-4 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800">
+                            {/* Lecture Info Bar */}
+                            <div className="px-4 sm:px-6 lg:px-4 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                    {/* Title and Details */}
+                                    {/* Title and meta */}
                                     <div className="flex-1 min-w-0">
-                                        <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2">{selectedLecture.title}</h1>
+                                        <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-1">{selectedLecture.title}</h1>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Lecture {selectedLecture.number}</span>
+                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Lecture {selectedLecture.number}</span>
                                             {selectedLecture.resourceUrl && (
-                                                <a
-                                                    href={selectedLecture.resourceUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs font-bold transition-all border border-blue-100 dark:border-blue-800/50"
-                                                >
-                                                    <FaPlayCircle className="text-xs" />
-                                                    <span className="hidden xs:inline">Open Video URL</span>
-                                                    <span className="xs:hidden">URL</span>
+                                                <a href={selectedLecture.resourceUrl} target="_blank" rel="noreferrer"
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs font-bold transition-all border border-blue-100 dark:border-blue-800/50">
+                                                    <FaPlayCircle className="text-xs" /> Open URL
                                                 </a>
                                             )}
                                             {selectedLecture.dueDate && (
                                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium">
-                                                    <FaClock className="text-xs" />
-                                                    Due {new Date(selectedLecture.dueDate).toLocaleDateString()}
+                                                    <FaClock className="text-xs" /> Due {new Date(selectedLecture.dueDate).toLocaleDateString()}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Right Side: Status Selector and Navigation Buttons */}
+                                    {/* Status + Navigation */}
                                     <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
-                                        {/* Status Selector */}
                                         <div className="flex-1 sm:flex-initial">
                                             <StatusSelector
                                                 status={progressMap[selectedLecture._id]?.status || 'Not Started'}
@@ -626,8 +563,6 @@ const CourseView = () => {
                                                 customStatuses={course?.lectureStatuses}
                                             />
                                         </div>
-
-                                        {/* Navigation Buttons */}
                                         <div className="flex items-center gap-2 shrink-0">
                                             <button
                                                 onClick={handlePrevLecture}
@@ -637,7 +572,6 @@ const CourseView = () => {
                                                 <FaStepBackward className="group-hover:-translate-x-0.5 transition-transform text-xs" />
                                                 <span className="hidden sm:inline">Previous</span>
                                             </button>
-
                                             <button
                                                 onClick={handleNextLecture}
                                                 disabled={getFlattenedLectures().findIndex(l => l._id === selectedLecture._id) === getFlattenedLectures().length - 1}
@@ -651,87 +585,144 @@ const CourseView = () => {
                                 </div>
                             </div>
 
-                            {/* Description and Comments */}
-                            <div className="px-4 sm:px-6 lg:px-4 py-4 sm:py-6 pb-8">
-                                {/* Description (if exists) */}
-                                {selectedLecture.description && (
-                                    <div className="mb-6 pb-5 border-b border-gray-100 dark:border-slate-800">
-                                        <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-2">Description</h3>
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{selectedLecture.description}</p>
+                            {/* Tab Strip */}
+                            <div className="flex border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4">
+                                {[
+                                    { id: 'overview', label: 'Overview' },
+                                    { id: 'notes', label: 'Notes', icon: <FaStickyNote className="text-amber-400 text-[10px]" /> },
+                                    { id: 'discussion', label: `Discussion${comments.length > 0 ? ` (${comments.length})` : ''}` },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex items-center gap-1.5 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                                            ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                            : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                            }`}
+                                    >
+                                        {tab.icon}{tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="px-4 sm:px-6 lg:px-4 py-5 pb-8">
+
+                                {/* Overview Tab */}
+                                {activeTab === 'overview' && (
+                                    <div>
+                                        {selectedLecture.description ? (
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{selectedLecture.description}</p>
+                                        ) : (
+                                            <p className="text-sm text-slate-400 dark:text-slate-500">No description for this lecture.</p>
+                                        )}
                                     </div>
                                 )}
 
-                                {/* Comments Section */}
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                                        Discussion ({comments.length})
-                                    </h3>
-
-                                    {/* Comment Input */}
-                                    <form onSubmit={handleAddComment} className="flex gap-3 items-start">
-                                        <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 uppercase shrink-0">
-                                            {user?.name?.charAt(0) || 'U'}
-                                        </div>
-                                        <div className="flex-1 flex gap-2 items-center bg-slate-50 dark:bg-slate-900 rounded-full px-4 py-2 border border-gray-200 dark:border-slate-700">
-                                            <input
-                                                type="text"
-                                                className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white focus:outline-none placeholder:text-slate-400"
-                                                placeholder="Add a comment..."
-                                                value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
+                                {/* Notes Tab */}
+                                {activeTab === 'notes' && (
+                                    <div>
+                                        <div className="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm">
+                                            {/* Notes card header */}
+                                            <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/20">
+                                                <div className="flex items-center gap-2">
+                                                    <FaStickyNote className="text-amber-500 text-sm" />
+                                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">My Notes</span>
+                                                    <span className="text-[10px] text-slate-400 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2 py-0.5 rounded-full">Private</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {notes.length > 0 && (
+                                                        <span className="text-[10px] text-slate-400 hidden sm:block">{notes.length.toLocaleString()} chars</span>
+                                                    )}
+                                                    <button
+                                                        onClick={handleSaveNotes}
+                                                        disabled={isSavingNotes}
+                                                        className="flex items-center gap-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all"
+                                                    >
+                                                        {isSavingNotes ? (
+                                                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <FaSave className="text-xs" />
+                                                        )}
+                                                        <span>{isSavingNotes ? 'Saving…' : 'Save'}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {/* Textarea */}
+                                            <textarea
+                                                className="w-full min-h-[300px] bg-white dark:bg-slate-900/50 p-5 text-sm text-slate-700 dark:text-slate-300 focus:outline-none resize-y placeholder:text-slate-300 dark:placeholder:text-slate-600 leading-7"
+                                                placeholder={`Jot down notes for this lecture…\n\n• Key concepts\n• Timestamps e.g. [2:30]\n• Questions to revisit`}
+                                                value={notes}
+                                                onChange={(e) => setNotes(e.target.value)}
                                             />
-                                            <button
-                                                type="submit"
-                                                disabled={!newComment.trim()}
-                                                className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
-                                            >
-                                                Post
-                                            </button>
                                         </div>
-                                    </form>
+                                    </div>
+                                )}
 
-                                    {/* Comments List */}
+                                {/* Discussion Tab */}
+                                {activeTab === 'discussion' && (
                                     <div className="space-y-4">
+                                        {/* Comment Input */}
+                                        <form onSubmit={handleAddComment} className="flex gap-3 items-start">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 uppercase shrink-0">
+                                                {user?.name?.charAt(0) || 'U'}
+                                            </div>
+                                            <div className="flex-1 flex gap-2 items-center bg-slate-50 dark:bg-slate-900 rounded-full px-4 py-2 border border-gray-200 dark:border-slate-700">
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white focus:outline-none placeholder:text-slate-400"
+                                                    placeholder="Add a comment…"
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={!newComment.trim()}
+                                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                                                >
+                                                    Post
+                                                </button>
+                                            </div>
+                                        </form>
+
+                                        {/* Comments List */}
                                         {comments.length > 0 ? (
                                             <>
-                                                {comments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((comment) => (
-                                                    <div key={comment._id} className="flex gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 uppercase">
-                                                            {(comment.user?.name || comment.student?.name || '?').charAt(0)}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                                                                    {(comment.user?._id || comment.student?._id) === user?._id ? 'You' : (comment.user?.name || comment.student?.name || 'Unknown')}
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                                <div className="space-y-3">
+                                                    {comments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((comment) => (
+                                                        <div key={comment._id} className="flex gap-3">
+                                                            <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 uppercase">
+                                                                {(comment.user?.name || comment.student?.name || '?').charAt(0)}
                                                             </div>
-                                                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-words">{comment.details}</p>
+                                                            <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                                        {(comment.user?._id || comment.student?._id) === user?._id ? 'You' : (comment.user?.name || comment.student?.name || 'Unknown')}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                                                </div>
+                                                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-words">{comment.details}</p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-
-                                                {/* Pagination */}
+                                                    ))}
+                                                </div>
                                                 <Pagination
                                                     currentPage={currentPage}
                                                     totalPages={Math.ceil(comments.length / itemsPerPage)}
                                                     totalItems={comments.length}
                                                     itemsPerPage={itemsPerPage}
                                                     onPageChange={(newPage) => setCurrentPage(newPage)}
-                                                    onLimitChange={(newLimit) => {
-                                                        setItemsPerPage(newLimit);
-                                                        setCurrentPage(1);
-                                                    }}
+                                                    onLimitChange={(newLimit) => { setItemsPerPage(newLimit); setCurrentPage(1); }}
                                                     compact={true}
                                                 />
                                             </>
                                         ) : (
                                             <div className="py-8 text-center">
-                                                <p className="text-sm text-slate-400 dark:text-slate-500">No comments yet. Be the first to comment!</p>
+                                                <p className="text-sm text-slate-400 dark:text-slate-500">No comments yet. Be the first!</p>
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     ) : (
