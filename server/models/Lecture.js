@@ -38,7 +38,7 @@ const lectureSchema = new mongoose.Schema({
     },
     importance: {
         type: String,
-        enum: ['Optional', 'Normal', 'Important', 'Very Important', ''],
+        enum: ['None', 'Optional', 'Normal', 'Important', 'Very Important', ''],
         default: ''
     }
 }, {
