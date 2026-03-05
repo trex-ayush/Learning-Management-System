@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
 
@@ -66,20 +66,24 @@ const GlobalActivity = () => {
     };
 
     const getActionIcon = (action) => {
-        switch (action) {
-            case 'Completed': return <FaCheckCircle className="text-green-500" />;
-            case 'Started': return <FaPlayCircle className="text-blue-500" />;
-            case 'In Progress': return <FaClock className="text-amber-500" />;
-            case 'Note Updated': return <FaStickyNote className="text-purple-500" />;
-            case 'Enrolled': return <FaUserPlus className="text-indigo-500" />;
-            case 'Comment': return <FaComment className="text-slate-500" />;
-            case 'Registered': return <FaUserPlus className="text-emerald-500" />;
-            case 'Login': return <FaCheckCircle className="text-blue-600" />;
-            case 'POST': return <FaCheckCircle className="text-green-600" />;
-            case 'PUT': return <FaCheckCircle className="text-amber-600" />;
-            case 'DELETE': return <FaCheckCircle className="text-red-600" />;
-            default: return <FaHistory className="text-slate-400" />;
-        }
+        if (!action) return <FaHistory className="text-slate-400" />;
+        if (action === 'Completed') return <FaCheckCircle className="text-green-500" />;
+        if (action === 'Started' || action === 'In Progress') return <FaPlayCircle className="text-blue-500" />;
+        if (action === 'Status Updated') return <FaClock className="text-amber-500" />;
+        if (action === 'Note Updated') return <FaStickyNote className="text-purple-500" />;
+        if (action === 'Enrolled') return <FaUserPlus className="text-indigo-500" />;
+        if (action === 'Unenrolled') return <FaTrash className="text-red-500" />;
+        if (action === 'Comment') return <FaComment className="text-slate-500" />;
+        if (action === 'Registered') return <FaUserPlus className="text-emerald-500" />;
+        if (action === 'Login') return <FaSignInAlt className="text-cyan-500" />;
+        if (action === 'Password Updated') return <FaPen className="text-violet-500" />;
+        if (action.includes('Deleted')) return <FaTrash className="text-red-500" />;
+        if (action.includes('Added') || action.includes('Created')) return <FaPlus className="text-emerald-500" />;
+        if (action.includes('Updated')) return <FaPen className="text-violet-500" />;
+        if (action.includes('Broadcast')) return <FaBullhorn className="text-amber-500" />;
+        if (action.includes('Teacher')) return <FaUserTie className="text-blue-500" />;
+        if (action.includes('Quiz')) return <FaBook className="text-indigo-500" />;
+        return <FaHistory className="text-slate-400" />;
     };
 
     return (
@@ -126,11 +130,23 @@ const GlobalActivity = () => {
                         >
                             <option value="">All Actions</option>
                             <option value="Login">Login</option>
+                            <option value="Registered">Registered</option>
+                            <option value="Enrolled">Enrolled</option>
+                            <option value="Unenrolled">Unenrolled</option>
+                            <option value="Status Updated">Status Updated</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Started">Started</option>
                             <option value="Comment">Comment</option>
                             <option value="Note Updated">Note Updated</option>
-                            <option value="Registered">Registered</option>
-                            <option value="Status Updated">Status Updated</option>
-                            <option value="Enrolled">Enrolled</option>
+                            <option value="Lecture Added">Lecture Added</option>
+                            <option value="Lecture Updated">Lecture Updated</option>
+                            <option value="Lecture Deleted">Lecture Deleted</option>
+                            <option value="Section Added">Section Added</option>
+                            <option value="Section Updated">Section Updated</option>
+                            <option value="Course Updated">Course Updated</option>
+                            <option value="Course Created">Course Created</option>
+                            <option value="Broadcast Created">Broadcast Created</option>
+                            <option value="Teacher Added">Teacher Added</option>
                         </select>
                     </div>
                     <button
@@ -186,24 +202,40 @@ const GlobalActivity = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap align-top">
                                                     <div className="flex items-center gap-2">
                                                         {getActionIcon(log.action)}
-                                                        <span className={`font-medium text-xs px-2 py-0.5 rounded-full ${log.action === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-                                                            log.action === 'Started' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
-                                                                log.action === 'Enrolled' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' :
-                                                                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                                                            }`}>
+                                                        <span className={`font-medium text-xs px-2 py-0.5 rounded-full ${
+                                                            log.action === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
+                                                            log.action === 'Started' || log.action === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
+                                                            log.action === 'Enrolled' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' :
+                                                            log.action === 'Login' || log.action === 'Registered' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400' :
+                                                            log.action === 'Comment' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' :
+                                                            log.action === 'Note Updated' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                                            log.action.includes('Deleted') || log.action === 'Unenrolled' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
+                                                            log.action.includes('Added') || log.action.includes('Created') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' :
+                                                            log.action.includes('Updated') ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400' :
+                                                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                                                        }`}>
                                                             {log.action}
                                                         </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 align-top">
                                                     <div className="flex flex-col gap-1 min-w-0">
-                                                        <span
-                                                            className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate hover:underline cursor-pointer block"
-                                                            title={log.course?.title || 'System Event'}
-                                                            onClick={() => log.course && navigate(`/admin/course/${log.course._id}`)}
-                                                        >
-                                                            {log.course?.title || <span className="text-slate-400 italic">Global Event</span>}
-                                                        </span>
+                                                        {log.course ? (
+                                                            <span
+                                                                className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate hover:underline cursor-pointer block"
+                                                                title={log.course.title}
+                                                                onClick={() => navigate(`/admin/course/${log.course._id}`)}
+                                                            >
+                                                                {log.course.title}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
+                                                                {log.action === 'Login' || log.action === 'Registered' ? 'Authentication' :
+                                                                 log.action === 'Password Updated' ? 'Account' :
+                                                                 log.action === 'Role Changed' || log.action === 'User Warned' || log.action === 'User Blocked' || log.action === 'User Unblocked' ? 'User Management' :
+                                                                 'Platform Activity'}
+                                                            </span>
+                                                        )}
                                                         {log.lecture && (
                                                             <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                                                                 <span className="text-[10px] uppercase font-bold bg-slate-100 dark:bg-slate-800 px-1 rounded">Lec</span>
