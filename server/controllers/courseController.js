@@ -138,7 +138,7 @@ const addSection = asyncHandler(async (req, res) => {
     // Course is attached by verifyCourseOwnership middleware
     const course = req.course;
 
-    course.sections.push({ title, isPublic: req.body.isPublic, lectures: [] });
+    course.sections.push({ title, isPublic: req.body.isPublic, isPreview: req.body.isPreview, importance: req.body.importance || '', lectures: [] });
     await course.save();
 
     res.status(201).json(course);
@@ -162,6 +162,12 @@ const updateSection = asyncHandler(async (req, res) => {
     section.title = title || section.title;
     if (req.body.isPublic !== undefined) {
         section.isPublic = req.body.isPublic;
+    }
+    if (req.body.isPreview !== undefined) {
+        section.isPreview = req.body.isPreview;
+    }
+    if (req.body.importance !== undefined) {
+        section.importance = req.body.importance;
     }
     await course.save();
 
@@ -219,7 +225,8 @@ const addLectureToSection = asyncHandler(async (req, res) => {
         dueDate,
         status: req.body.status || 'Pending',
         isPublic: req.body.isPublic !== undefined ? req.body.isPublic : false,
-        isPreview: req.body.isPreview !== undefined ? req.body.isPreview : false
+        isPreview: req.body.isPreview !== undefined ? req.body.isPreview : false,
+        importance: req.body.importance || ''
     });
 
     // Add to section
@@ -248,6 +255,9 @@ const updateLecture = asyncHandler(async (req, res) => {
     }
     if (req.body.isPreview !== undefined) {
         lecture.isPreview = req.body.isPreview;
+    }
+    if (req.body.importance !== undefined) {
+        lecture.importance = req.body.importance;
     }
 
     await lecture.save();

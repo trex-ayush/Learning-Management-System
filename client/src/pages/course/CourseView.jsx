@@ -396,7 +396,7 @@ const CourseView = () => {
 
                                     {expandedSections[section._id] && (
                                         <div className="space-y-0.5 mt-0 mb-3 ml-2 border-l border-gray-100 dark:border-slate-800 pl-2">
-                                            {section.lectures.map((lec) => {
+                                            {[...section.lectures].sort((a, b) => a.number - b.number).map((lec) => {
                                                 const status = progressMap[lec._id]?.status || 'Not Started';
                                                 const isSelected = selectedLecture && selectedLecture._id === lec._id;
 
@@ -446,7 +446,7 @@ const CourseView = () => {
                                             title={section.title}
                                         >
                                             {/* Lecture Numbers inside the bordered box */}
-                                            {section.lectures && section.lectures.map((lec) => {
+                                            {section.lectures && [...section.lectures].sort((a, b) => a.number - b.number).map((lec) => {
                                                 const status = progressMap[lec._id]?.status || 'Not Started';
                                                 const isSelected = selectedLecture && selectedLecture._id === lec._id;
                                                 const completionLabel = course.completedStatus || 'Completed';

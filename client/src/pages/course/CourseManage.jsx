@@ -23,6 +23,7 @@ const CourseManage = () => {
     const [newSectionTitle, setNewSectionTitle] = useState('');
     const [newSectionIsPublic, setNewSectionIsPublic] = useState(true);
     const [newSectionIsPreview, setNewSectionIsPreview] = useState(false);
+    const [newSectionImportance, setNewSectionImportance] = useState('');
     const [expandedSections, setExpandedSections] = useState({});
 
     // Section State
@@ -96,11 +97,11 @@ const CourseManage = () => {
         try {
             const res = await api.get(`/courses/${id}`);
             setCourse(res.data);
-            // Initialize expanded sections - only first section expanded by default
+            // Initialize expanded sections - all collapsed by default
             if (res.data.sections && res.data.sections.length > 0) {
                 const initialExpanded = {};
-                res.data.sections.forEach((section, index) => {
-                    initialExpanded[section._id] = index === 0; // Only first section expanded
+                res.data.sections.forEach((section) => {
+                    initialExpanded[section._id] = false;
                 });
                 setExpandedSections(initialExpanded);
             }
@@ -215,13 +216,14 @@ const CourseManage = () => {
         e.preventDefault();
         try {
             if (editingSectionId) {
-                await api.put(`/courses/${id}/sections/${editingSectionId}`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview });
+                await api.put(`/courses/${id}/sections/${editingSectionId}`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview, importance: newSectionImportance });
             } else {
-                await api.post(`/courses/${id}/sections`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview });
+                await api.post(`/courses/${id}/sections`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview, importance: newSectionImportance });
             }
             setNewSectionTitle('');
             setNewSectionIsPublic(true);
             setNewSectionIsPreview(false);
+            setNewSectionImportance('');
             setEditingSectionId(null);
             fetchCourse();
             toast.success(editingSectionId ? 'Section updated!' : 'Section added!');
@@ -251,7 +253,7 @@ const CourseManage = () => {
                 await api.post(`/courses/${id}/sections/${activeSectionId}/lectures`, newLecture);
             }
 
-            setNewLecture({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true });
+            setNewLecture({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, importance: '' });
             setActiveSectionId(null);
             setEditingLectureId(null);
             fetchCourse();
@@ -272,7 +274,8 @@ const CourseManage = () => {
             dueDate: lec.dueDate ? lec.dueDate.split('T')[0] : '',
             status: lec.status || 'Pending',
             isPublic: lec.isPublic,
-            isPreview: lec.isPreview
+            isPreview: lec.isPreview,
+            importance: lec.importance || ''
         });
         setEditingLectureId(lec._id);
         setActiveSectionId(sectionId);
@@ -397,6 +400,7 @@ const CourseManage = () => {
                             setNewSectionTitle('');
                             setNewSectionIsPublic(true);
                             setNewSectionIsPreview(false);
+                            setNewSectionImportance('');
                             setIsSectionModalOpen(true);
                         }}
                         className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors h-8 sm:h-9"
@@ -409,7 +413,7 @@ const CourseManage = () => {
             {/* Sections List */}
             <div className="space-y-4">
                 {course.sections && course.sections.length > 0 ? (
-                    course.sections.map((section) => (
+                    course.sections.map((section, sectionIndex) => (
                         <div key={section._id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden group transition-colors duration-300">
                             <div
                                 className="bg-gray-50/50 dark:bg-slate-950/50 px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center gap-2 transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/50"
@@ -419,7 +423,9 @@ const CourseManage = () => {
                                     <div className={`transition-transform duration-200 shrink-0 ${expandedSections[section._id] ? 'rotate-180' : ''}`}>
                                         <FaChevronDown className="text-slate-400 text-xs" />
                                     </div>
-                                    <FaBook className="text-slate-300 dark:text-slate-600 text-xs shrink-0 hidden sm:block" />
+                                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-900 dark:bg-white flex items-center justify-center text-[10px] sm:text-xs font-bold text-white dark:text-slate-900 shrink-0">
+                                        {sectionIndex + 1}
+                                    </div>
                                     <span className="truncate">{section.title}</span>
                                     {section.isPreview && (
                                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 uppercase tracking-wide shrink-0">
@@ -427,6 +433,16 @@ const CourseManage = () => {
                                         </span>
                                     )}
                                     <span className="text-[10px] sm:text-xs text-slate-400 font-normal shrink-0">({section.lectures?.length || 0})</span>
+                                    {section.importance && (
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0 ${
+                                            section.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                            section.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                            section.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                            'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                        }`}>
+                                            {section.importance}
+                                        </span>
+                                    )}
                                 </h3>
                                 <div className="flex items-center gap-1 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                                     <button
@@ -442,6 +458,7 @@ const CourseManage = () => {
                                             setNewSectionTitle(section.title);
                                             setNewSectionIsPublic(section.isPublic);
                                             setNewSectionIsPreview(section.isPreview || false);
+                                            setNewSectionImportance(section.importance || '');
                                             setIsSectionModalOpen(true);
                                         }}
                                         className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -462,7 +479,7 @@ const CourseManage = () => {
                                             setActiveSectionId(section._id);
                                             setEditingLectureId(null);
                                             const nextNum = (section.lectures?.length || 0) + 1;
-                                            setNewLecture({ title: '', number: nextNum, resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true });
+                                            setNewLecture({ title: '', number: nextNum, resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, importance: '' });
                                             setIsLectureModalOpen(true);
                                         }}
                                         className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium transition-colors bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-sm whitespace-nowrap"
@@ -476,7 +493,7 @@ const CourseManage = () => {
                             {expandedSections[section._id] && (
                                 <div className="divide-y divide-gray-100 dark:divide-slate-800 animate-in slide-in-from-top-2 duration-200">
                                     {section.lectures && section.lectures.length > 0 ? (
-                                        section.lectures.map((lec) => (
+                                        [...section.lectures].sort((a, b) => a.number - b.number).map((lec) => (
                                             <div key={lec._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                                                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 shadow-sm shrink-0">
@@ -490,6 +507,16 @@ const CourseManage = () => {
                                                             {lec.title}
                                                         </a>
                                                         <div className="flex items-center gap-2 sm:gap-3 mt-0.5 flex-wrap">
+                                                            {lec.importance && (
+                                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                                                                    lec.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                                    lec.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                                                    lec.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                                                    'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                }`}>
+                                                                    {lec.importance}
+                                                                </span>
+                                                            )}
                                                             {lec.dueDate && (
                                                                 <span className="text-[9px] sm:text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1 sm:px-1.5 py-0.5 rounded font-medium">
                                                                     Due {new Date(lec.dueDate).toLocaleDateString()}
@@ -932,6 +959,21 @@ const CourseManage = () => {
                         </label>
                     </div>
 
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Importance</label>
+                        <select
+                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-white"
+                            value={newSectionImportance}
+                            onChange={(e) => setNewSectionImportance(e.target.value)}
+                        >
+                            <option value="">None</option>
+                            <option value="Optional">Optional</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Important">Important</option>
+                            <option value="Very Important">Very Important</option>
+                        </select>
+                    </div>
+
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5">
                             {editingSectionId ? "Update Section" : "Add Section"}
@@ -1025,6 +1067,21 @@ const CourseManage = () => {
                         <label htmlFor="isPreview" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                             Free Preview (Demo for non-enrolled users)
                         </label>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Importance</label>
+                        <select
+                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-white"
+                            value={newLecture.importance || ''}
+                            onChange={(e) => setNewLecture({ ...newLecture, importance: e.target.value })}
+                        >
+                            <option value="">None</option>
+                            <option value="Optional">Optional</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Important">Important</option>
+                            <option value="Very Important">Very Important</option>
+                        </select>
                     </div>
 
                     <div className="flex justify-end pt-4">

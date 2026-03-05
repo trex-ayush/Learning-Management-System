@@ -366,7 +366,7 @@ const StudentCourseDetails = () => {
                                         {isExpanded && (
                                             <div className="divide-y divide-gray-100 dark:divide-slate-800 animate-in slide-in-from-top-2 duration-200">
                                                 {section.lectures && section.lectures.length > 0 ? (
-                                                    section.lectures.map((lec) => {
+                                                    [...section.lectures].sort((a, b) => a.number - b.number).map((lec) => {
                                                         const isPreview = lec.isPreview || section.isPreview;
                                                         const progress = progressMap[lec._id] || { status: 'Not Started' };
                                                         const status = progress.status;

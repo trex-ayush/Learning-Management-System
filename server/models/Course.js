@@ -42,6 +42,7 @@ const courseSchema = new mongoose.Schema({
         title: { type: String, required: true },
         isPublic: { type: Boolean, default: false },
         isPreview: { type: Boolean, default: false },
+        importance: { type: String, enum: ['Optional', 'Normal', 'Important', 'Very Important', ''], default: '' },
         lectures: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Lecture'
