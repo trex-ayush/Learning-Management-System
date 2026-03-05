@@ -442,7 +442,7 @@ const CourseLanding = () => {
 
                                         {expandedSections[section._id] && (
                                             <div className="px-4 pb-4">
-                                                {section.lectures?.map((lecture) => {
+                                                {[...(section.lectures || [])].sort((a, b) => a.number - b.number).map((lecture) => {
                                                     const isPreview = lecture.isPreview || section.isPreview;
                                                     return (
                                                         <div

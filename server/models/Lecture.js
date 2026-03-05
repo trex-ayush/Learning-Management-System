@@ -35,6 +35,11 @@ const lectureSchema = new mongoose.Schema({
     isPublic: {
         type: Boolean,
         default: false
+    },
+    importance: {
+        type: String,
+        enum: ['Optional', 'Normal', 'Important', 'Very Important', ''],
+        default: ''
     }
 }, {
     timestamps: true

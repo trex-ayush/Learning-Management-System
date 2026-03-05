@@ -224,7 +224,7 @@ const StudentProgressDetail = () => {
                             {expandedSections[section._id] && (
                                 <div className="border-t border-gray-100 dark:border-slate-800">
                                     {section.lectures.length > 0 ? (
-                                        section.lectures.map((lecture, idx) => (
+                                        [...section.lectures].sort((a, b) => a.number - b.number).map((lecture, idx) => (
                                             <div
                                                 key={lecture._id}
                                                 className="px-6 py-3 flex items-center justify-between border-b border-gray-50 dark:border-slate-800/50 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors"
