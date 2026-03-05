@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock } from 'react-icons/fa';
 import Modal from '../../components/ui/Modal';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import TeacherManagement from '../../components/course/TeacherManagement';
@@ -47,6 +47,38 @@ const CourseManage = () => {
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [studentLimit, setStudentLimit] = useState(15);
     const [studentTotal, setStudentTotal] = useState(0);
+
+    // Student Progress Overlay State (Curriculum tab)
+    const [selectedStudentId, setSelectedStudentId] = useState(null);
+    const [selectedStudentName, setSelectedStudentName] = useState('');
+    const [studentProgressData, setStudentProgressData] = useState(null);
+    const [studentProgressLoading, setStudentProgressLoading] = useState(false);
+    const [progressStudentList, setProgressStudentList] = useState([]);
+    const [progressStudentKeyword, setProgressStudentKeyword] = useState('');
+    const [debouncedProgressKeyword, setDebouncedProgressKeyword] = useState('');
+    const [showStudentSelector, setShowStudentSelector] = useState(false);
+    const studentSelectorRef = useRef(null);
+
+    // Debounce progress student search keyword
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedProgressKeyword(progressStudentKeyword);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [progressStudentKeyword]);
+
+    // Close student selector on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (studentSelectorRef.current && !studentSelectorRef.current.contains(e.target)) {
+                setShowStudentSelector(false);
+            }
+        };
+        if (showStudentSelector) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showStudentSelector]);
 
     // Broadcast State
     const [broadcasts, setBroadcasts] = useState([]);
@@ -138,6 +170,88 @@ const CourseManage = () => {
             fetchStudents(studentPage, debouncedStudentKeyword);
         }
     }, [studentPage, studentLimit, debouncedStudentKeyword, activeTab]);
+
+    // Fetch student list for progress overlay selector (lightweight - names only)
+    const fetchProgressStudentList = async (keyword = '') => {
+        try {
+            const res = await api.get(`/courses/${id}/enrolled-students?keyword=${keyword}`);
+            setProgressStudentList(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch student list for progress", err);
+        }
+    };
+
+    // Fetch selected student's progress
+    const fetchStudentProgress = async (studentId) => {
+        setStudentProgressLoading(true);
+        try {
+            const res = await api.get(`/courses/${id}/progress/${studentId}`);
+            setStudentProgressData(res.data);
+        } catch (err) {
+            console.error("Failed to fetch student progress", err);
+            toast.error('Failed to load student progress');
+            setSelectedStudentId(null);
+            setStudentProgressData(null);
+        } finally {
+            setStudentProgressLoading(false);
+        }
+    };
+
+    // When student selector opens or debounced keyword changes, fetch the list
+    useEffect(() => {
+        if (showStudentSelector) {
+            fetchProgressStudentList(debouncedProgressKeyword);
+        }
+    }, [showStudentSelector, debouncedProgressKeyword]);
+
+    // When a student is selected, fetch their progress
+    useEffect(() => {
+        if (selectedStudentId) {
+            fetchStudentProgress(selectedStudentId);
+        } else {
+            setStudentProgressData(null);
+        }
+    }, [selectedStudentId]);
+
+    // Build lookup maps from progress data
+    const lectureProgressMap = {};
+    const sectionProgressMap = {};
+    if (studentProgressData) {
+        studentProgressData.sections.forEach(section => {
+            sectionProgressMap[section._id] = {
+                completedCount: section.completedCount,
+                totalCount: section.totalCount,
+                progressPercent: section.progressPercent
+            };
+            section.lectures.forEach(lec => {
+                lectureProgressMap[lec._id] = {
+                    status: lec.status,
+                    statusDate: lec.statusDate
+                };
+            });
+        });
+    }
+
+    // Helper: get status icon for progress overlay
+    const getProgressStatusIcon = (status) => {
+        const completedStatus = studentProgressData?.course?.completedStatus || course?.completedStatus || 'Completed';
+        if (status === completedStatus || status === 'Completed') {
+            return <FaCheckCircle className="text-green-500" size={12} />;
+        } else if (status === 'In Progress') {
+            return <FaPlayCircle className="text-amber-500" size={12} />;
+        }
+        return <FaClock className="text-slate-400" size={12} />;
+    };
+
+    // Helper: get status badge color
+    const getProgressStatusColor = (status) => {
+        const statuses = studentProgressData?.course?.lectureStatuses || course?.lectureStatuses || [];
+        const config = statuses.find(s => s.label === status);
+        if (config?.color) return config.color;
+        if (status === 'Completed') return '#10b981';
+        if (status === 'In Progress') return '#f59e0b';
+        return '#94a3b8';
+    };
 
     // Fetch broadcasts (lazy load)
     const fetchBroadcasts = async (page = 1) => {
@@ -410,6 +524,95 @@ const CourseManage = () => {
                 </div>
             </div>
 
+            {/* Student Progress Overlay Selector */}
+            <div className="relative" ref={studentSelectorRef}>
+                {!selectedStudentId ? (
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setShowStudentSelector(!showStudentSelector);
+                                setProgressStudentKeyword('');
+                            }}
+                            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full sm:w-auto"
+                        >
+                            <FaUserGraduate className="text-slate-400" size={12} />
+                            <span>View Student Progress</span>
+                            <FaChevronDown className={`text-slate-400 text-[10px] transition-transform ${showStudentSelector ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showStudentSelector && (
+                            <div className="absolute top-full left-0 mt-1 w-full sm:w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-20 overflow-hidden">
+                                <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+                                    <div className="relative">
+                                        <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={10} />
+                                        <input
+                                            type="text"
+                                            placeholder="Search students..."
+                                            value={progressStudentKeyword}
+                                            onChange={(e) => setProgressStudentKeyword(e.target.value)}
+                                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200 placeholder-slate-400"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-48 overflow-y-auto">
+                                    {progressStudentList.length > 0 ? (
+                                        progressStudentList.map(s => (
+                                            <button
+                                                key={s._id}
+                                                onClick={() => {
+                                                    setSelectedStudentId(s._id);
+                                                    setSelectedStudentName(s.name);
+                                                    setShowStudentSelector(false);
+                                                }}
+                                                className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                            >
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                                    {s.name?.charAt(0)?.toUpperCase() || '?'}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</p>
+                                                    <p className="text-[10px] text-slate-400 truncate">{s.email}</p>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No students found</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+                        <FaUserGraduate className="text-blue-500" size={12} />
+                        <div className="flex-1 min-w-0">
+                            <span className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                                Viewing progress for: <span className="font-bold">{selectedStudentName}</span>
+                            </span>
+                            {studentProgressData && (
+                                <span className="text-[10px] text-blue-600 dark:text-blue-400 ml-2">
+                                    ({studentProgressData.progress.completedLectures}/{studentProgressData.progress.totalLectures} completed — {studentProgressData.progress.progressPercent}%)
+                                </span>
+                            )}
+                        </div>
+                        {studentProgressLoading && (
+                            <span className="text-[10px] text-blue-500 animate-pulse">Loading...</span>
+                        )}
+                        <button
+                            onClick={() => {
+                                setSelectedStudentId(null);
+                                setSelectedStudentName('');
+                                setStudentProgressData(null);
+                            }}
+                            className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded transition-colors text-blue-500"
+                            title="Clear student overlay"
+                        >
+                            <FaTimes size={12} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
             {/* Sections List */}
             <div className="space-y-4">
                 {course.sections && course.sections.length > 0 ? (
@@ -441,6 +644,19 @@ const CourseManage = () => {
                                             'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                                         }`}>
                                             {section.importance}
+                                        </span>
+                                    )}
+                                    {selectedStudentId && sectionProgressMap[section._id] && (
+                                        <span className="flex items-center gap-1.5 shrink-0 ml-1">
+                                            <span className="w-16 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 hidden sm:block">
+                                                <span
+                                                    className="bg-green-500 h-1.5 rounded-full block transition-all"
+                                                    style={{ width: `${sectionProgressMap[section._id].progressPercent}%` }}
+                                                />
+                                            </span>
+                                            <span className="text-[9px] font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
+                                                {sectionProgressMap[section._id].completedCount}/{sectionProgressMap[section._id].totalCount}
+                                            </span>
                                         </span>
                                     )}
                                 </h3>
@@ -532,6 +748,24 @@ const CourseManage = () => {
                                                     </div>
                                                 </div>
 
+                                                {selectedStudentId && lectureProgressMap[lec._id] && (
+                                                    <span
+                                                        className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
+                                                        style={{
+                                                            backgroundColor: `${getProgressStatusColor(lectureProgressMap[lec._id].status)}15`,
+                                                            color: getProgressStatusColor(lectureProgressMap[lec._id].status)
+                                                        }}
+                                                    >
+                                                        {getProgressStatusIcon(lectureProgressMap[lec._id].status)}
+                                                        <span className="hidden sm:inline">{lectureProgressMap[lec._id].status}</span>
+                                                    </span>
+                                                )}
+                                                {selectedStudentId && !lectureProgressMap[lec._id] && (
+                                                    <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-400">
+                                                        <FaClock className="text-slate-400" size={10} />
+                                                        <span className="hidden sm:inline">Not Started</span>
+                                                    </span>
+                                                )}
                                                 <div className="flex items-center gap-1 sm:gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                                                     <button
                                                         onClick={() => handleToggleLectureVisibility(lec._id, lec.isPublic)}
