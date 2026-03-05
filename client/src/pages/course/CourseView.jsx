@@ -85,9 +85,9 @@ const CourseView = () => {
                 const courseData = res.data;
                 setCourse(courseData);
 
-                // Expand first section by default
+                // All sections collapsed by default
                 if (courseData.sections && courseData.sections.length > 0) {
-                    setExpandedSections({ [courseData.sections[0]._id]: true });
+                    setExpandedSections({});
                     // Select first lecture if available
                     if (courseData.sections && courseData.sections.length > 0 && courseData.sections[0].lectures.length > 0) {
                         const firstLec = courseData.sections[0].lectures[0];
@@ -380,7 +380,18 @@ const CourseView = () => {
                                             onClick={() => toggleSection(section._id)}
                                             className="w-full flex justify-between items-center group mb-1 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-md p-1 -mx-1 transition-colors"
                                         >
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">{section.title}</span>
+                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors flex items-center gap-1.5">{section.title}
+                                                {section.importance && (
+                                                    <span className={`text-[8px] font-bold px-1 py-0.5 rounded uppercase tracking-wide normal-case ${
+                                                        section.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' :
+                                                        section.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' :
+                                                        section.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
+                                                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                                    }`}>
+                                                        {section.importance}
+                                                    </span>
+                                                )}
+                                            </span>
                                             {expandedSections[section._id] ?
                                                 <FaChevronUp className="text-[10px] text-slate-400 dark:text-slate-500" /> :
                                                 <FaChevronDown className="text-[10px] text-slate-400 dark:text-slate-500" />

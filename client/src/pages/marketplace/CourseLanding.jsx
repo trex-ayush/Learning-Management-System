@@ -47,10 +47,7 @@ const CourseLanding = () => {
             const res = await api.get(`/marketplace/${id}`);
             setCourse(res.data.course);
             setReviews(res.data.reviews);
-            // Expand first section by default
-            if (res.data.course.sections?.length > 0) {
-                setExpandedSections({ [res.data.course.sections[0]._id]: true });
-            }
+            // All sections collapsed by default
         } catch (error) {
             toast.error('Course not found');
             navigate('/marketplace');
@@ -434,6 +431,16 @@ const CourseLanding = () => {
                                                 <span className="font-medium text-slate-900 dark:text-white">
                                                     {section.title}
                                                 </span>
+                                                {section.importance && (
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0 ${
+                                                        section.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                        section.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                                        section.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                    }`}>
+                                                        {section.importance}
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-sm text-slate-500">
                                                 {section.lectures?.length || 0} lectures

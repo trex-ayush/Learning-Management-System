@@ -76,10 +76,10 @@ const StudentCourseDetails = () => {
                 // 1. Set Course Details
                 setCourse(courseRes.data);
 
-                // Auto-expand all sections by default
+                // All sections collapsed by default
                 if (courseRes.data.sections) {
                     const initialExpanded = {};
-                    courseRes.data.sections.forEach(sec => initialExpanded[sec._id] = true);
+                    courseRes.data.sections.forEach(sec => initialExpanded[sec._id] = false);
                     setExpandedSections(initialExpanded);
                 }
 
@@ -341,6 +341,16 @@ const StudentCourseDetails = () => {
                                                 <h3 className="font-semibold text-sm text-slate-800 dark:text-white flex items-center gap-2">
                                                     <FaBook className="text-slate-300 dark:text-slate-600 text-xs" />
                                                     {section.title}
+                                                    {section.importance && (
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0 ${
+                                                            section.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                            section.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                                            section.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                                            'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                        }`}>
+                                                            {section.importance}
+                                                        </span>
+                                                    )}
                                                 </h3>
                                                 {isExpanded ?
                                                     <FaChevronUp className="text-slate-400 text-xs" /> :
@@ -424,6 +434,21 @@ const StudentCourseDetails = () => {
                                                                                     Free Preview
                                                                                 </span>
                                                                             )}
+
+                                                                            {/* Importance Badge - lecture's own or inherited from section */}
+                                                                            {(() => {
+                                                                                const imp = lec.importance === 'None' ? '' : (lec.importance || section.importance);
+                                                                                return imp && imp !== 'None' ? (
+                                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                                                                                        imp === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                                                        imp === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                                                                        imp === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                                                                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                                    }`}>
+                                                                                        {imp}
+                                                                                    </span>
+                                                                                ) : null;
+                                                                            })()}
 
                                                                             {lec.dueDate ? (
                                                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isLate

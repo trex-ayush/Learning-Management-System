@@ -93,12 +93,12 @@ const CourseManage = () => {
     };
 
     // Fetch course data (always needed for header)
-    const fetchCourse = async () => {
+    const fetchCourse = async (preserveExpanded = false) => {
         try {
             const res = await api.get(`/courses/${id}`);
             setCourse(res.data);
-            // Initialize expanded sections - all collapsed by default
-            if (res.data.sections && res.data.sections.length > 0) {
+            // Initialize expanded sections - all collapsed by default, but preserve state on re-fetch
+            if (res.data.sections && res.data.sections.length > 0 && !preserveExpanded) {
                 const initialExpanded = {};
                 res.data.sections.forEach((section) => {
                     initialExpanded[section._id] = false;
@@ -225,7 +225,7 @@ const CourseManage = () => {
             setNewSectionIsPreview(false);
             setNewSectionImportance('');
             setEditingSectionId(null);
-            fetchCourse();
+            fetchCourse(true);
             toast.success(editingSectionId ? 'Section updated!' : 'Section added!');
         } catch (error) {
             toast.error('Error saving section');
@@ -236,7 +236,7 @@ const CourseManage = () => {
         if (!window.confirm('Are you sure? This will delete the section and ALL its lectures.')) return;
         try {
             await api.delete(`/courses/${id}/sections/${sectionId}`);
-            fetchCourse();
+            fetchCourse(true);
             toast.success('Section deleted');
         } catch (error) {
             toast.error('Error deleting section');
@@ -256,7 +256,7 @@ const CourseManage = () => {
             setNewLecture({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, importance: '' });
             setActiveSectionId(null);
             setEditingLectureId(null);
-            fetchCourse();
+            fetchCourse(true);
             toast.success(editingLectureId ? 'Lecture updated!' : 'Lecture added!');
         } catch (error) {
             if (!error.handled) {
@@ -285,7 +285,7 @@ const CourseManage = () => {
         if (!window.confirm('Are you sure you want to delete this lecture?')) return;
         try {
             await api.delete(`/courses/lectures/${lectureId}`);
-            fetchCourse();
+            fetchCourse(true);
             toast.success('Lecture deleted');
         } catch (error) {
             toast.error('Error deleting lecture');
@@ -295,7 +295,7 @@ const CourseManage = () => {
     const handleToggleSectionVisibility = async (sectionId, currentStatus) => {
         try {
             await api.put(`/courses/${id}/sections/${sectionId}`, { isPublic: !currentStatus });
-            fetchCourse();
+            fetchCourse(true);
             toast.success(currentStatus ? 'Section hidden' : 'Section is now Public');
         } catch (error) {
             toast.error('Error updating visibility');
@@ -305,7 +305,7 @@ const CourseManage = () => {
     const handleToggleLectureVisibility = async (lectureId, currentStatus) => {
         try {
             await api.put(`/courses/lectures/${lectureId}`, { isPublic: !currentStatus });
-            fetchCourse();
+            fetchCourse(true);
             toast.success(currentStatus ? 'Lecture hidden' : 'Lecture is now Public');
         } catch (error) {
             toast.error('Error updating visibility');
@@ -507,16 +507,19 @@ const CourseManage = () => {
                                                             {lec.title}
                                                         </a>
                                                         <div className="flex items-center gap-2 sm:gap-3 mt-0.5 flex-wrap">
-                                                            {lec.importance && (
-                                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
-                                                                    lec.importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
-                                                                    lec.importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
-                                                                    lec.importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
-                                                                    'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                                                                }`}>
-                                                                    {lec.importance}
-                                                                </span>
-                                                            )}
+                                                            {(() => {
+                                                                const imp = lec.importance === 'None' ? '' : (lec.importance || section.importance);
+                                                                return imp && imp !== 'None' ? (
+                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                                                                        imp === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                                        imp === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+                                                                        imp === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                                                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                    }`}>
+                                                                        {imp}
+                                                                    </span>
+                                                                ) : null;
+                                                            })()}
                                                             {lec.dueDate && (
                                                                 <span className="text-[9px] sm:text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1 sm:px-1.5 py-0.5 rounded font-medium">
                                                                     Due {new Date(lec.dueDate).toLocaleDateString()}
@@ -1076,7 +1079,8 @@ const CourseManage = () => {
                             value={newLecture.importance || ''}
                             onChange={(e) => setNewLecture({ ...newLecture, importance: e.target.value })}
                         >
-                            <option value="">None</option>
+                            <option value="">Inherit from Section</option>
+                            <option value="None">None</option>
                             <option value="Optional">Optional</option>
                             <option value="Normal">Normal</option>
                             <option value="Important">Important</option>
