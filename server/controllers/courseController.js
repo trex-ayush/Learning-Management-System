@@ -674,6 +674,36 @@ const getCourseProgresses = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Get enrolled student list (lightweight, no progress data)
+// @route   GET /api/courses/:id/enrolled-students
+// @access  Private (Admin or Course Owner)
+const getEnrolledStudentList = asyncHandler(async (req, res) => {
+    const { keyword } = req.query;
+
+    let query = { course: req.params.id };
+
+    if (keyword) {
+        const users = await User.find({
+            $or: [
+                { name: { $regex: keyword, $options: 'i' } },
+                { email: { $regex: keyword, $options: 'i' } }
+            ]
+        }).select('_id');
+        query.student = { $in: users.map(u => u._id) };
+    }
+
+    const students = await Progress.find(query)
+        .select('student')
+        .populate('student', 'name email')
+        .lean();
+
+    res.status(200).json(students.map(s => ({
+        _id: s.student._id,
+        name: s.student.name,
+        email: s.student.email
+    })));
+});
+
 // @desc    Get user stats (completed lectures count)
 // @route   GET /api/courses/my/stats
 // @access  Private
@@ -1308,5 +1338,6 @@ module.exports = {
     getMyProgress,
     getCourseAnalytics,
     searchCourses,
-    getStudentProgressDetail
+    getStudentProgressDetail,
+    getEnrolledStudentList
 };

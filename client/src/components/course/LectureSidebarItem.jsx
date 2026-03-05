@@ -7,8 +7,12 @@ const LectureSidebarItem = ({
     status = null,
     showStatus = false,
     customStatuses = [],
-    completedStatus = 'Completed'
+    completedStatus = 'Completed',
+    sectionImportance = ''
 }) => {
+    // Resolve lecture importance (own or inherited from section)
+    const importance = lecture.importance === 'None' ? '' : (lecture.importance || sectionImportance);
+
     // Find the student-set progress status details
     const studentStatusInfo = customStatuses.find(s => s.label === status);
 
@@ -43,7 +47,17 @@ const LectureSidebarItem = ({
             </div>
 
             {/* Right Side Indicators & Chips */}
-            <div className="shrink-0 ml-2 flex items-center gap-2">
+            <div className="shrink-0 ml-2 flex items-center gap-1.5">
+                {importance && importance !== 'None' && (
+                    <span className={`px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-wide leading-none ${
+                        importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :
+                        importance === 'Important' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
+                        importance === 'Normal' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' :
+                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                    }`}>
+                        {importance === 'Very Important' ? 'V.Imp' : importance === 'Important' ? 'Imp' : importance}
+                    </span>
+                )}
                 {showStatus && (
                     <span
                         className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-tighter border transition-colors`}
