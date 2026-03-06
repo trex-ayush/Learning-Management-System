@@ -10,7 +10,7 @@ const FloatingAIChatButton = () => {
     return (
         <Link
             to="/ai-chat"
-            className="fixed bottom-6 right-6 z-50 group"
+            className="fixed bottom-20 md:bottom-6 right-6 z-50 group"
             title="AI Chat Assistant"
         >
             <div className="relative">
