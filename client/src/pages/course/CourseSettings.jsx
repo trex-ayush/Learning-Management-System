@@ -20,6 +20,7 @@ const CourseSettings = ({ isEmbedded = false }) => {
         status: 'Draft',
         lectureStatuses: [],
         completedStatus: 'Completed',
+        allowPeerProgress: false,
         // Marketplace fields
         isMarketplace: false,
         price: 0,
@@ -70,6 +71,7 @@ const CourseSettings = ({ isEmbedded = false }) => {
                         { label: 'Completed', color: '#10b981' }
                     ],
                 completedStatus: res.data.completedStatus || 'Completed',
+                allowPeerProgress: res.data.allowPeerProgress || false,
                 isMarketplace: res.data.isMarketplace || false,
                 price: res.data.price || 0,
                 originalPrice: res.data.originalPrice || 0,

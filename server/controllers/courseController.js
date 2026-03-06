@@ -60,6 +60,7 @@ const updateCourse = asyncHandler(async (req, res) => {
     if (req.body.tags !== undefined) course.tags = req.body.tags;
     if (req.body.requirements !== undefined) course.requirements = req.body.requirements;
     if (req.body.whatYouWillLearn !== undefined) course.whatYouWillLearn = req.body.whatYouWillLearn;
+    if (req.body.allowPeerProgress !== undefined) course.allowPeerProgress = req.body.allowPeerProgress;
 
     await course.save();
     res.status(200).json(course);
@@ -692,9 +693,12 @@ const getEnrolledStudentList = asyncHandler(async (req, res) => {
         query.student = { $in: users.map(u => u._id) };
     }
 
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+
     const students = await Progress.find(query)
         .select('student')
         .populate('student', 'name email')
+        .limit(limit)
         .lean();
 
     res.status(200).json(students.map(s => ({
@@ -702,6 +706,100 @@ const getEnrolledStudentList = asyncHandler(async (req, res) => {
         name: s.student.name,
         email: s.student.email
     })));
+});
+
+// @desc    Get peer student list for a course (student-facing, requires allowPeerProgress)
+// @route   GET /api/courses/:id/peers
+// @access  Private (enrolled students only)
+const getPeerStudentList = asyncHandler(async (req, res) => {
+    const course = await Course.findById(req.params.id).select('allowPeerProgress');
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+    if (!course.allowPeerProgress) { res.status(403); throw new Error('Peer progress viewing is not enabled for this course'); }
+
+    // Check if requester is enrolled
+    const isEnrolled = await Progress.findOne({ course: req.params.id, student: req.user.id });
+    if (!isEnrolled) { res.status(403); throw new Error('You are not enrolled in this course'); }
+
+    const { keyword } = req.query;
+    let query = { course: req.params.id };
+
+    if (keyword) {
+        const users = await User.find({
+            $or: [
+                { name: { $regex: keyword, $options: 'i' } },
+                { email: { $regex: keyword, $options: 'i' } }
+            ]
+        }).select('_id');
+        query.student = { $in: users.map(u => u._id) };
+    }
+
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+    const students = await Progress.find(query)
+        .select('student')
+        .populate('student', 'name email')
+        .limit(limit)
+        .lean();
+
+    res.status(200).json(students.map(s => ({
+        _id: s.student._id,
+        name: s.student.name,
+        email: s.student.email
+    })));
+});
+
+// @desc    Get peer student progress detail (student-facing, requires allowPeerProgress)
+// @route   GET /api/courses/:id/peers/:studentId/progress
+// @access  Private (enrolled students only)
+const getPeerStudentProgress = asyncHandler(async (req, res) => {
+    const { id, studentId } = req.params;
+
+    const course = await Course.findById(id)
+        .select('allowPeerProgress sections title lectureStatuses completedStatus')
+        .populate({ path: 'sections.lectures', select: 'title number' });
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+    if (!course.allowPeerProgress) { res.status(403); throw new Error('Peer progress viewing is not enabled'); }
+
+    // Check if requester is enrolled
+    const isEnrolled = await Progress.findOne({ course: id, student: req.user.id });
+    if (!isEnrolled) { res.status(403); throw new Error('You are not enrolled in this course'); }
+
+    const student = await User.findById(studentId).select('name email');
+    if (!student) { res.status(404); throw new Error('Student not found'); }
+
+    const progress = await Progress.findOne({ course: id, student: studentId });
+    if (!progress) { res.status(404); throw new Error('Student is not enrolled'); }
+
+    const lectureProgressMap = new Map();
+    progress.completedLectures.forEach(lp => {
+        lectureProgressMap.set(lp.lecture.toString(), { status: lp.status, completedAt: lp.completedAt });
+    });
+
+    let totalLectures = 0, completedLectures = 0;
+    const completedStatus = course.completedStatus || 'Completed';
+
+    const sectionsProgress = course.sections.map((section, si) => {
+        const lectures = section.lectures.map((lec, li) => {
+            totalLectures++;
+            const lp = lectureProgressMap.get(lec._id.toString());
+            const status = lp ? lp.status : 'Not Started';
+            if (status === completedStatus) completedLectures++;
+            return { _id: lec._id, title: lec.title, number: lec.number || li + 1, status, statusDate: lp?.completedAt || null };
+        });
+        const sectionCompleted = lectures.filter(l => l.status === completedStatus).length;
+        return {
+            _id: section._id, title: section.title, sectionNumber: si + 1,
+            lectures, completedCount: sectionCompleted, totalCount: lectures.length,
+            progressPercent: lectures.length > 0 ? Math.round((sectionCompleted / lectures.length) * 100) : 0
+        };
+    });
+
+    res.status(200).json({
+        student: { _id: student._id, name: student.name, email: student.email },
+        course: { _id: course._id, title: course.title, lectureStatuses: course.lectureStatuses },
+        progress: { completedLectures, totalLectures, progressPercent: totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0 },
+        sections: sectionsProgress
+    });
 });
 
 // @desc    Get user stats (completed lectures count)
@@ -1339,5 +1437,7 @@ module.exports = {
     getCourseAnalytics,
     searchCourses,
     getStudentProgressDetail,
-    getEnrolledStudentList
+    getEnrolledStudentList,
+    getPeerStudentList,
+    getPeerStudentProgress
 };
