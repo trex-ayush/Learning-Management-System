@@ -27,7 +27,9 @@ const {
     getCourseAnalytics,
     searchCourses,
     getStudentProgressDetail,
-    getEnrolledStudentList
+    getEnrolledStudentList,
+    getPeerStudentList,
+    getPeerStudentProgress
 } = require('../controllers/courseController');
 const {
     addTeacher,
@@ -89,6 +91,10 @@ router.delete('/:id/enroll/:studentId', protect, verifyStudentManagementPermissi
 
 // Analytics route
 router.get('/:id/analytics', protect, verifyCourseAccess, getCourseAnalytics);
+
+// Peer progress routes (student-facing, controlled by allowPeerProgress setting)
+router.get('/:id/peers', protect, getPeerStudentList);
+router.get('/:id/peers/:studentId/progress', protect, getPeerStudentProgress);
 
 // Student progress route (for current user)
 router.get('/:id/my-progress', protect, getMyProgress);

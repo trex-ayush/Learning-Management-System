@@ -8,7 +8,8 @@ const LectureSidebarItem = ({
     showStatus = false,
     customStatuses = [],
     completedStatus = 'Completed',
-    sectionImportance = ''
+    sectionImportance = '',
+    peerStatus = null
 }) => {
     // Resolve lecture importance (own or inherited from section)
     const importance = lecture.importance === 'None' ? '' : (lecture.importance || sectionImportance);
@@ -69,6 +70,13 @@ const LectureSidebarItem = ({
                     >
                         {status || 'Not Started'}
                     </span>
+                )}
+                {peerStatus && (
+                    <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        title={`Peer: ${peerStatus}`}
+                        style={{ backgroundColor: peerStatus === completedStatus ? '#a855f7' : peerStatus === 'In Progress' ? '#c084fc' : '#d4d4d8' }}
+                    />
                 )}
                 {isSelected && !showStatus && <FaPlayCircle className="text-[10px] opacity-70" />}
             </div>

@@ -197,7 +197,7 @@ const CourseManage = () => {
         }
     };
 
-    // When student selector opens or debounced keyword changes, fetch the list
+    // Fetch student list when selector opens or debounced keyword changes
     useEffect(() => {
         if (showStudentSelector) {
             fetchProgressStudentList(debouncedProgressKeyword);
@@ -490,6 +490,18 @@ const CourseManage = () => {
         }
     };
 
+    // Toggle peer progress setting
+    const handleTogglePeerProgress = async () => {
+        try {
+            const newValue = !course.allowPeerProgress;
+            await api.put(`/courses/${id}`, { allowPeerProgress: newValue });
+            setCourse({ ...course, allowPeerProgress: newValue });
+            toast.success(newValue ? 'Students can now view peer progress' : 'Peer progress viewing disabled');
+        } catch (err) {
+            toast.error('Failed to update setting');
+        }
+    };
+
     if (!course) return <div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading Course...</div>;
 
     // Render Curriculum Tab Content
@@ -524,94 +536,111 @@ const CourseManage = () => {
                 </div>
             </div>
 
-            {/* Student Progress Overlay Selector */}
-            <div className="relative" ref={studentSelectorRef}>
+            {/* Student Progress & Peer Settings */}
+            {(isOwner || userPermissions.permissions.manage_students || userPermissions.permissions.full_access) && (
+            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg">
                 {!selectedStudentId ? (
-                    <div className="relative">
-                        <button
-                            onClick={() => {
-                                setShowStudentSelector(!showStudentSelector);
-                                setProgressStudentKeyword('');
-                            }}
-                            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full sm:w-auto"
-                        >
-                            <FaUserGraduate className="text-slate-400" size={12} />
-                            <span>View Student Progress</span>
-                            <FaChevronDown className={`text-slate-400 text-[10px] transition-transform ${showStudentSelector ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showStudentSelector && (
-                            <div className="absolute top-full left-0 mt-1 w-full sm:w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                                <div className="p-2 border-b border-gray-100 dark:border-slate-700">
-                                    <div className="relative">
-                                        <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={10} />
-                                        <input
-                                            type="text"
-                                            placeholder="Search students..."
-                                            value={progressStudentKeyword}
-                                            onChange={(e) => setProgressStudentKeyword(e.target.value)}
-                                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200 placeholder-slate-400"
-                                            autoFocus
-                                        />
+                    <div className="flex items-center justify-between gap-2 px-3 py-2">
+                        {/* Student Selector */}
+                        <div className="relative" ref={studentSelectorRef}>
+                            <button
+                                onClick={() => {
+                                    setShowStudentSelector(!showStudentSelector);
+                                    setProgressStudentKeyword('');
+                                }}
+                                className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 rounded-md text-xs font-medium transition-colors"
+                            >
+                                <FaUserGraduate className="text-slate-400" size={11} />
+                                <span>View Student Progress</span>
+                                <FaChevronDown className={`text-slate-400 text-[9px] transition-transform ${showStudentSelector ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showStudentSelector && (
+                                <div className="absolute top-full left-0 mt-1 w-72 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                                    <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+                                        <div className="relative">
+                                            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={10} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search students..."
+                                                value={progressStudentKeyword}
+                                                onChange={(e) => setProgressStudentKeyword(e.target.value)}
+                                                className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200 placeholder-slate-400"
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="max-h-48 overflow-y-auto">
+                                        {progressStudentList.length > 0 ? (
+                                            progressStudentList.map(s => (
+                                                <button
+                                                    key={s._id}
+                                                    onClick={() => {
+                                                        setSelectedStudentId(s._id);
+                                                        setSelectedStudentName(s.name);
+                                                        setShowStudentSelector(false);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                                        {s.name?.charAt(0)?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</p>
+                                                        <p className="text-[10px] text-slate-400 truncate">{s.email}</p>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No students found</div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="max-h-48 overflow-y-auto">
-                                    {progressStudentList.length > 0 ? (
-                                        progressStudentList.map(s => (
-                                            <button
-                                                key={s._id}
-                                                onClick={() => {
-                                                    setSelectedStudentId(s._id);
-                                                    setSelectedStudentName(s.name);
-                                                    setShowStudentSelector(false);
-                                                }}
-                                                className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-                                            >
-                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                                                    {s.name?.charAt(0)?.toUpperCase() || '?'}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</p>
-                                                    <p className="text-[10px] text-slate-400 truncate">{s.email}</p>
-                                                </div>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No students found</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
-                        <FaUserGraduate className="text-blue-500" size={12} />
-                        <div className="flex-1 min-w-0">
-                            <span className="text-xs font-medium text-blue-800 dark:text-blue-300">
-                                Viewing progress for: <span className="font-bold">{selectedStudentName}</span>
-                            </span>
-                            {studentProgressData && (
-                                <span className="text-[10px] text-blue-600 dark:text-blue-400 ml-2">
-                                    ({studentProgressData.progress.completedLectures}/{studentProgressData.progress.totalLectures} completed — {studentProgressData.progress.progressPercent}%)
-                                </span>
                             )}
                         </div>
-                        {studentProgressLoading && (
-                            <span className="text-[10px] text-blue-500 animate-pulse">Loading...</span>
-                        )}
+                        {/* Peer Progress Toggle */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">Peer Progress</span>
+                            <button
+                                type="button"
+                                onClick={handleTogglePeerProgress}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${course.allowPeerProgress ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                title={course.allowPeerProgress ? 'Students can view peer progress (click to disable)' : 'Students cannot view peer progress (click to enable)'}
+                            >
+                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${course.allowPeerProgress ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                        <FaUserGraduate className="text-blue-500 shrink-0" size={12} />
+                        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                                {selectedStudentName}
+                            </span>
+                            {studentProgressData && (
+                                <span className="text-[10px] font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
+                                    {studentProgressData.progress.completedLectures}/{studentProgressData.progress.totalLectures} completed ({studentProgressData.progress.progressPercent}%)
+                                </span>
+                            )}
+                            {studentProgressLoading && (
+                                <span className="text-[10px] text-blue-500 animate-pulse">Loading...</span>
+                            )}
+                        </div>
                         <button
                             onClick={() => {
                                 setSelectedStudentId(null);
                                 setSelectedStudentName('');
                                 setStudentProgressData(null);
                             }}
-                            className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded transition-colors text-blue-500"
-                            title="Clear student overlay"
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0"
+                            title="Clear"
                         >
-                            <FaTimes size={12} />
+                            <FaTimes size={11} />
                         </button>
                     </div>
                 )}
             </div>
+            )}
 
             {/* Sections List */}
             <div className="space-y-4">

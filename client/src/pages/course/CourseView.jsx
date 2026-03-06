@@ -1,8 +1,8 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock } from 'react-icons/fa';
+import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUserGraduate, FaCheckCircle, FaSearch } from 'react-icons/fa';
 import StatusSelector from '../../components/ui/StatusSelector';
 import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
@@ -46,6 +46,17 @@ const CourseView = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar
     const [isSidebarVisible, setIsSidebarVisible] = useState(true); // Desktop sidebar toggle - open by default
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion'
+
+    // Peer progress state
+    const [showPeerSelector, setShowPeerSelector] = useState(false);
+    const [peerList, setPeerList] = useState([]);
+    const [peerKeyword, setPeerKeyword] = useState('');
+    const [debouncedPeerKeyword, setDebouncedPeerKeyword] = useState('');
+    const [selectedPeerId, setSelectedPeerId] = useState(null);
+    const [selectedPeerName, setSelectedPeerName] = useState('');
+    const [peerProgressData, setPeerProgressData] = useState(null);
+    const [peerProgressLoading, setPeerProgressLoading] = useState(false);
+    const peerSelectorRef = useRef(null);
 
     // Navigation Helpers
     const getFlattenedLectures = () => {
@@ -288,6 +299,52 @@ const CourseView = () => {
         }));
     };
 
+    // Peer progress: debounce keyword
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedPeerKeyword(peerKeyword), 400);
+        return () => clearTimeout(timer);
+    }, [peerKeyword]);
+
+    // Peer progress: fetch peer list when selector opens
+    useEffect(() => {
+        if (showPeerSelector && course?.allowPeerProgress) {
+            api.get(`/courses/${id}/peers?keyword=${debouncedPeerKeyword}`)
+                .then(res => setPeerList(res.data || []))
+                .catch(() => setPeerList([]));
+        }
+    }, [showPeerSelector, debouncedPeerKeyword]);
+
+    // Peer progress: fetch selected peer's progress
+    useEffect(() => {
+        if (selectedPeerId) {
+            setPeerProgressLoading(true);
+            api.get(`/courses/${id}/peers/${selectedPeerId}/progress`)
+                .then(res => setPeerProgressData(res.data))
+                .catch(() => { setPeerProgressData(null); setSelectedPeerId(null); toast.error('Failed to load peer progress'); })
+                .finally(() => setPeerProgressLoading(false));
+        } else {
+            setPeerProgressData(null);
+        }
+    }, [selectedPeerId]);
+
+    // Peer progress: click outside to close selector
+    useEffect(() => {
+        if (!showPeerSelector) return;
+        const handler = (e) => { if (peerSelectorRef.current && !peerSelectorRef.current.contains(e.target)) setShowPeerSelector(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showPeerSelector]);
+
+    // Build peer progress lookup maps
+    const peerLectureMap = {};
+    const peerSectionMap = {};
+    if (peerProgressData) {
+        peerProgressData.sections.forEach(sec => {
+            peerSectionMap[sec._id] = { completedCount: sec.completedCount, totalCount: sec.totalCount, progressPercent: sec.progressPercent };
+            sec.lectures.forEach(lec => { peerLectureMap[lec._id] = { status: lec.status }; });
+        });
+    }
+
     if (!course) return <div className="flex justify-center items-center h-screen text-slate-500 font-medium bg-gray-50 dark:bg-slate-950 dark:text-slate-400">Loading Experience...</div>;
 
 
@@ -366,6 +423,73 @@ const CourseView = () => {
                     </div>
 
                     <div className={`px-1 py-1 space-y-0.5 flex-1 overflow-y-auto ${!isSidebarVisible ? 'hidden' : ''}`}>
+                        {/* Peer Progress Selector */}
+                        {course.allowPeerProgress && (isEnrolled || (user && (user.role === 'admin' || course.user === user._id))) && (
+                            <div className="px-2 py-2" ref={peerSelectorRef}>
+                                {!selectedPeerId ? (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => { setShowPeerSelector(!showPeerSelector); setPeerKeyword(''); }}
+                                            className="flex items-center gap-2 w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                                        >
+                                            <FaUserGraduate size={10} className="text-slate-400" />
+                                            <span>View Peer Progress</span>
+                                            <FaChevronDown className={`text-slate-400 text-[8px] ml-auto transition-transform ${showPeerSelector ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {showPeerSelector && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                                                <div className="p-1.5 border-b border-gray-100 dark:border-slate-700">
+                                                    <div className="relative">
+                                                        <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={9} />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search..."
+                                                            value={peerKeyword}
+                                                            onChange={(e) => setPeerKeyword(e.target.value)}
+                                                            className="w-full pl-6 pr-2 py-1 text-[11px] bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200"
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="max-h-36 overflow-y-auto">
+                                                    {peerList.length > 0 ? peerList.map(s => (
+                                                        <button
+                                                            key={s._id}
+                                                            onClick={() => { setSelectedPeerId(s._id); setSelectedPeerName(s.name); setShowPeerSelector(false); }}
+                                                            className="w-full px-2.5 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                                                                {s.name?.charAt(0)?.toUpperCase() || '?'}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</p>
+                                                            </div>
+                                                        </button>
+                                                    )) : (
+                                                        <div className="px-2.5 py-3 text-[11px] text-slate-400 text-center italic">No students found</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-2.5 py-1.5">
+                                        <FaUserGraduate className="text-blue-500 shrink-0" size={10} />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300 truncate block">{selectedPeerName}</span>
+                                            {peerProgressData && (
+                                                <span className="text-[9px] text-blue-500 dark:text-blue-400">
+                                                    {peerProgressData.progress.progressPercent}% complete
+                                                </span>
+                                            )}
+                                        </div>
+                                        {peerProgressLoading && <span className="text-[9px] text-blue-400 animate-pulse">...</span>}
+                                        <button onClick={() => { setSelectedPeerId(null); setSelectedPeerName(''); }} className="p-0.5 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded text-blue-500"><FaTimes size={10} /></button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {course.sections && course.sections.map((section) => {
                             // Section Progress Logic
                             const totalSecLectures = section.lectures ? section.lectures.length : 0;
@@ -397,12 +521,20 @@ const CourseView = () => {
                                                 <FaChevronDown className="text-[10px] text-slate-400 dark:text-slate-500" />
                                             }
                                         </button>
-                                        <div className="h-0.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden w-full mb-2">
+                                        <div className="h-0.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden w-full mb-1">
                                             <div
                                                 className="h-full bg-slate-900 dark:bg-blue-600 transition-all duration-500"
                                                 style={{ width: `${secPercent}%` }}
                                             ></div>
                                         </div>
+                                        {selectedPeerId && peerSectionMap[section._id] && (
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <div className="h-0.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden flex-1">
+                                                    <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${peerSectionMap[section._id].progressPercent}%` }} />
+                                                </div>
+                                                <span className="text-[8px] text-purple-500 font-medium">{peerSectionMap[section._id].completedCount}/{peerSectionMap[section._id].totalCount}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {expandedSections[section._id] && (
@@ -425,6 +557,7 @@ const CourseView = () => {
                                                         customStatuses={course?.lectureStatuses}
                                                         completedStatus={course?.completedStatus}
                                                         sectionImportance={section.importance}
+                                                        peerStatus={selectedPeerId ? (peerLectureMap[lec._id]?.status || 'Not Started') : null}
                                                     />
                                                 );
                                             })}
