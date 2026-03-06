@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
 import AuthContext from '../../context/AuthContext';
@@ -12,16 +12,6 @@ const StudentCourseDetails = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'content';
     const { user } = useContext(AuthContext);
-
-    // Tab layout orientation (vertical sidebar or horizontal tabs)
-    const [tabLayout, setTabLayout] = useState(() => {
-        return localStorage.getItem('studentCourseTabLayout') || 'vertical';
-    });
-    const toggleTabLayout = () => {
-        const next = tabLayout === 'vertical' ? 'horizontal' : 'vertical';
-        setTabLayout(next);
-        localStorage.setItem('studentCourseTabLayout', next);
-    };
 
     const [course, setCourse] = useState(null);
     const [progressMap, setProgressMap] = useState({});
@@ -828,7 +818,7 @@ const StudentCourseDetails = () => {
     if (!course) return <div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading Course...</div>;
 
     return (
-        <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-colors duration-300 ${tabLayout === 'vertical' ? 'pb-20 md:pb-12 md:pl-[85px]' : 'pb-12'}`}>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 pb-12 transition-colors duration-300">
 
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
@@ -850,132 +840,35 @@ const StudentCourseDetails = () => {
                     </button>
                 </div>
 
-                {/* Horizontal Tabs (when horizontal layout) */}
-                {tabLayout === 'horizontal' && (
-                    <div className="container mx-auto px-3 sm:px-4">
-                        <div className="flex items-center gap-0.5 border-t border-gray-100 dark:border-slate-800">
-                            <div className="flex flex-1">
-                                {tabs.map((tab) => {
-                                    const Icon = tab.icon;
-                                    const isActive = activeTab === tab.id;
-                                    const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => handleTabChange(tab.id)}
-                                            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] ${isActive
-                                                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
-                                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                                }`}
-                                        >
-                                            <Icon size={12} />
-                                            {tab.label}
-                                            {showBadge && (
-                                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                                                    {unreadBroadcastCount > 99 ? '99+' : unreadBroadcastCount}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <button
-                                onClick={toggleTabLayout}
-                                className="p-1.5 ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-colors"
-                                title="Switch to vertical sidebar"
-                            >
-                                <FaGripVertical size={12} />
-                            </button>
-                        </div>
+                {/* Horizontal Tabs */}
+                <div className="container mx-auto px-3 sm:px-4">
+                    <div className="flex -mb-px overflow-x-auto scrollbar-hide">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.id;
+                            const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabChange(tab.id)}
+                                    className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${isActive
+                                        ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                        }`}
+                                >
+                                    <Icon className="shrink-0 text-[12px] sm:text-sm" />
+                                    {tab.label}
+                                    {showBadge && (
+                                        <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
+                                            {unreadBroadcastCount > 99 ? '99+' : unreadBroadcastCount}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
             </div>
-
-            {/* Mobile bottom nav bar when vertical layout is active */}
-            {tabLayout === 'vertical' && (
-                <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 safe-area-bottom">
-                    <div className="flex items-stretch">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => handleTabChange(tab.id)}
-                                    className={`relative flex-1 flex flex-col items-center gap-0.5 py-2 pt-2.5 transition-colors ${isActive
-                                        ? 'text-blue-600 dark:text-blue-400'
-                                        : 'text-slate-400 dark:text-slate-500'
-                                        }`}
-                                >
-                                    {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />}
-                                    <Icon className="text-[17px]" />
-                                    <span className="text-[9px] font-semibold leading-tight">{tab.label}</span>
-                                    {showBadge && (
-                                        <span className="absolute top-1 right-1/2 translate-x-3 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
-                                            {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                        <Link
-                            to="/ai-chat"
-                            className="relative flex-1 flex flex-col items-center gap-0.5 py-2 pt-2.5 text-slate-400 dark:text-slate-500"
-                        >
-                            <FaRobot className="text-[17px]" />
-                            <span className="text-[9px] font-semibold leading-tight">AI Chat</span>
-                        </Link>
-                    </div>
-                </div>
-            )}
-
-            {/* Vertical Sidebar - Fixed left strip (hidden on mobile) */}
-            {tabLayout === 'vertical' && (
-                <div className="hidden md:flex fixed left-0 top-16 bottom-0 w-[85px] z-20 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col items-center pt-4 pb-4">
-                    <div className="flex flex-col items-center gap-1 flex-1">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => handleTabChange(tab.id)}
-                                    className={`relative w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/40'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-                                        }`}
-                                >
-                                    <Icon className="text-[18px]" />
-                                    <span className="text-[10px] font-semibold leading-tight">{tab.label}</span>
-                                    {showBadge && (
-                                        <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
-                                            {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <Link
-                        to="/ai-chat"
-                        className="w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800"
-                        title="AI Chat Assistant"
-                    >
-                        <FaRobot className="text-[18px]" />
-                        <span className="text-[10px] font-semibold leading-tight">AI Chat</span>
-                    </Link>
-                    <button
-                        onClick={toggleTabLayout}
-                        className="w-[70px] flex flex-col items-center gap-1 px-1 py-2.5 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                        title="Switch to horizontal tabs"
-                    >
-                        <FaGripHorizontal className="text-sm" />
-                        <span className="text-[9px] font-medium">Layout</span>
-                    </button>
-                </div>
-            )}
 
             {/* Tab Content */}
             <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">

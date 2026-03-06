@@ -1,13 +1,11 @@
-import { useState, useEffect, useContext } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { FaSearch, FaFilter, FaTimes, FaChevronDown, FaStore, FaGraduationCap, FaChalkboardTeacher } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { FaSearch, FaFilter, FaTimes, FaChevronDown } from 'react-icons/fa';
 import api from '../../api/axios';
 import CourseCard from '../../components/ui/CourseCard';
-import AuthContext from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Marketplace = () => {
-    const { user } = useContext(AuthContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -129,37 +127,7 @@ const Marketplace = () => {
         searchParams.get('minPrice') || searchParams.get('maxPrice') || searchParams.get('minRating');
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-            {/* Navigation Tabs - Only show for logged in users */}
-            {user && (
-                <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10">
-                    <div className="container mx-auto px-4">
-                        <div className="flex gap-1">
-                            <div className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400">
-                                <FaStore className="text-sm" />
-                                <span>Marketplace</span>
-                            </div>
-                            <Link
-                                to="/my-learning"
-                                className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all"
-                            >
-                                <FaGraduationCap className="text-sm" />
-                                <span>My Learning</span>
-                            </Link>
-                            <Link
-                                to="/my-courses"
-                                className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all"
-                            >
-                                <FaChalkboardTeacher className="text-sm" />
-                                <span>My Courses</span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-6 sm:py-8">
                 {/* Filter Bar */}
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div className="flex items-center gap-3">
@@ -368,7 +336,6 @@ const Marketplace = () => {
                         ))}
                     </div>
                 )}
-            </div>
         </div>
     );
 };

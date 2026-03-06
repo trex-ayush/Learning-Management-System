@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import api from '../../api/axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
-import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaStore, FaRobot, FaArrowRight } from 'react-icons/fa';
+import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaRobot, FaArrowRight } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const StudentDashboard = ({ defaultTab }) => {
@@ -10,14 +10,9 @@ const StudentDashboard = ({ defaultTab }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Determine active tab from route or prop
-    const getInitialTab = () => {
-        if (location.pathname === '/my-courses') return 'created';
-        if (defaultTab === 'created') return 'created';
-        return 'enrolled';
-    };
+    // Derive active tab directly from route
+    const activeTab = location.pathname === '/my-courses' ? 'created' : 'enrolled';
 
-    const [activeTab, setActiveTab] = useState(getInitialTab());
     const [enrolledCourses, setEnrolledCourses] = useState([]);
     const [createdCourses, setCreatedCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -114,54 +109,7 @@ const StudentDashboard = ({ defaultTab }) => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pb-12 transition-colors duration-300">
-
-            {/* Tabs */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10">
-                <div className="container mx-auto px-4">
-                    <div className="flex gap-1">
-                        <Link
-                            to="/marketplace"
-                            className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
-                        >
-                            <FaStore className="text-sm" />
-                            <span>Marketplace</span>
-                        </Link>
-                        <button
-                            onClick={() => setActiveTab('enrolled')}
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'enrolled'
-                                ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
-                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                        >
-                            <FaGraduationCap className="text-sm" />
-                            <span>My Learning</span>
-                            {enrolledCourses.length > 0 && (
-                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                    {enrolledCourses.length}
-                                </span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('created')}
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'created'
-                                ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
-                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                        >
-                            <FaChalkboardTeacher className="text-sm" />
-                            <span>My Courses</span>
-                            {createdCourses.length > 0 && (
-                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                    {createdCourses.length}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="container mx-auto px-4 py-6 sm:py-8">
                 {/* AI Chat Banner */}
                 {activeTab === 'enrolled' && (
                     <Link to="/ai-chat" className="block mb-6 group">
@@ -401,7 +349,6 @@ const StudentDashboard = ({ defaultTab }) => {
                         )}
                     </div>
                 )}
-            </div>
 
             {/* Create Course Modal */}
             {showCreateModal && (

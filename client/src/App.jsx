@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import FloatingAIChatButton from './components/ui/FloatingAIChatButton';
+import AppSidebar from './components/layout/AppSidebar';
 import { Toaster } from 'react-hot-toast';
 import api from './api/axios';
 
@@ -27,14 +28,14 @@ const QuizTake = lazy(() => import('./pages/quiz/QuizTake'));
 const QuizAnalytics = lazy(() => import('./pages/quiz/QuizAnalytics'));
 
 // Student
-const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+import StudentDashboard from './pages/student/StudentDashboard';
 const StudentDetail = lazy(() => import('./pages/student/StudentDetail'));
 const StudentProgressDetail = lazy(() => import('./pages/student/StudentProgressDetail'));
 const StudentAISettings = lazy(() => import('./pages/student/StudentAISettings'));
 const AIChatPage = lazy(() => import('./pages/student/AIChatPage'));
 
 // Marketplace
-const Marketplace = lazy(() => import('./pages/marketplace/Marketplace'));
+import Marketplace from './pages/marketplace/Marketplace';
 const CourseLanding = lazy(() => import('./pages/marketplace/CourseLanding'));
 const CheckoutSuccess = lazy(() => import('./pages/marketplace/CheckoutSuccess'));
 const MyPurchases = lazy(() => import('./pages/marketplace/MyPurchases'));
@@ -155,7 +156,8 @@ function App() {
           <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 flex flex-col">
             <Navbar />
             <div className="flex-1">
-              <Toaster position="top-right" toastOptions={{
+              <AppSidebar>
+                <Toaster position="top-right" toastOptions={{
                 duration: 3000,
                 style: {
                   background: '#333',
@@ -233,6 +235,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </AppSidebar>
             </div>
             <Footer />
             <AuthenticatedFloatingButton />
