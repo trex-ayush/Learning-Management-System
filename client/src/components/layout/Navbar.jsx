@@ -150,7 +150,7 @@ const Navbar = () => {
                             <FaGraduationCap size={18} />
                         </div>
                         <span className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            Skill Path
+                            ClasslyAI
                         </span>
                     </Link>
 

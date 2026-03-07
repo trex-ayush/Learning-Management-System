@@ -133,10 +133,10 @@ const StudentCourseDetails = () => {
     // Set Document Title
     useEffect(() => {
         if (course) {
-            document.title = `Skill Path | ${course.title}`;
+            document.title = `ClasslyAI | ${course.title}`;
         }
         return () => {
-            document.title = 'Skill Path';
+            document.title = 'ClasslyAI';
         };
     }, [course]);
 

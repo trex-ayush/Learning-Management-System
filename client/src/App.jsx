@@ -3,7 +3,6 @@ import { useContext, useState, useEffect, lazy, Suspense } from 'react';
 import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
 import FloatingAIChatButton from './components/ui/FloatingAIChatButton';
 import { Toaster } from 'react-hot-toast';
 import api from './api/axios';
@@ -234,7 +233,6 @@ function App() {
                 </Routes>
               </Suspense>
             </div>
-            <Footer />
             <AuthenticatedFloatingButton />
           </div>
         </Router>
