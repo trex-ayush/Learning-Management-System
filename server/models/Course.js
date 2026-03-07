@@ -42,6 +42,10 @@ const courseSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    allowStudentUploads: {
+        type: Boolean,
+        default: false
+    },
     sections: [{
         title: { type: String, required: true },
         isPublic: { type: Boolean, default: false },

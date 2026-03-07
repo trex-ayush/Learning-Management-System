@@ -57,6 +57,9 @@ app.use('/api/instructor', require('./routes/instructorRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 
+// Resource routes
+app.use('/api/resources', require('./routes/resourceRoutes'));
+
 // AI generation routes
 app.use('/api/ai', require('./routes/aiRoutes'));
 

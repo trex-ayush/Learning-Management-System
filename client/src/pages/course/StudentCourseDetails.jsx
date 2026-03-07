@@ -1,9 +1,11 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
+import StudentAnalytics from '../../components/course/StudentAnalytics';
+import ResourceManager from '../../components/course/ResourceManager';
 import AuthContext from '../../context/AuthContext';
 
 const StudentCourseDetails = () => {
@@ -22,6 +24,8 @@ const StudentCourseDetails = () => {
         setTabLayout(next);
         localStorage.setItem('studentCourseTabLayout', next);
     };
+
+    const [sidebarHovered, setSidebarHovered] = useState(false);
 
     const [course, setCourse] = useState(null);
     const [progressMap, setProgressMap] = useState({});
@@ -108,6 +112,8 @@ const StudentCourseDetails = () => {
         { id: 'content', label: 'Content', icon: FaBook },
         { id: 'quizzes', label: 'Quizzes', icon: FaClipboardList },
         { id: 'announcements', label: 'Announcements', icon: FaBullhorn },
+        { id: 'resources', label: 'Resources', icon: FaFolderOpen },
+        { id: 'analytics', label: 'Analytics', icon: FaChartLine },
         { id: 'ai-assistant', label: 'AI Assistant', icon: FaRobot },
     ];
 
@@ -828,7 +834,7 @@ const StudentCourseDetails = () => {
     if (!course) return <div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading Course...</div>;
 
     return (
-        <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-colors duration-300 ${tabLayout === 'vertical' ? 'pb-20 md:pb-12 md:pl-[85px]' : 'pb-12'}`}>
+        <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
@@ -930,10 +936,14 @@ const StudentCourseDetails = () => {
                 </div>
             )}
 
-            {/* Vertical Sidebar - Fixed left strip (hidden on mobile) */}
+            {/* Vertical Sidebar - Glass effect, icon-only → expands on hover */}
             {tabLayout === 'vertical' && (
-                <div className="hidden md:flex fixed left-0 top-16 bottom-0 w-[85px] z-20 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col items-center pt-4 pb-4">
-                    <div className="flex flex-col items-center gap-1 flex-1">
+                <div
+                    className="glass-sidebar hidden md:flex fixed left-0 top-16 bottom-0 z-[60] flex-col pt-4 pb-4"
+                    onMouseEnter={() => setSidebarHovered(true)}
+                    onMouseLeave={() => setSidebarHovered(false)}
+                >
+                    <div className="flex flex-col gap-1 flex-1 px-1.5">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -942,15 +952,15 @@ const StudentCourseDetails = () => {
                                 <button
                                     key={tab.id}
                                     onClick={() => handleTabChange(tab.id)}
-                                    className={`relative w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/40'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    className={`glass-nav-item relative ${isActive
+                                        ? 'glass-nav-active text-white'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
                                         }`}
                                 >
-                                    <Icon className="text-[18px]" />
-                                    <span className="text-[10px] font-semibold leading-tight">{tab.label}</span>
+                                    <Icon className="glass-nav-icon text-[18px]" />
+                                    <span className="glass-nav-label text-[12px] font-semibold">{tab.label}</span>
                                     {showBadge && (
-                                        <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
                                             {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
                                         </span>
                                     )}
@@ -958,22 +968,24 @@ const StudentCourseDetails = () => {
                             );
                         })}
                     </div>
-                    <Link
-                        to="/ai-chat"
-                        className="w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800"
-                        title="AI Chat Assistant"
-                    >
-                        <FaRobot className="text-[18px]" />
-                        <span className="text-[10px] font-semibold leading-tight">AI Chat</span>
-                    </Link>
-                    <button
-                        onClick={toggleTabLayout}
-                        className="w-[70px] flex flex-col items-center gap-1 px-1 py-2.5 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                        title="Switch to horizontal tabs"
-                    >
-                        <FaGripHorizontal className="text-sm" />
-                        <span className="text-[9px] font-medium">Layout</span>
-                    </button>
+                    <div className="flex flex-col gap-1 px-1.5">
+                        <Link
+                            to="/ai-chat"
+                            className="glass-nav-item text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                            title="AI Chat Assistant"
+                        >
+                            <FaRobot className="glass-nav-icon text-[18px]" />
+                            <span className="glass-nav-label text-[12px] font-semibold">AI Chat</span>
+                        </Link>
+                        <button
+                            onClick={toggleTabLayout}
+                            className="glass-nav-item text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"
+                            title="Switch to horizontal tabs"
+                        >
+                            <FaGripHorizontal className="glass-nav-icon text-sm" />
+                            <span className="glass-nav-label text-[11px] font-medium">Layout</span>
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -982,6 +994,8 @@ const StudentCourseDetails = () => {
                 {activeTab === 'content' && renderContentTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}
                 {activeTab === 'announcements' && renderAnnouncementsTab()}
+                {activeTab === 'resources' && <ResourceManager courseId={id} userId={user?._id || user?.id} />}
+                {activeTab === 'analytics' && <StudentAnalytics courseId={id} />}
                 {activeTab === 'ai-assistant' && <AIChatPanel courseId={id} courseTitle={course?.title} />}
             </div>
         </div>

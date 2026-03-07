@@ -4,6 +4,8 @@ const Lecture = require('../models/Lecture');
 const User = require('../models/User');
 const Progress = require('../models/Progress');
 const Activity = require('../models/Activity');
+const QuizAttempt = require('../models/QuizAttempt');
+const Quiz = require('../models/Quiz');
 const CourseTeacher = require('../models/CourseTeacher');
 const { canManage, getTeacherPermissions } = require('../middleware/ownershipMiddleware');
 
@@ -1410,6 +1412,171 @@ const getStudentProgressDetail = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get student's own analytics for a course
+// @route   GET /api/courses/:id/my-analytics
+// @access  Private (enrolled student)
+const getMyAnalytics = asyncHandler(async (req, res) => {
+    const courseId = req.params.id;
+    const studentId = req.user.id;
+
+    // Fetch course with sections populated
+    const course = await Course.findById(courseId).populate({
+        path: 'sections',
+        populate: { path: 'lectures', select: 'title number dueDate' }
+    });
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    const completionLabel = course.completedStatus || 'Completed';
+
+    // Fetch student progress
+    const progress = await Progress.findOne({ student: studentId, course: courseId });
+    const completedLectures = progress?.completedLectures || [];
+
+    // Build progress map
+    const progressMap = {};
+    completedLectures.forEach(l => {
+        progressMap[l.lecture.toString()] = { status: l.status, completedAt: l.completedAt };
+    });
+
+    // Calculate total lectures
+    let totalLectures = 0;
+    course.sections.forEach(s => { totalLectures += s.lectures.length; });
+
+    const completedCount = completedLectures.filter(l => l.status === completionLabel).length;
+    const overallPercent = totalLectures > 0 ? Math.round((completedCount / totalLectures) * 100) : 0;
+
+    // Section-wise progress
+    const sectionProgress = course.sections.map(section => {
+        const total = section.lectures.length;
+        const completed = section.lectures.filter(l => progressMap[l._id.toString()]?.status === completionLabel).length;
+        return {
+            title: section.title,
+            total,
+            completed,
+            percent: total > 0 ? Math.round((completed / total) * 100) : 0
+        };
+    });
+
+    // Daily activity (last 30 days) from Activity logs
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const activities = await Activity.find({
+        student: studentId,
+        course: courseId,
+        createdAt: { $gte: thirtyDaysAgo }
+    }).sort({ createdAt: 1 });
+
+    // Group by date
+    const dailyActivity = {};
+    activities.forEach(act => {
+        const dateStr = act.createdAt.toISOString().split('T')[0];
+        if (!dailyActivity[dateStr]) dailyActivity[dateStr] = 0;
+        dailyActivity[dateStr]++;
+    });
+
+    // Fill in missing days
+    const activityTimeline = [];
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        activityTimeline.push({ date: dateStr, count: dailyActivity[dateStr] || 0 });
+    }
+
+    // Completion timeline (when lectures were completed, grouped by date)
+    const completionTimeline = {};
+    completedLectures.forEach(l => {
+        if (l.status === completionLabel && l.completedAt) {
+            const dateStr = new Date(l.completedAt).toISOString().split('T')[0];
+            if (!completionTimeline[dateStr]) completionTimeline[dateStr] = 0;
+            completionTimeline[dateStr]++;
+        }
+    });
+
+    // Status distribution (how many lectures in each status)
+    const statusDistribution = {};
+    let notStartedCount = 0;
+    course.sections.forEach(section => {
+        section.lectures.forEach(lec => {
+            const status = progressMap[lec._id.toString()]?.status || 'Not Started';
+            if (status === 'Not Started') {
+                notStartedCount++;
+            } else {
+                statusDistribution[status] = (statusDistribution[status] || 0) + 1;
+            }
+        });
+    });
+    if (notStartedCount > 0) {
+        statusDistribution['Not Started'] = notStartedCount;
+    }
+
+    // Late submissions
+    let lateCount = 0;
+    let onTimeCount = 0;
+    course.sections.forEach(section => {
+        section.lectures.forEach(lec => {
+            if (!lec.dueDate) return;
+            const p = progressMap[lec._id.toString()];
+            if (p?.status === completionLabel && p.completedAt) {
+                if (new Date(p.completedAt) > new Date(lec.dueDate)) {
+                    lateCount++;
+                } else {
+                    onTimeCount++;
+                }
+            }
+        });
+    });
+
+    // Quiz performance
+    const quizzes = await Quiz.find({ course: courseId, isActive: true }).select('title passingScore');
+    const quizAttempts = await QuizAttempt.find({
+        course: courseId,
+        student: studentId,
+        status: { $in: ['completed', 'timed-out'] }
+    }).sort({ createdAt: 1 });
+
+    const quizPerformance = quizzes.map(quiz => {
+        const attempts = quizAttempts.filter(a => a.quiz.toString() === quiz._id.toString());
+        const bestAttempt = attempts.reduce((best, a) => (a.percentage > (best?.percentage || 0) ? a : best), null);
+        return {
+            title: quiz.title,
+            passingScore: quiz.passingScore,
+            totalAttempts: attempts.length,
+            bestScore: bestAttempt?.percentage || 0,
+            passed: bestAttempt?.passed || false,
+            scores: attempts.map(a => ({ score: a.percentage, date: a.completedAt || a.createdAt }))
+        };
+    });
+
+    // Recent activity (last 10)
+    const recentActivity = await Activity.find({
+        student: studentId,
+        course: courseId
+    }).sort({ createdAt: -1 }).limit(10).select('action details createdAt');
+
+    res.json({
+        courseTitle: course.title,
+        overview: {
+            totalLectures,
+            completedLectures: completedCount,
+            overallPercent,
+            totalQuizzes: quizzes.length,
+            quizzesPassed: quizPerformance.filter(q => q.passed).length
+        },
+        sectionProgress,
+        activityTimeline,
+        completionTimeline,
+        statusDistribution,
+        submissions: { onTime: onTimeCount, late: lateCount },
+        quizPerformance,
+        recentActivity
+    });
+});
+
 module.exports = {
     createCourse,
     updateCourse,
@@ -1439,5 +1606,6 @@ module.exports = {
     getStudentProgressDetail,
     getEnrolledStudentList,
     getPeerStudentList,
-    getPeerStudentProgress
+    getPeerStudentProgress,
+    getMyAnalytics
 };
