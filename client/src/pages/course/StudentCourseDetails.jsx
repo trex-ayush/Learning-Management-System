@@ -1,10 +1,11 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
 import StudentAnalytics from '../../components/course/StudentAnalytics';
+import ResourceManager from '../../components/course/ResourceManager';
 import AuthContext from '../../context/AuthContext';
 
 const StudentCourseDetails = () => {
@@ -111,6 +112,7 @@ const StudentCourseDetails = () => {
         { id: 'content', label: 'Content', icon: FaBook },
         { id: 'quizzes', label: 'Quizzes', icon: FaClipboardList },
         { id: 'announcements', label: 'Announcements', icon: FaBullhorn },
+        { id: 'resources', label: 'Resources', icon: FaFolderOpen },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine },
         { id: 'ai-assistant', label: 'AI Assistant', icon: FaRobot },
     ];
@@ -832,7 +834,7 @@ const StudentCourseDetails = () => {
     if (!course) return <div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading Course...</div>;
 
     return (
-        <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
+        <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
@@ -937,7 +939,7 @@ const StudentCourseDetails = () => {
             {/* Vertical Sidebar - Glass effect, icon-only → expands on hover */}
             {tabLayout === 'vertical' && (
                 <div
-                    className="glass-sidebar hidden md:flex fixed left-0 top-16 bottom-0 z-40 flex-col pt-4 pb-4"
+                    className="glass-sidebar hidden md:flex fixed left-0 top-16 bottom-0 z-[60] flex-col pt-4 pb-4"
                     onMouseEnter={() => setSidebarHovered(true)}
                     onMouseLeave={() => setSidebarHovered(false)}
                 >
@@ -992,6 +994,7 @@ const StudentCourseDetails = () => {
                 {activeTab === 'content' && renderContentTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}
                 {activeTab === 'announcements' && renderAnnouncementsTab()}
+                {activeTab === 'resources' && <ResourceManager courseId={id} userId={user?._id || user?.id} />}
                 {activeTab === 'analytics' && <StudentAnalytics courseId={id} />}
                 {activeTab === 'ai-assistant' && <AIChatPanel courseId={id} courseTitle={course?.title} />}
             </div>

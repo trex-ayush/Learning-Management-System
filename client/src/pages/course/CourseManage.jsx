@@ -1,12 +1,13 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen } from 'react-icons/fa';
 import Modal from '../../components/ui/Modal';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import TeacherManagement from '../../components/course/TeacherManagement';
 import Pagination from '../../components/ui/Pagination';
 import AINotesGenerator from '../../components/course/AINotesGenerator';
+import ResourceManager from '../../components/course/ResourceManager';
 import toast from 'react-hot-toast';
 import AuthContext from '../../context/AuthContext';
 
@@ -28,6 +29,8 @@ const CourseManage = () => {
         setTabLayout(next);
         localStorage.setItem('courseManageTabLayout', next);
     };
+
+    const [sidebarHovered, setSidebarHovered] = useState(false);
 
     const [course, setCourse] = useState(null);
     const [newSectionTitle, setNewSectionTitle] = useState('');
@@ -127,6 +130,7 @@ const CourseManage = () => {
         { id: 'broadcasts', label: 'Broadcasts', icon: FaBullhorn },
         { id: 'students', label: 'Students', icon: FaUsers },
         { id: 'teachers', label: 'Teachers', icon: FaUserTie },
+        { id: 'resources', label: 'Resources', icon: FaFolderOpen },
         { id: 'ai-notes', label: 'AI Notes', icon: FaRobot },
     ];
 
@@ -1050,14 +1054,17 @@ const CourseManage = () => {
 
 
     return (
-        <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-colors duration-300 ${tabLayout === 'vertical' ? 'pb-20 md:pb-12 md:pl-[85px]' : 'pb-12'}`}>
+        <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-10 transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
                 <div className="container mx-auto px-3 sm:px-4">
-                    <div className="h-12 sm:h-16 flex items-center justify-between gap-2">
+                    <div className="py-3 sm:py-4 flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white truncate">{course.title}</h1>
+                            <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">{course.title}</h1>
+                            {course.description && (
+                                <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{course.description}</p>
+                            )}
                         </div>
                         <div className="flex gap-1.5 sm:gap-2 shrink-0">
                             <button
@@ -1231,28 +1238,31 @@ const CourseManage = () => {
                 </div>
             )}
 
-            {/* Tab Content Area */}
-            {/* Vertical Sidebar - Fixed left strip (hidden on mobile) */}
+            {/* Vertical Sidebar - Glass effect, icon-only → expands on hover */}
             {tabLayout === 'vertical' && (
-                <div className="hidden md:flex fixed left-0 top-16 bottom-0 w-[85px] z-20 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col items-center pt-4 pb-4">
-                    <div className="flex flex-col items-center gap-1 flex-1">
+                <div
+                    className="glass-sidebar hidden md:flex fixed left-0 top-16 bottom-0 z-[60] flex-col pt-4 pb-4"
+                    onMouseEnter={() => setSidebarHovered(true)}
+                    onMouseLeave={() => setSidebarHovered(false)}
+                >
+                    <div className="flex flex-col gap-1 flex-1 px-1.5">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
-                            const showBadge = tab.id === 'broadcasts' && unreadBroadcastCount > 0;
                             const isActive = activeTab === tab.id;
+                            const showBadge = tab.id === 'broadcasts' && unreadBroadcastCount > 0;
                             return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`relative w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/40'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    className={`glass-nav-item relative ${isActive
+                                        ? 'glass-nav-active text-white'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
                                         }`}
                                 >
-                                    <Icon className="text-[18px]" />
-                                    <span className="text-[10px] font-semibold leading-tight">{tab.label}</span>
+                                    <Icon className="glass-nav-icon text-[18px]" />
+                                    <span className="glass-nav-label text-[12px] font-semibold">{tab.label}</span>
                                     {showBadge && (
-                                        <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
                                             {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
                                         </span>
                                     )}
@@ -1260,31 +1270,34 @@ const CourseManage = () => {
                             );
                         })}
                     </div>
-                    <Link
-                        to="/ai-chat"
-                        className="w-[70px] flex flex-col items-center gap-1.5 px-1 py-3 rounded-xl transition-all text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800"
-                        title="AI Chat Assistant"
-                    >
-                        <FaRobot className="text-[18px]" />
-                        <span className="text-[10px] font-semibold leading-tight">AI Chat</span>
-                    </Link>
-                    <button
-                        onClick={toggleTabLayout}
-                        className="w-[70px] flex flex-col items-center gap-1 px-1 py-2.5 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                        title="Switch to horizontal tabs"
-                    >
-                        <FaGripHorizontal className="text-sm" />
-                        <span className="text-[9px] font-medium">Layout</span>
-                    </button>
+                    <div className="flex flex-col gap-1 px-1.5">
+                        <Link
+                            to="/ai-chat"
+                            className="glass-nav-item text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                            title="AI Chat Assistant"
+                        >
+                            <FaRobot className="glass-nav-icon text-[18px]" />
+                            <span className="glass-nav-label text-[12px] font-semibold">AI Chat</span>
+                        </Link>
+                        <button
+                            onClick={toggleTabLayout}
+                            className="glass-nav-item text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"
+                            title="Switch to horizontal tabs"
+                        >
+                            <FaGripHorizontal className="glass-nav-icon text-sm" />
+                            <span className="glass-nav-label text-[11px] font-medium">Layout</span>
+                        </button>
+                    </div>
                 </div>
             )}
 
             {/* Tab Content */}
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
                 {activeTab === 'curriculum' && renderCurriculumTab()}
                 {activeTab === 'broadcasts' && renderBroadcastsTab()}
                 {activeTab === 'students' && renderStudentsTab()}
                 {activeTab === 'teachers' && renderTeachersTab()}
+                {activeTab === 'resources' && <ResourceManager courseId={id} isTeacher={true} />}
                 {activeTab === 'ai-notes' && <AINotesGenerator courseId={id} />}
             </div>
 

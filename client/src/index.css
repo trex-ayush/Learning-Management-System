@@ -171,6 +171,15 @@
     .glass-content-expanded {
         padding-left: 180px;
     }
+
+    /* Footer shifts with sidebar */
+    body:has(.glass-sidebar) footer {
+        padding-left: 60px;
+        transition: padding-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body:has(.glass-sidebar:hover) footer {
+        padding-left: 180px;
+    }
 }
 
 /* Hide scrollbar utility */
