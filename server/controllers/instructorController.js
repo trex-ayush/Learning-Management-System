@@ -10,7 +10,7 @@ const Payout = require('../models/Payout');
 // @route   POST /api/instructor/become
 // @access  Private
 const becomeInstructor = asyncHandler(async (req, res) => {
-    const { bio } = req.body;
+    const bio = req.body?.bio;
 
     if (req.user.role === 'instructor') {
         res.status(400);

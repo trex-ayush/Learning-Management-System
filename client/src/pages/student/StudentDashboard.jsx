@@ -12,6 +12,8 @@ const StudentDashboard = ({ defaultTab }) => {
 
     // Determine active tab from route or prop
     const getInitialTab = () => {
+        // Students can only see enrolled tab
+        if (user && user.role === 'student') return 'enrolled';
         if (location.pathname === '/my-courses') return 'created';
         if (defaultTab === 'created') return 'created';
         return 'enrolled';
@@ -40,9 +42,10 @@ const StudentDashboard = ({ defaultTab }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const isStudent = user && user.role === 'student';
                 const [enrolledRes, createdRes] = await Promise.all([
                     api.get('/courses/my/enrolled'),
-                    api.get('/courses/my/created')
+                    isStudent ? { data: [] } : api.get('/courses/my/created')
                 ]);
                 setEnrolledCourses(enrolledRes.data);
                 setCreatedCourses(createdRes.data);
@@ -54,7 +57,7 @@ const StudentDashboard = ({ defaultTab }) => {
         };
 
         fetchData();
-    }, []);
+    }, [user]);
 
     const handleCreateCourse = async (e) => {
         e.preventDefault();
@@ -142,21 +145,23 @@ const StudentDashboard = ({ defaultTab }) => {
                                 </span>
                             )}
                         </button>
-                        <button
-                            onClick={() => setActiveTab('created')}
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'created'
-                                ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
-                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                        >
-                            <FaChalkboardTeacher className="text-sm" />
-                            <span>My Courses</span>
-                            {createdCourses.length > 0 && (
-                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                    {createdCourses.length}
-                                </span>
-                            )}
-                        </button>
+                        {user && user.role !== 'student' && (
+                            <button
+                                onClick={() => setActiveTab('created')}
+                                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'created'
+                                    ? 'border-slate-900 text-slate-900 dark:text-white dark:border-white'
+                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                    }`}
+                            >
+                                <FaChalkboardTeacher className="text-sm" />
+                                <span>My Courses</span>
+                                {createdCourses.length > 0 && (
+                                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                        {createdCourses.length}
+                                    </span>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

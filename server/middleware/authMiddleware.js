@@ -56,5 +56,14 @@ const instructorOnly = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin, instructorOnly };
+const studentOnly = (req, res, next) => {
+    if (req.user && (req.user.role === 'student' || req.user.role === 'admin')) {
+        next();
+    } else {
+        res.status(401);
+        throw new Error('Not authorized. Student access required.');
+    }
+};
+
+module.exports = { protect, admin, instructorOnly, studentOnly };
 

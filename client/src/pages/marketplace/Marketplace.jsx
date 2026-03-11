@@ -146,13 +146,15 @@ const Marketplace = () => {
                                 <FaGraduationCap className="text-sm" />
                                 <span>My Learning</span>
                             </Link>
-                            <Link
-                                to="/my-courses"
-                                className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all"
-                            >
-                                <FaChalkboardTeacher className="text-sm" />
-                                <span>My Courses</span>
-                            </Link>
+                            {user.role !== 'student' && (
+                                <Link
+                                    to="/my-courses"
+                                    className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all"
+                                >
+                                    <FaChalkboardTeacher className="text-sm" />
+                                    <span>My Courses</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

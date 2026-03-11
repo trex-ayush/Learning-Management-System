@@ -198,7 +198,7 @@ function App() {
 
                   {/* My Learning & My Courses - tabs on StudentDashboard */}
                   <Route path="/my-learning" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-                  <Route path="/my-courses" element={<ProtectedRoute><StudentDashboard defaultTab="created" /></ProtectedRoute>} />
+                  <Route path="/my-courses" element={<InstructorRoute><StudentDashboard defaultTab="created" /></InstructorRoute>} />
 
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/course/:id" element={<ProtectedRoute><StudentCourseDetails /></ProtectedRoute>} />

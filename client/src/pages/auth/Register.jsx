@@ -8,13 +8,14 @@ const Register = () => {
         name: '',
         email: '',
         password: '',
-        role: 'student'
+        role: 'student',
+        adminKey: ''
     });
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    const { name, email, password } = formData;
+    const { name, email, password, role, adminKey } = formData;
 
     const onChange = (e) => {
         setFormData((prevState) => ({
@@ -31,7 +32,7 @@ const Register = () => {
         try {
             // Note: In real app, we might pass role here or default to student
             // Passing role for flexibility as requested
-            const res = await register(name, email, password);
+            const res = await register(name, email, password, role, role === 'admin' ? adminKey : null);
             // Register doesn't handle role in frontend context yet strictly,
             // but backend accepts it if generic register route allows.
             // Our backend `registerUser` calls `req.body` so it will take role if sent.
@@ -129,6 +130,50 @@ const Register = () => {
                                 />
                             </div>
                         </div>
+
+                        {/* Role Selector */}
+                        <div>
+                            <label htmlFor="role" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+                                Register as
+                            </label>
+                            <div className="mt-2">
+                                <select
+                                    id="role"
+                                    name="role"
+                                    value={role}
+                                    onChange={onChange}
+                                    className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:focus:ring-blue-500 sm:text-sm sm:leading-6 bg-white dark:bg-slate-800 transition-all"
+                                >
+                                    <option value="student">Student</option>
+                                    <option value="instructor">Teacher / Instructor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Admin Key Field - only shown when admin role is selected */}
+                        {role === 'admin' && (
+                            <div>
+                                <label htmlFor="adminKey" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+                                    Admin Key
+                                </label>
+                                <div className="mt-2">
+                                    <input
+                                        id="adminKey"
+                                        name="adminKey"
+                                        type="password"
+                                        required
+                                        value={adminKey}
+                                        onChange={onChange}
+                                        className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-red-600 dark:focus:ring-red-500 sm:text-sm sm:leading-6 bg-transparent transition-all"
+                                        placeholder="Enter admin secret key"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Admin key is required to create an admin account
+                                </p>
+                            </div>
+                        )}
 
                         <div>
                             <button

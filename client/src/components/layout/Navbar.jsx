@@ -24,11 +24,10 @@ const Navbar = () => {
     const mobileInputRef = useRef(null);
     const filterDropdownRef = useRef(null);
 
-    const filterOptions = [
-        { value: 'all', label: 'All' },
-        { value: 'enrolled', label: 'Enrolled' },
-        { value: 'created', label: 'Created' }
-    ];
+    const isStudent = user && user.role === 'student';
+    const filterOptions = isStudent
+        ? [{ value: 'all', label: 'All' }, { value: 'enrolled', label: 'Enrolled' }]
+        : [{ value: 'all', label: 'All' }, { value: 'enrolled', label: 'Enrolled' }, { value: 'created', label: 'Created' }];
 
     const onLogout = () => {
         logout();
@@ -384,11 +383,7 @@ const Navbar = () => {
 
                     {/* Mobile Filter Tabs */}
                     <div className="flex border-b border-gray-200 dark:border-slate-800">
-                        {[
-                            { value: 'all', label: 'All' },
-                            { value: 'enrolled', label: 'Enrolled' },
-                            { value: 'created', label: 'Created' }
-                        ].map((option) => (
+                        {filterOptions.map((option) => (
                             <button
                                 key={option.value}
                                 onClick={() => setSearchFilter(option.value)}

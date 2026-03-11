@@ -7,7 +7,7 @@ const User = require('../models/User');
 // @route   POST /api/auth/register
 // @access  Public (or Admin only later)
 const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, adminKey } = req.body;
 
     if (!name || !email || !password) {
         res.status(400);
@@ -19,6 +19,14 @@ const registerUser = asyncHandler(async (req, res) => {
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
+    }
+
+    // Admin registration requires valid admin key
+    if (role === 'admin') {
+        if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+            res.status(401);
+            throw new Error('Invalid admin key');
+        }
     }
 
     // Create user
