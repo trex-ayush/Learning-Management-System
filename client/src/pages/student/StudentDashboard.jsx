@@ -270,8 +270,8 @@ const StudentDashboard = ({ defaultTab }) => {
                             </p>
                         </div>
                     )
-                ) : (
-                    // Created Courses Tab
+                ) : user && user.role !== 'student' ? (
+                    // Created Courses Tab (instructors/admins only)
                     <div>
                         {/* Header with Create Button */}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -405,7 +405,7 @@ const StudentDashboard = ({ defaultTab }) => {
                             </div>
                         )}
                     </div>
-                )}
+                ) : null}
             </div>
 
             {/* Create Course Modal */}
