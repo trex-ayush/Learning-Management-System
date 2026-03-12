@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 
 // @desc    Register new user
@@ -117,9 +118,87 @@ const updatePassword = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Google OAuth login/register
+// @route   POST /api/auth/google
+// @access  Public
+const googleAuth = asyncHandler(async (req, res) => {
+    const { credential } = req.body;
+
+    if (!credential) {
+        res.status(400);
+        throw new Error('Google credential is required');
+    }
+
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    let ticket;
+    try {
+        ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+    } catch (error) {
+        res.status(401);
+        throw new Error('Invalid Google token');
+    }
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (!email) {
+        res.status(400);
+        throw new Error('Google account must have an email');
+    }
+
+    // Check if user exists by googleId or email
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    let isNewUser = false;
+
+    if (user) {
+        // Existing user — check if blocked
+        if (user.isBlocked) {
+            res.status(403);
+            throw new Error(user.blockReason || 'Your account has been blocked. Please contact support.');
+        }
+
+        // Link Google ID if user exists by email but hasn't linked Google yet
+        if (!user.googleId) {
+            user.googleId = googleId;
+            if (picture && !user.profileImage) {
+                user.profileImage = picture;
+            }
+            await user.save();
+        }
+    } else {
+        // New user — create account with Google info
+        isNewUser = true;
+        user = await User.create({
+            name,
+            email,
+            googleId,
+            profileImage: picture || '',
+            role: 'student', // Default role for Google signups
+        });
+    }
+
+    res.locals.user = user; // For Activity Logger
+    res.json({
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        warnings: user.warnings || [],
+        maxWarnings: user.maxWarnings || 2,
+        isNewUser,
+        token: generateToken(user._id),
+    });
+});
+
 module.exports = {
     registerUser,
     loginUser,
     getMe,
     updatePassword,
+    googleAuth,
 };

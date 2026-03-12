@@ -1,6 +1,9 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
+import RolePickerModal from '../../components/ui/RolePickerModal';
+import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
 const Login = () => {
@@ -9,7 +12,9 @@ const Login = () => {
         password: ''
     });
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useContext(AuthContext);
+    const [showRolePicker, setShowRolePicker] = useState(false);
+    const [newUserName, setNewUserName] = useState('');
+    const { login, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const { email, password } = formData;
@@ -23,7 +28,7 @@ const Login = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        if (isLoading) return; // Prevent multiple submissions
+        if (isLoading) return;
 
         setIsLoading(true);
         try {
@@ -68,8 +73,48 @@ const Login = () => {
         }
     };
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const user = await googleLogin(credentialResponse.credential);
+            if (user.isNewUser) {
+                setNewUserName(user.name);
+                setShowRolePicker(true);
+            } else {
+                navigate('/');
+                toast.success(`Welcome back, ${user.name}!`);
+            }
+        } catch (error) {
+            const isBlocked = error.response?.status === 403;
+            if (isBlocked) {
+                toast.error(error.response?.data?.message || 'Your account has been blocked.');
+            } else {
+                toast.error(error.response?.data?.message || 'Google sign-in failed');
+            }
+        }
+    };
+
+    const handleRoleSelect = async (role) => {
+        try {
+            if (role === 'instructor') {
+                await api.post('/instructor/become');
+            }
+            navigate('/');
+            toast.success('Account created successfully!');
+        } catch (error) {
+            toast.error('Failed to set role');
+            navigate('/');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+            {showRolePicker && (
+                <RolePickerModal
+                    userName={newUserName}
+                    onSelect={handleRoleSelect}
+                />
+            )}
+
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="mx-auto h-12 w-12 rounded-xl bg-slate-900 dark:bg-blue-600 flex items-center justify-center text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
@@ -147,6 +192,33 @@ const Login = () => {
                             </button>
                         </div>
                     </form>
+
+                    {/* Divider */}
+                    <div className="mt-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200 dark:border-slate-700" />
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
+                                    Or continue with
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Google Sign-In */}
+                        <div className="mt-6 flex justify-center">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => toast.error('Google sign-in failed')}
+                                size="large"
+                                width="100%"
+                                text="signin_with"
+                                shape="rectangular"
+                                theme="outline"
+                            />
+                        </div>
+                    </div>
 
                     <div className="mt-6">
                         <div className="relative">
