@@ -42,12 +42,14 @@ const CourseManage = () => {
     // Section State
     const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
     const [editingSectionId, setEditingSectionId] = useState(null);
+    const [sectionBroadcast, setSectionBroadcast] = useState({ enabled: false, message: '', priority: 'normal' });
 
     // Lecture State
     const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
     const [activeSectionId, setActiveSectionId] = useState(null);
     const [editingLectureId, setEditingLectureId] = useState(null);
     const [newLecture, setNewLecture] = useState({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, isPreview: false });
+    const [lectureBroadcast, setLectureBroadcast] = useState({ enabled: false, message: '', priority: 'normal' });
 
     // Students State
     const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -347,12 +349,21 @@ const CourseManage = () => {
                 await api.put(`/courses/${id}/sections/${editingSectionId}`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview, importance: newSectionImportance });
             } else {
                 await api.post(`/courses/${id}/sections`, { title: newSectionTitle, isPublic: newSectionIsPublic, isPreview: newSectionIsPreview, importance: newSectionImportance });
+                if (sectionBroadcast.enabled) {
+                    const broadcastMsg = sectionBroadcast.message || `📚 New section added: "${newSectionTitle}"`;
+                    await api.post(`/broadcasts/course/${id}`, {
+                        title: `New Section: ${newSectionTitle}`,
+                        message: broadcastMsg,
+                        priority: sectionBroadcast.priority
+                    }).catch(() => toast.error('Section saved but broadcast failed'));
+                }
             }
             setNewSectionTitle('');
             setNewSectionIsPublic(true);
             setNewSectionIsPreview(false);
             setNewSectionImportance('');
             setEditingSectionId(null);
+            setSectionBroadcast({ enabled: false, message: '', priority: 'normal' });
             fetchCourse(true);
             toast.success(editingSectionId ? 'Section updated!' : 'Section added!');
         } catch (error) {
@@ -379,11 +390,21 @@ const CourseManage = () => {
             } else {
                 if (!activeSectionId) return alert('Select a section first');
                 await api.post(`/courses/${id}/sections/${activeSectionId}/lectures`, newLecture);
+                if (lectureBroadcast.enabled) {
+                    const sectionTitle = course?.sections?.find(s => s._id === activeSectionId)?.title || '';
+                    const broadcastMsg = lectureBroadcast.message || `🎬 New lecture added: "${newLecture.title}"${sectionTitle ? ` in section "${sectionTitle}"` : ''}`;
+                    await api.post(`/broadcasts/course/${id}`, {
+                        title: `New Lecture: ${newLecture.title}`,
+                        message: broadcastMsg,
+                        priority: lectureBroadcast.priority
+                    }).catch(() => toast.error('Lecture saved but broadcast failed'));
+                }
             }
 
             setNewLecture({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, importance: '' });
             setActiveSectionId(null);
             setEditingLectureId(null);
+            setLectureBroadcast({ enabled: false, message: '', priority: 'normal' });
             fetchCourse(true);
             toast.success(editingLectureId ? 'Lecture updated!' : 'Lecture added!');
         } catch (error) {
@@ -1361,6 +1382,53 @@ const CourseManage = () => {
                         </select>
                     </div>
 
+                    {/* Auto-broadcast toggle — only for new sections */}
+                    {!editingSectionId && (
+                        <div className={`rounded-lg border transition-colors ${sectionBroadcast.enabled ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50'}`}>
+                            <button
+                                type="button"
+                                onClick={() => setSectionBroadcast(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                className="w-full flex items-center justify-between px-4 py-3"
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <FaBullhorn className={`text-sm ${sectionBroadcast.enabled ? 'text-indigo-500' : 'text-slate-400'}`} />
+                                    <span className={`text-xs font-bold uppercase tracking-wide ${sectionBroadcast.enabled ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        Notify Students via Broadcast
+                                    </span>
+                                </div>
+                                <div className={`w-9 h-5 rounded-full flex items-center px-1 transition-colors ${sectionBroadcast.enabled ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                    <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform ${sectionBroadcast.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </div>
+                            </button>
+                            {sectionBroadcast.enabled && (
+                                <div className="px-4 pb-4 space-y-3 border-t border-indigo-200 dark:border-indigo-800/50 pt-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Message <span className="normal-case font-normal">(optional — leave blank for default)</span></label>
+                                        <textarea
+                                            rows={2}
+                                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                                            placeholder={`📚 New section added: "${newSectionTitle || 'Section Title'}"`}
+                                            value={sectionBroadcast.message}
+                                            onChange={(e) => setSectionBroadcast(prev => ({ ...prev, message: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Priority</label>
+                                        <select
+                                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                            value={sectionBroadcast.priority}
+                                            onChange={(e) => setSectionBroadcast(prev => ({ ...prev, priority: e.target.value }))}
+                                        >
+                                            <option value="normal">Normal</option>
+                                            <option value="important">Important</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5">
                             {editingSectionId ? "Update Section" : "Add Section"}
@@ -1471,6 +1539,53 @@ const CourseManage = () => {
                             <option value="Very Important">Very Important</option>
                         </select>
                     </div>
+
+                    {/* Auto-broadcast toggle — only for new lectures */}
+                    {!editingLectureId && (
+                        <div className={`rounded-lg border transition-colors ${lectureBroadcast.enabled ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50'}`}>
+                            <button
+                                type="button"
+                                onClick={() => setLectureBroadcast(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                className="w-full flex items-center justify-between px-4 py-3"
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <FaBullhorn className={`text-sm ${lectureBroadcast.enabled ? 'text-indigo-500' : 'text-slate-400'}`} />
+                                    <span className={`text-xs font-bold uppercase tracking-wide ${lectureBroadcast.enabled ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        Notify Students via Broadcast
+                                    </span>
+                                </div>
+                                <div className={`w-9 h-5 rounded-full flex items-center px-1 transition-colors ${lectureBroadcast.enabled ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                    <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform ${lectureBroadcast.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </div>
+                            </button>
+                            {lectureBroadcast.enabled && (
+                                <div className="px-4 pb-4 space-y-3 border-t border-indigo-200 dark:border-indigo-800/50 pt-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Message <span className="normal-case font-normal">(optional — leave blank for default)</span></label>
+                                        <textarea
+                                            rows={2}
+                                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                                            placeholder={`🎬 New lecture added: "${newLecture.title || 'Lecture Title'}"`}
+                                            value={lectureBroadcast.message}
+                                            onChange={(e) => setLectureBroadcast(prev => ({ ...prev, message: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Priority</label>
+                                        <select
+                                            className="w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                            value={lectureBroadcast.priority}
+                                            onChange={(e) => setLectureBroadcast(prev => ({ ...prev, priority: e.target.value }))}
+                                        >
+                                            <option value="normal">Normal</option>
+                                            <option value="important">Important</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5">
