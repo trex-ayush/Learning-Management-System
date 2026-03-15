@@ -12,9 +12,10 @@ const getGlobalActivities = async (req, res) => {
         // Build query
         const query = {};
 
-        // 1. Action Filter
+        // 1. Action Filter (supports comma-separated multiple values)
         if (req.query.action && req.query.action !== 'All') {
-            query.action = req.query.action;
+            const actions = req.query.action.split(',').map(a => a.trim()).filter(Boolean);
+            query.action = actions.length === 1 ? actions[0] : { $in: actions };
         }
 
         // 2. User Filter (Search by name or email)

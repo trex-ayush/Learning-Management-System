@@ -1,8 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
-import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen, FaChevronDown, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
+
+const ALL_ACTIONS = [
+    'Login', 'Registered', 'Enrolled', 'Unenrolled',
+    'Status Updated', 'Marked for Revision', 'Removed from Revision',
+    'Completed', 'Started', 'Comment', 'Note Updated',
+    'Lecture Added', 'Lecture Updated', 'Lecture Deleted',
+    'Section Added', 'Section Updated',
+    'Course Updated', 'Course Created',
+    'Broadcast Created', 'Teacher Added',
+];
 
 const GlobalActivity = () => {
     const navigate = useNavigate();
@@ -16,7 +26,9 @@ const GlobalActivity = () => {
 
     // Filters State
     const [searchTerm, setSearchTerm] = useState('');
-    const [actionFilter, setActionFilter] = useState('');
+    const [selectedActions, setSelectedActions] = useState([]); // multi-select
+    const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
+    const actionDropdownRef = useRef(null);
     const [userFilter, setUserFilter] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [debouncedUser, setDebouncedUser] = useState('');
@@ -31,6 +43,14 @@ const GlobalActivity = () => {
         return () => clearTimeout(timer);
     }, [userFilter]);
 
+    // Close action dropdown on outside click
+    useEffect(() => {
+        if (!actionDropdownOpen) return;
+        const handler = (e) => { if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target)) setActionDropdownOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [actionDropdownOpen]);
+
     useEffect(() => {
         const fetchActivities = async () => {
             setLoading(true);
@@ -40,7 +60,7 @@ const GlobalActivity = () => {
                     page,
                     limit,
                     search: debouncedSearch,
-                    action: actionFilter === 'All' ? '' : actionFilter,
+                    action: selectedActions.length > 0 ? selectedActions.join(',') : '',
                     user: debouncedUser
                 };
                 const res = await api.get('/activities', { params });
@@ -56,11 +76,18 @@ const GlobalActivity = () => {
         };
 
         fetchActivities();
-    }, [page, limit, debouncedSearch, actionFilter, debouncedUser]);
+    }, [page, limit, debouncedSearch, selectedActions, debouncedUser]);
+
+    const toggleAction = (action) => {
+        setSelectedActions(prev =>
+            prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action]
+        );
+        setPage(1);
+    };
 
     const handleReset = () => {
         setSearchTerm('');
-        setActionFilter('');
+        setSelectedActions([]);
         setUserFilter('');
         setPage(1);
     };
@@ -105,60 +132,101 @@ const GlobalActivity = () => {
 
             <div className="container mx-auto px-4 py-8">
                 {/* Filters Bar */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex-1">
-                        <input
-                            type="text"
-                            placeholder="Search details..."
-                            className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <input
-                            type="text"
-                            placeholder="Filter by User Name..."
-                            className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
-                            value={userFilter}
-                            onChange={(e) => setUserFilter(e.target.value)}
-                        />
-                    </div>
-                    <div className="w-full md:w-48">
-                        <select
-                            className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
-                            value={actionFilter}
-                            onChange={(e) => setActionFilter(e.target.value)}
+                <div className="flex flex-col gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search details..."
+                                className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Filter by User Name..."
+                                className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                                value={userFilter}
+                                onChange={(e) => setUserFilter(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Multi-select Action Filter */}
+                        <div className="relative w-full md:w-56" ref={actionDropdownRef}>
+                            <button
+                                onClick={() => setActionDropdownOpen(prev => !prev)}
+                                className={`w-full flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border text-sm transition-colors ${actionDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-slate-700'} text-slate-900 dark:text-white`}
+                            >
+                                <span className="truncate text-sm text-slate-500 dark:text-slate-400">
+                                    {selectedActions.length === 0 ? 'All Actions' : `${selectedActions.length} selected`}
+                                </span>
+                                <FaChevronDown className={`text-slate-400 text-xs shrink-0 ml-2 transition-transform ${actionDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {actionDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                    <div className="max-h-64 overflow-y-auto py-1">
+                                        {ALL_ACTIONS.map(action => {
+                                            const isSelected = selectedActions.includes(action);
+                                            return (
+                                                <button
+                                                    key={action}
+                                                    onClick={() => toggleAction(action)}
+                                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+                                                >
+                                                    <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                        {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                                    </span>
+                                                    {getActionIcon(action)}
+                                                    {action}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {selectedActions.length > 0 && (
+                                        <div className="border-t border-gray-100 dark:border-slate-700 px-3 py-2">
+                                            <button
+                                                onClick={() => { setSelectedActions([]); setPage(1); }}
+                                                className="text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
+                                            >
+                                                Clear selection
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={handleReset}
+                            className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors shrink-0"
                         >
-                            <option value="">All Actions</option>
-                            <option value="Login">Login</option>
-                            <option value="Registered">Registered</option>
-                            <option value="Enrolled">Enrolled</option>
-                            <option value="Unenrolled">Unenrolled</option>
-                            <option value="Status Updated">Status Updated</option>
-                            <option value="Marked for Revision">Marked for Revision</option>
-                            <option value="Removed from Revision">Removed from Revision</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Started">Started</option>
-                            <option value="Comment">Comment</option>
-                            <option value="Note Updated">Note Updated</option>
-                            <option value="Lecture Added">Lecture Added</option>
-                            <option value="Lecture Updated">Lecture Updated</option>
-                            <option value="Lecture Deleted">Lecture Deleted</option>
-                            <option value="Section Added">Section Added</option>
-                            <option value="Section Updated">Section Updated</option>
-                            <option value="Course Updated">Course Updated</option>
-                            <option value="Course Created">Course Created</option>
-                            <option value="Broadcast Created">Broadcast Created</option>
-                            <option value="Teacher Added">Teacher Added</option>
-                        </select>
+                            Reset
+                        </button>
                     </div>
-                    <button
-                        onClick={handleReset}
-                        className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors"
-                    >
-                        Reset
-                    </button>
+
+                    {/* Active filter chips */}
+                    {selectedActions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {selectedActions.map(action => (
+                                <span
+                                    key={action}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                                >
+                                    {getActionIcon(action)}
+                                    {action}
+                                    <button
+                                        onClick={() => toggleAction(action)}
+                                        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
+                                    >
+                                        <FaTimes size={9} />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (
