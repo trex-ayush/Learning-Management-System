@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
 
@@ -71,6 +71,8 @@ const GlobalActivity = () => {
         if (action === 'Started' || action === 'In Progress') return <FaPlayCircle className="text-blue-500" />;
         if (action === 'Status Updated') return <FaClock className="text-amber-500" />;
         if (action === 'Note Updated') return <FaStickyNote className="text-purple-500" />;
+        if (action === 'Marked for Revision') return <FaBookmark className="text-amber-500" />;
+        if (action === 'Removed from Revision') return <FaBookOpen className="text-slate-400" />;
         if (action === 'Enrolled') return <FaUserPlus className="text-indigo-500" />;
         if (action === 'Unenrolled') return <FaTrash className="text-red-500" />;
         if (action === 'Comment') return <FaComment className="text-slate-500" />;
@@ -134,6 +136,8 @@ const GlobalActivity = () => {
                             <option value="Enrolled">Enrolled</option>
                             <option value="Unenrolled">Unenrolled</option>
                             <option value="Status Updated">Status Updated</option>
+                            <option value="Marked for Revision">Marked for Revision</option>
+                            <option value="Removed from Revision">Removed from Revision</option>
                             <option value="Completed">Completed</option>
                             <option value="Started">Started</option>
                             <option value="Comment">Comment</option>
@@ -209,6 +213,8 @@ const GlobalActivity = () => {
                                                             log.action === 'Login' || log.action === 'Registered' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400' :
                                                             log.action === 'Comment' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' :
                                                             log.action === 'Note Updated' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                                            log.action === 'Marked for Revision' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' :
+                                                            log.action === 'Removed from Revision' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' :
                                                             log.action.includes('Deleted') || log.action === 'Unenrolled' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
                                                             log.action.includes('Added') || log.action.includes('Created') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' :
                                                             log.action.includes('Updated') ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400' :

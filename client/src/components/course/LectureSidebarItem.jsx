@@ -1,4 +1,4 @@
-import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaLock } from 'react-icons/fa';
+import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaLock, FaBookmark } from 'react-icons/fa';
 
 const LectureSidebarItem = ({
     lecture,
@@ -9,7 +9,8 @@ const LectureSidebarItem = ({
     customStatuses = [],
     completedStatus = 'Completed',
     sectionImportance = '',
-    peerStatus = null
+    peerStatus = null,
+    markedForRevision = false
 }) => {
     // Resolve lecture importance (own or inherited from section)
     const importance = lecture.importance === 'None' ? '' : (lecture.importance || sectionImportance);
@@ -76,6 +77,13 @@ const LectureSidebarItem = ({
                         className="w-2 h-2 rounded-full shrink-0"
                         title={`Peer: ${peerStatus}`}
                         style={{ backgroundColor: peerStatus === completedStatus ? '#a855f7' : peerStatus === 'In Progress' ? '#c084fc' : '#d4d4d8' }}
+                    />
+                )}
+                {markedForRevision && (
+                    <FaBookmark
+                        size={9}
+                        className={`shrink-0 ${isSelected ? 'text-amber-300' : 'text-amber-500'}`}
+                        title="Marked for revision"
                     />
                 )}
                 {isSelected && !showStatus && <FaPlayCircle className="text-[10px] opacity-70" />}

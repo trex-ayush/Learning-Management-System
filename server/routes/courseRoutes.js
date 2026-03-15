@@ -14,6 +14,7 @@ const {
     getEnrolledCourses,
     getCreatedCourses,
     updateLectureProgress,
+    toggleLectureRevision,
     getStudentActivity,
     getCourseProgresses,
     addComment,
@@ -61,6 +62,7 @@ router.post('/', protect, createCourseLimiter, createCourse);
 
 // Lecture routes (before :id routes to avoid conflicts)
 router.put('/lectures/:id/progress', protect, updateLectureProgress);
+router.put('/lectures/:id/toggle-revision', protect, toggleLectureRevision);
 router.post('/lectures/:id/comments', protect, addComment);
 router.get('/lectures/:id/comments', protect, getLectureComments);
 router.get('/lectures/:id', protect, getLecture);

@@ -39,6 +39,7 @@ const activityLogger = async (req, res, next) => {
             else if (url.includes('/enroll')) { action = 'Enrolled'; }
             else if (url.includes('/comments')) { action = 'Comment'; }
             else if (url.match(/\/lectures\/[a-f0-9]{24}\/progress/i)) { action = 'Status Updated'; }
+            else if (url.match(/\/lectures\/[a-f0-9]{24}\/toggle-revision/i)) { action = 'Revision Toggled'; }
             else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Lecture Updated'; }
             else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Lecture Deleted'; }
             else if (url.match(/\/sections\/[a-f0-9]{24}\/lectures/i)) { action = 'Lecture Added'; }
