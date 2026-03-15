@@ -27,6 +27,10 @@ const progressSchema = new mongoose.Schema({
         },
         completedAt: {
             type: Date
+        },
+        markedForRevision: {
+            type: Boolean,
+            default: false
         }
     }]
 }, {

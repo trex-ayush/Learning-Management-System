@@ -1577,6 +1577,47 @@ const getMyAnalytics = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Toggle markedForRevision for a lecture
+// @route   PUT /api/courses/lectures/:id/toggle-revision
+// @access  Private (enrolled student)
+const toggleLectureRevision = asyncHandler(async (req, res) => {
+    const lectureId = req.params.id;
+
+    const lecture = await Lecture.findById(lectureId);
+    if (!lecture) {
+        res.status(404);
+        throw new Error('Lecture not found');
+    }
+
+    const progress = await Progress.findOne({ student: req.user.id, course: lecture.course });
+    if (!progress) {
+        res.status(404);
+        throw new Error('Not enrolled in this course');
+    }
+
+    const lectureIndex = progress.completedLectures.findIndex(
+        (item) => item.lecture.toString() === lectureId
+    );
+
+    let markedForRevision;
+    if (lectureIndex > -1) {
+        markedForRevision = !progress.completedLectures[lectureIndex].markedForRevision;
+        progress.completedLectures[lectureIndex].markedForRevision = markedForRevision;
+    } else {
+        // Create entry if it doesn't exist yet
+        progress.completedLectures.push({
+            lecture: lectureId,
+            status: 'Not Started',
+            notes: '',
+            markedForRevision: true
+        });
+        markedForRevision = true;
+    }
+
+    await progress.save();
+    res.status(200).json({ markedForRevision });
+});
+
 module.exports = {
     createCourse,
     updateCourse,
@@ -1591,6 +1632,7 @@ module.exports = {
     getEnrolledCourses,
     getCreatedCourses,
     updateLectureProgress,
+    toggleLectureRevision,
     getStudentActivity,
     getCourseProgresses,
     addComment,

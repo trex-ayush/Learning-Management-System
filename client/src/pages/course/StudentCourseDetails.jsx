@@ -1,12 +1,13 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen, FaBookmark } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
 import StudentAnalytics from '../../components/course/StudentAnalytics';
 import ResourceManager from '../../components/course/ResourceManager';
 import AuthContext from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const StudentCourseDetails = () => {
     const { id } = useParams();
@@ -39,6 +40,9 @@ const StudentCourseDetails = () => {
     const [broadcastPage, setBroadcastPage] = useState(1);
     const [broadcastPagination, setBroadcastPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [unreadBroadcastCount, setUnreadBroadcastCount] = useState(0);
+
+    // Revision badge toggle (controls the count badge on the Revision tab)
+    const [showRevisionCountBadge, setShowRevisionCountBadge] = useState(true);
 
     // Quiz State
     const [quizzes, setQuizzes] = useState([]);
@@ -107,9 +111,13 @@ const StudentCourseDetails = () => {
         });
     }
 
+    // Count of lectures marked for revision
+    const revisionCount = Object.values(progressMap).filter(p => p.markedForRevision).length;
+
     // Tab definitions
     const tabs = [
         { id: 'content', label: 'Content', icon: FaBook },
+        { id: 'revision', label: 'Revision', icon: FaBookmark, badge: showRevisionCountBadge && revisionCount > 0 ? revisionCount : null },
         { id: 'quizzes', label: 'Quizzes', icon: FaClipboardList },
         { id: 'announcements', label: 'Announcements', icon: FaBullhorn },
         { id: 'resources', label: 'Resources', icon: FaFolderOpen },
@@ -169,7 +177,8 @@ const StudentCourseDetails = () => {
                     progressRes.data.completedLectures.forEach(item => {
                         map[item.lecture] = {
                             status: item.status,
-                            completedAt: item.completedAt
+                            completedAt: item.completedAt,
+                            markedForRevision: item.markedForRevision || false
                         };
                     });
                     setProgressMap(map);
@@ -638,6 +647,14 @@ const StudentCourseDetails = () => {
 
 
                                                                 <div className="flex items-center gap-2">
+                                                                    {/* Revision bookmark indicator */}
+                                                                    {progressMap[lec._id]?.markedForRevision && (
+                                                                        <FaBookmark
+                                                                            size={11}
+                                                                            className="text-amber-500 dark:text-amber-400 shrink-0"
+                                                                            title="Marked for revision"
+                                                                        />
+                                                                    )}
                                                                     {/* Peer progress indicator */}
                                                                     {selectedPeerId && peerLectureMap[lec._id] && (
                                                                         <span
@@ -674,6 +691,144 @@ const StudentCourseDetails = () => {
                     </div>
                 </div>
             </div >
+        );
+    };
+
+    const handleUnmarkRevision = async (lectureId, e) => {
+        e.stopPropagation();
+        try {
+            await api.put(`/courses/lectures/${lectureId}/toggle-revision`);
+            setProgressMap(prev => ({
+                ...prev,
+                [lectureId]: { ...prev[lectureId], markedForRevision: false }
+            }));
+            toast.success('Removed from revision list');
+        } catch {
+            toast.error('Failed to remove from revision list');
+        }
+    };
+
+    // Render Revision Tab
+    const renderRevisionTab = () => {
+        if (!isEnrolled) {
+            return (
+                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Enroll in this course to use the revision feature.</p>
+                </div>
+            );
+        }
+
+        // Collect all lectures marked for revision, preserving section context
+        const revisionLectures = [];
+        if (course?.sections) {
+            for (const section of course.sections) {
+                for (const lec of section.lectures || []) {
+                    if (progressMap[lec._id]?.markedForRevision) {
+                        revisionLectures.push({ lec, section });
+                    }
+                }
+            }
+        }
+
+        if (revisionLectures.length === 0) {
+            return (
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
+                    <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FaBookmark className="text-amber-400 dark:text-amber-500" size={20} />
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">No lectures marked for revision</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                        Open a lecture and click the <strong>Revision</strong> button to bookmark it here for later review.
+                    </p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 pb-3">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <FaBookmark className="text-amber-500" size={14} />
+                        Marked for Revision
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">({revisionLectures.length})</span>
+                    </h2>
+                    <button
+                        onClick={() => setShowRevisionCountBadge(prev => !prev)}
+                        title={showRevisionCountBadge ? 'Hide count badge' : 'Show count badge'}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            showRevisionCountBadge
+                                ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                    >
+                        <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            showRevisionCountBadge ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-slate-300 dark:border-slate-600'
+                        }`} />
+                        Badge {showRevisionCountBadge ? 'On' : 'Off'}
+                    </button>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 divide-y divide-gray-100 dark:divide-slate-800 overflow-hidden">
+                    {revisionLectures.map(({ lec, section }) => {
+                        const status = progressMap[lec._id]?.status || 'Not Started';
+                        const completionLabel = course.completedStatus || 'Completed';
+                        const statusColor = course?.lectureStatuses?.find(s => s.label === status)?.color || '#64748b';
+                        return (
+                            <div
+                                key={lec._id}
+                                onClick={() => navigate(`/course/${id}/lecture/${lec._id}`)}
+                                className="group p-4 flex items-center justify-between hover:bg-amber-50/50 dark:hover:bg-amber-900/10 cursor-pointer transition-colors"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="shrink-0">
+                                        {status !== 'Not Started' ? (
+                                            <div style={{ color: statusColor }}>
+                                                {status === completionLabel
+                                                    ? <FaCheckCircle size={16} />
+                                                    : <FaPlayCircle size={16} />
+                                                }
+                                            </div>
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                                                {lec.number}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="font-medium text-sm text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">{lec.title}</span>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500">{section.title}</span>
+                                            <span
+                                                className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
+                                                style={{
+                                                    backgroundColor: `${statusColor}20`,
+                                                    borderColor: `${statusColor}40`,
+                                                    color: statusColor
+                                                }}
+                                            >
+                                                {status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        onClick={(e) => handleUnmarkRevision(lec._id, e)}
+                                        title="Remove from revision list"
+                                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                                    >
+                                        <FaBookmark size={10} />
+                                        <span className="hidden sm:inline">Unmark</span>
+                                    </button>
+                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-slate-400 dark:text-slate-300 uppercase tracking-wider bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2 py-1 rounded-md">
+                                        Watch
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         );
     };
 
@@ -865,6 +1020,7 @@ const StudentCourseDetails = () => {
                                     const Icon = tab.icon;
                                     const isActive = activeTab === tab.id;
                                     const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
+                                    const showRevisionBadge = tab.id === 'revision' && tab.badge;
                                     return (
                                         <button
                                             key={tab.id}
@@ -879,6 +1035,11 @@ const StudentCourseDetails = () => {
                                             {showBadge && (
                                                 <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                                                     {unreadBroadcastCount > 99 ? '99+' : unreadBroadcastCount}
+                                                </span>
+                                            )}
+                                            {showRevisionBadge && (
+                                                <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                                    {tab.badge > 99 ? '99+' : tab.badge}
                                                 </span>
                                             )}
                                         </button>
@@ -905,6 +1066,7 @@ const StudentCourseDetails = () => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
                             const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
+                            const showRevisionBadge = tab.id === 'revision' && tab.badge;
                             return (
                                 <button
                                     key={tab.id}
@@ -920,6 +1082,11 @@ const StudentCourseDetails = () => {
                                     {showBadge && (
                                         <span className="absolute top-1 right-1/2 translate-x-3 bg-red-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
                                             {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
+                                        </span>
+                                    )}
+                                    {showRevisionBadge && (
+                                        <span className="absolute top-1 right-1/2 translate-x-3 bg-amber-500 text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                            {tab.badge > 9 ? '9+' : tab.badge}
                                         </span>
                                     )}
                                 </button>
@@ -948,6 +1115,7 @@ const StudentCourseDetails = () => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
                             const showBadge = tab.id === 'announcements' && unreadBroadcastCount > 0;
+                            const showRevisionBadge = tab.id === 'revision' && tab.badge;
                             return (
                                 <button
                                     key={tab.id}
@@ -962,6 +1130,11 @@ const StudentCourseDetails = () => {
                                     {showBadge && (
                                         <span className="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
                                             {unreadBroadcastCount > 9 ? '9+' : unreadBroadcastCount}
+                                        </span>
+                                    )}
+                                    {showRevisionBadge && (
+                                        <span className="absolute top-1 right-1 bg-amber-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                            {tab.badge > 9 ? '9+' : tab.badge}
                                         </span>
                                     )}
                                 </button>
@@ -992,6 +1165,7 @@ const StudentCourseDetails = () => {
             {/* Tab Content */}
             <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
                 {activeTab === 'content' && renderContentTab()}
+                {activeTab === 'revision' && renderRevisionTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}
                 {activeTab === 'announcements' && renderAnnouncementsTab()}
                 {activeTab === 'resources' && <ResourceManager courseId={id} userId={user?._id || user?.id} />}

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUserGraduate, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUserGraduate, FaCheckCircle, FaSearch, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 import StatusSelector from '../../components/ui/StatusSelector';
 import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
@@ -126,7 +126,8 @@ const CourseView = () => {
                         map[item.lecture] = {
                             status: item.status,
                             notes: item.notes,
-                            completedAt: item.completedAt
+                            completedAt: item.completedAt,
+                            markedForRevision: item.markedForRevision || false
                         };
                     });
                     setProgressMap(map);
@@ -271,6 +272,28 @@ const CourseView = () => {
         } catch (err) {
             console.error("Failed to update progress", err);
             toast.error('Failed to save progress');
+        }
+    };
+
+    const handleToggleRevision = async () => {
+        if (!selectedLecture) return;
+        if (!isEnrolled) {
+            toast.error("You are in Preview Mode (Not Enrolled). Cannot mark for revision.");
+            return;
+        }
+        try {
+            const res = await api.put(`/courses/lectures/${selectedLecture._id}/toggle-revision`);
+            const { markedForRevision } = res.data;
+            setProgressMap(prev => ({
+                ...prev,
+                [selectedLecture._id]: {
+                    ...prev[selectedLecture._id],
+                    markedForRevision
+                }
+            }));
+            toast.success(markedForRevision ? 'Marked for revision!' : 'Removed from revision list');
+        } catch (err) {
+            toast.error('Failed to update revision mark');
         }
     };
 
@@ -558,6 +581,7 @@ const CourseView = () => {
                                                         completedStatus={course?.completedStatus}
                                                         sectionImportance={section.importance}
                                                         peerStatus={selectedPeerId ? (peerLectureMap[lec._id]?.status || 'Not Started') : null}
+                                                        markedForRevision={progressMap[lec._id]?.markedForRevision || false}
                                                     />
                                                 );
                                             })}
@@ -722,6 +746,23 @@ const CourseView = () => {
                                                 customStatuses={course?.lectureStatuses}
                                             />
                                         </div>
+                                        {isEnrolled && (
+                                            <button
+                                                onClick={handleToggleRevision}
+                                                title={progressMap[selectedLecture._id]?.markedForRevision ? 'Remove from revision list' : 'Mark for revision'}
+                                                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
+                                                    progressMap[selectedLecture._id]?.markedForRevision
+                                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                                                        : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-600 dark:hover:text-amber-400'
+                                                }`}
+                                            >
+                                                {progressMap[selectedLecture._id]?.markedForRevision
+                                                    ? <FaBookmark size={12} />
+                                                    : <FaRegBookmark size={12} />
+                                                }
+                                                <span className="hidden sm:inline">Revision</span>
+                                            </button>
+                                        )}
                                         <div className="flex items-center gap-2 shrink-0">
                                             <button
                                                 onClick={handlePrevLecture}
