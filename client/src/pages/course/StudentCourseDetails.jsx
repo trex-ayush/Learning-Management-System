@@ -51,6 +51,7 @@ const StudentCourseDetails = () => {
     // Peer Progress State
     const [showPeerSelector, setShowPeerSelector] = useState(false);
     const [peerList, setPeerList] = useState([]);
+    const [peerListLoading, setPeerListLoading] = useState(false);
     const [peerKeyword, setPeerKeyword] = useState('');
     const [debouncedPeerKeyword, setDebouncedPeerKeyword] = useState('');
     const [selectedPeerId, setSelectedPeerId] = useState(null);
@@ -68,9 +69,11 @@ const StudentCourseDetails = () => {
     // Fetch peer list when selector opens
     useEffect(() => {
         if (showPeerSelector && course?.allowPeerProgress) {
+            setPeerListLoading(true);
             api.get(`/courses/${id}/peers?keyword=${debouncedPeerKeyword}`)
                 .then(res => setPeerList(res.data || []))
-                .catch(() => setPeerList([]));
+                .catch(() => setPeerList([]))
+                .finally(() => setPeerListLoading(false));
         }
     }, [showPeerSelector, debouncedPeerKeyword]);
 
@@ -429,7 +432,12 @@ const StudentCourseDetails = () => {
                                             </div>
                                         </div>
                                         <div className="max-h-48 overflow-y-auto">
-                                            {peerList.length > 0 ? peerList.map(s => (
+                                            {peerListLoading ? (
+                                                <div className="flex items-center justify-center py-5 gap-2 text-xs text-slate-400">
+                                                    <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                                                    Loading students...
+                                                </div>
+                                            ) : peerList.length > 0 ? peerList.map(s => (
                                                 <button
                                                     key={s._id}
                                                     onClick={() => { setSelectedPeerId(s._id); setSelectedPeerName(s.name); setShowPeerSelector(false); }}
@@ -441,7 +449,7 @@ const StudentCourseDetails = () => {
                                                     <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</span>
                                                 </button>
                                             )) : (
-                                                <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No peers found</div>
+                                                <div className="px-3 py-4 text-xs text-slate-400 text-center italic">No students found</div>
                                             )}
                                         </div>
                                     </div>

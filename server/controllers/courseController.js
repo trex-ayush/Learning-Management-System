@@ -1615,6 +1615,14 @@ const toggleLectureRevision = asyncHandler(async (req, res) => {
     }
 
     await progress.save();
+
+    res.locals.activity = {
+        course: lecture.course,
+        lecture: lectureId,
+        action: markedForRevision ? 'Marked for Revision' : 'Removed from Revision',
+        details: `${markedForRevision ? 'Marked' : 'Removed'} "${lecture.title}" ${markedForRevision ? 'for' : 'from'} revision`
+    };
+
     res.status(200).json({ markedForRevision });
 });
 

@@ -12,7 +12,9 @@ import {
     FaUserPlus,
     FaComment,
     FaEnvelope,
-    FaUser
+    FaUser,
+    FaBookmark,
+    FaBookOpen
 } from 'react-icons/fa';
 import Pagination from '../../components/ui/Pagination';
 
@@ -51,6 +53,8 @@ const StudentDetail = () => {
             case 'Started': return <FaPlayCircle className="text-blue-500" />;
             case 'In Progress': return <FaClock className="text-amber-500" />;
             case 'Note Updated': return <FaStickyNote className="text-purple-500" />;
+            case 'Marked for Revision': return <FaBookmark className="text-amber-500" />;
+            case 'Removed from Revision': return <FaBookOpen className="text-slate-400" />;
             case 'Enrolled': return <FaUserPlus className="text-indigo-500" />;
             case 'Comment': return <FaComment className="text-slate-500" />;
             case 'POST': return <FaCheckCircle className="text-green-600" />;
@@ -67,6 +71,8 @@ const StudentDetail = () => {
             case 'In Progress': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400';
             case 'Enrolled': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400';
             case 'Note Updated': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
+            case 'Marked for Revision': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400';
+            case 'Removed from Revision': return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
             case 'Comment': return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
             default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
         }
