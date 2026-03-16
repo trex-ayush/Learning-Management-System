@@ -389,13 +389,15 @@ const CourseManage = () => {
                 await api.put(`/courses/lectures/${editingLectureId}`, newLecture);
             } else {
                 if (!activeSectionId) return alert('Select a section first');
-                await api.post(`/courses/${id}/sections/${activeSectionId}/lectures`, newLecture);
+                const { data: createdLecture } = await api.post(`/courses/${id}/sections/${activeSectionId}/lectures`, newLecture);
                 if (lectureBroadcast.enabled) {
                     const sectionTitle = course?.sections?.find(s => s._id === activeSectionId)?.title || '';
-                    const broadcastMsg = lectureBroadcast.message || `🎬 New lecture added: "${newLecture.title}"${sectionTitle ? ` in section "${sectionTitle}"` : ''}`;
+                    const lectureLink = createdLecture?._id ? `${window.location.origin}/course/${id}/lecture/${createdLecture._id}` : '';
+                    const defaultMsg = `🎬 New lecture added: "${newLecture.title}"${sectionTitle ? ` in "${sectionTitle}"` : ''}${lectureLink ? `\n🔗 ${lectureLink}` : ''}`;
+                    const broadcastMsg = lectureBroadcast.message + (lectureLink ? `\n🔗 ${lectureLink}` : '');
                     await api.post(`/broadcasts/course/${id}`, {
                         title: `New Lecture: ${newLecture.title}`,
-                        message: broadcastMsg,
+                        message: broadcastMsg || defaultMsg,
                         priority: lectureBroadcast.priority
                     }).catch(() => toast.error('Lecture saved but broadcast failed'));
                 }

@@ -248,7 +248,11 @@ const BroadcastList = ({
 
                                     {/* Message - compact */}
                                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 mb-2 pl-3.5">
-                                        {broadcast.message}
+                                        {broadcast.message.split(/(\bhttps?:\/\/\S+)/g).map((part, i) =>
+                                            /^https?:\/\//.test(part)
+                                                ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline break-all" onClick={e => e.stopPropagation()}>{part}</a>
+                                                : part
+                                        )}
                                     </p>
 
                                     {/* Footer - inline */}
