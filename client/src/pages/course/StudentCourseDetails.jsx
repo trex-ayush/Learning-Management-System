@@ -501,7 +501,7 @@ const StudentCourseDetails = () => {
                                         {/* Section Header (Accordion) */}
                                         <div
                                             onClick={() => toggleSection(section._id)}
-                                            className="bg-gray-50/50 dark:bg-slate-950/50 px-5 py-4 border-b border-gray-100 dark:border-slate-800 transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/80 flex flex-col gap-3"
+                                            className="bg-gray-50/50 dark:bg-slate-950/40 px-5 py-4 border-b border-gray-100 dark:border-white/5 transition-all cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/60 flex flex-col gap-3"
                                         >
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-semibold text-sm text-slate-800 dark:text-white flex items-center gap-2">
@@ -526,9 +526,9 @@ const StudentCourseDetails = () => {
 
                                             {/* Section Progress Bar */}
                                             <div className="flex items-center gap-3">
-                                                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="flex-1 h-1.5 bg-gray-200 dark:border-white/5 dark:bg-slate-800 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-green-500 rounded-full transition-all duration-500"
+                                                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                                                         style={{ width: `${secPercent}%` }}
                                                     ></div>
                                                 </div>
@@ -571,8 +571,8 @@ const StudentCourseDetails = () => {
                                                                         navigate(`/course/${id}/lecture/${lec._id}`);
                                                                     }
                                                                 }}
-                                                                className={`group transition-colors p-4 flex items-center justify-between ${isEnrolled || isPreview
-                                                                    ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer'
+                                                                className={`group transition-all duration-200 p-4 flex items-center justify-between ${isEnrolled || isPreview
+                                                                    ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer'
                                                                     : 'opacity-60 cursor-not-allowed bg-slate-50/50 dark:bg-slate-900/50'
                                                                     }`}
                                                             >
@@ -601,7 +601,7 @@ const StudentCourseDetails = () => {
                                                                         )}
                                                                     </div>
                                                                     <div>
-                                                                        <span className="font-medium text-sm text-slate-900 dark:text-white group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                                                                        <span className="font-medium text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-all duration-200 inline-block group-hover:translate-x-1">
                                                                             {lec.title}
                                                                         </span>
                                                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -720,8 +720,12 @@ const StudentCourseDetails = () => {
     const renderRevisionTab = () => {
         if (!isEnrolled) {
             return (
-                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Enroll in this course to use the revision feature.</p>
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <FaLock className="text-slate-300 dark:text-slate-600" size={32} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Enroll to Start Revising</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">Join this course to bookmark key lectures and build your personal study guide.</p>
                 </div>
             );
         }
@@ -740,12 +744,12 @@ const StudentCourseDetails = () => {
 
         if (revisionLectures.length === 0) {
             return (
-                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
-                    <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FaBookmark className="text-amber-400 dark:text-amber-500" size={20} />
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <FaBookmark className="text-amber-400 dark:text-amber-500" size={32} />
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">No lectures marked for revision</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No lectures marked for revision</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                         Open a lecture and click the <strong>Revision</strong> button to bookmark it here for later review.
                     </p>
                 </div>
@@ -844,20 +848,21 @@ const StudentCourseDetails = () => {
     const renderQuizzesTab = () => {
         if (!quizzesLoaded) {
             return (
-                <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 dark:border-white"></div>
+                <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                    <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-medium text-slate-500 animate-pulse">Loading Quizzes...</p>
                 </div>
             );
         }
 
         if (quizzes.length === 0) {
             return (
-                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <FaClipboardList className="text-slate-400 dark:text-slate-500" />
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <FaClipboardList className="text-indigo-400 dark:text-indigo-500/80" size={32} />
                     </div>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">No Quizzes Available</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Quizzes will appear here once added by the instructor.</p>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No Quizzes Yet</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">The instructor hasn't added any quizzes to this course yet. Check back later to test your knowledge.</p>
                 </div>
             );
         }
@@ -941,7 +946,7 @@ const StudentCourseDetails = () => {
                                                 {canTake && (
                                                     <button
                                                         onClick={() => navigate(`/course/${id}/quiz/${quiz._id}?retake=true`)}
-                                                        className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 transition-colors flex items-center gap-1"
+                                                        className="px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1"
                                                     >
                                                         <FaRedo size={10} /> Retake
                                                     </button>
@@ -951,12 +956,12 @@ const StudentCourseDetails = () => {
                                             <button
                                                 onClick={() => navigate(`/course/${id}/quiz/${quiz._id}`)}
                                                 disabled={!canTake}
-                                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${canTake
-                                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
+                                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${canTake
+                                                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
                                                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                                                     }`}
                                             >
-                                                {canTake ? (quiz.attemptCount > 0 ? 'Retry' : 'Start Quiz') : 'No Attempts Left'}
+                                                {canTake ? (quiz.attemptCount > 0 ? 'Retry Quiz' : 'Start Quiz') : 'No Attempts Left'}
                                             </button>
                                         )}
                                     </div>
@@ -994,14 +999,19 @@ const StudentCourseDetails = () => {
         );
     };
 
-    if (!course) return <div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading Course...</div>;
+    if (!course) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-8 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-medium text-slate-500 animate-pulse">Loading Course Data...</p>
+        </div>
+    );
 
     return (
-        <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
+        <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
-                <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+                <div className="w-full px-4 md:px-8 xl:px-12 py-3 md:py-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                         <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">{course.title}</h1>
                         <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{course.description}</p>
@@ -1013,7 +1023,7 @@ const StudentCourseDetails = () => {
                                 navigate(`/course/${id}/lecture/${resumeLec._id}`);
                             }
                         }}
-                        className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                        className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all"
                     >
                         <FaPlayCircle size={14} /> {hasAnyProgress() ? 'Continue' : 'Start'}
                     </button>
@@ -1021,9 +1031,9 @@ const StudentCourseDetails = () => {
 
                 {/* Horizontal Tabs (when horizontal layout) */}
                 {tabLayout === 'horizontal' && (
-                    <div className="container mx-auto px-3 sm:px-4">
+                    <div className="w-full px-4 md:px-8 xl:px-12">
                         <div className="flex items-center gap-0.5 border-t border-gray-100 dark:border-slate-800">
-                            <div className="flex flex-1">
+                            <div className="flex flex-1 overflow-x-auto scrollbar-hide">
                                 {tabs.map((tab) => {
                                     const Icon = tab.icon;
                                     const isActive = activeTab === tab.id;
@@ -1033,7 +1043,7 @@ const StudentCourseDetails = () => {
                                         <button
                                             key={tab.id}
                                             onClick={() => handleTabChange(tab.id)}
-                                            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] ${isActive
+                                            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] whitespace-nowrap ${isActive
                                                 ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
                                                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                                 }`}
@@ -1171,7 +1181,7 @@ const StudentCourseDetails = () => {
             )}
 
             {/* Tab Content */}
-            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+            <div className="w-full px-4 md:px-8 xl:px-12 py-4 sm:py-6">
                 {activeTab === 'content' && renderContentTab()}
                 {activeTab === 'revision' && renderRevisionTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}

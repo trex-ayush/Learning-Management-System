@@ -45,7 +45,7 @@ const VideoPlayer = ({ url, onProgress, onDuration, onEnded }) => {
             <PlayerWrapper>
                 <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center relative">
                     <div className="text-center p-6 z-10">
-                        <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-lg shadow-indigo-500/30">
                             <FaPlayCircle />
                         </div>
                         <h3 className="text-white font-bold text-lg mb-2">Telegram Video</h3>
@@ -56,7 +56,7 @@ const VideoPlayer = ({ url, onProgress, onDuration, onEnded }) => {
                             href={url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-indigo-500/30"
                         >
                             View on Telegram
                         </a>

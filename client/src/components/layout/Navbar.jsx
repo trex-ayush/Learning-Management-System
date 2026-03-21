@@ -143,7 +143,7 @@ const Navbar = () => {
     return (
         <>
             <nav className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md transition-colors duration-300">
-                <div className="container mx-auto px-4 h-16 flex justify-between items-center">
+                <div className="w-full px-4 md:px-8 h-16 flex justify-between items-center">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2 group">
                         <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-blue-600 flex items-center justify-center text-white transition-colors duration-300">

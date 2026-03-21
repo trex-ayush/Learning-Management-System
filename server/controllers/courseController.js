@@ -1465,7 +1465,7 @@ const getMyAnalytics = asyncHandler(async (req, res) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const activities = await Activity.find({
-        student: studentId,
+        user: studentId,
         course: courseId,
         createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: 1 });
@@ -1554,7 +1554,7 @@ const getMyAnalytics = asyncHandler(async (req, res) => {
 
     // Recent activity (last 10)
     const recentActivity = await Activity.find({
-        student: studentId,
+        user: studentId,
         course: courseId
     }).sort({ createdAt: -1 }).limit(10).select('action details createdAt');
 
