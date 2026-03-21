@@ -168,7 +168,8 @@
         padding-left: 60px;
         transition: padding-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .glass-content-expanded {
+    .glass-content-expanded,
+    body:has(.glass-sidebar:hover) .glass-content-area {
         padding-left: 180px;
     }
 

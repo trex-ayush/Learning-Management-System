@@ -10,7 +10,7 @@ const FloatingAIChatButton = () => {
     return (
         <Link
             to="/ai-chat"
-            className="fixed bottom-20 md:bottom-6 right-6 z-50 group"
+            className="fixed bottom-24 md:bottom-10 right-6 md:right-10 z-50 group"
             title="AI Chat Assistant"
         >
             <div className="relative">
@@ -18,7 +18,7 @@ const FloatingAIChatButton = () => {
                 <div className="absolute inset-0 bg-purple-500 rounded-full animate-ping opacity-20" />
 
                 {/* Button */}
-                <div className="relative w-14 h-14 bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 active:scale-95">
+                <div className="relative w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 active:scale-95">
                     <FaRobot className="text-xl" />
                 </div>
 

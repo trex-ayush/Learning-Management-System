@@ -163,8 +163,9 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-slate-200 dark:border-slate-700 border-t-slate-600 dark:border-t-slate-300 rounded-full animate-spin" />
+            <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium text-slate-500 animate-pulse">Loading Resources...</p>
             </div>
         );
     }
@@ -198,7 +199,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null }) => {
                     {canUpload && (
                         <button
                             onClick={() => setShowUploadForm(!showUploadForm)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-xs font-semibold hover:opacity-90 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all"
                         >
                             <FaUpload size={11} /> Upload
                         </button>
@@ -280,7 +281,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null }) => {
                             <button
                                 type="submit"
                                 disabled={uploading}
-                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[11px] font-semibold transition-colors disabled:opacity-50 shrink-0"
+                                className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-md text-[11px] font-semibold transition-all shadow-sm disabled:opacity-50 shrink-0"
                             >
                                 {uploading ? 'Uploading...' : 'Upload'}
                             </button>
@@ -317,13 +318,13 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null }) => {
 
             {/* Resource List */}
             {filteredResources.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800">
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <FaFileAlt className="text-slate-400" />
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <FaFileAlt className="text-indigo-400 dark:text-indigo-500/80" size={32} />
                     </div>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">No Resources Yet</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        {canUpload ? 'Upload notes, images, or share links for the class.' : 'Resources will appear here when shared by the teacher.'}
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No Resources Yet</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                        {canUpload ? 'Upload notes, images, or share links to help your classmates.' : 'Study materials shared by the instructor will appear here.'}
                     </p>
                 </div>
             ) : (

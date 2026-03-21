@@ -47,6 +47,7 @@ const CourseView = () => {
     const [isSidebarVisible, setIsSidebarVisible] = useState(true); // Desktop sidebar toggle - open by default
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion'
 
+
     // Peer progress state
     const [showPeerSelector, setShowPeerSelector] = useState(false);
     const [peerList, setPeerList] = useState([]);
@@ -376,7 +377,7 @@ const CourseView = () => {
 
 
     return (
-        <div className="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 min-h-screen">
+        <div className="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* Mobile Header */}
             <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-3 flex items-center justify-between z-50 sticky top-0">
@@ -408,6 +409,7 @@ const CourseView = () => {
                         flex flex-col transform transition-all duration-300
                         ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0 w-[280px]'}
                         ${!isSidebarVisible ? 'lg:w-16' : 'lg:w-80'}
+
                     `}>
                     <div className={`p-3 bg-white dark:bg-slate-900 sticky top-0 z-10 hidden lg:flex items-center border-b border-gray-100 dark:border-slate-800 ${!isSidebarVisible ? 'justify-center' : 'justify-between'}`}>
                         {isSidebarVisible ? (
@@ -678,21 +680,21 @@ const CourseView = () => {
                                             </div>
                                         )
                                     ) : (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 p-6 text-center">
-                                            <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500">
-                                                <FaLock size={24} />
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xl z-10 p-6 text-center">
+                                            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-6 text-white/80 shadow-2xl backdrop-blur-md border border-white/20">
+                                                <FaLock size={32} />
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Content Locked</h3>
-                                            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md text-sm">
-                                                This lecture is part of the full course. Enroll now to unlock all content.
+                                            <h3 className="text-2xl font-bold text-white mb-3 tracking-wide">Premium Content Locked</h3>
+                                            <p className="text-slate-300 mb-8 max-w-md text-sm leading-relaxed">
+                                                This lecture is part of the full course experience. Enroll now to unlock all high-quality modules.
                                             </p>
                                             {!user ? (
-                                                <button onClick={() => navigate('/login')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm">
+                                                <button onClick={() => navigate('/login')} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-indigo-500/30 text-sm hover:-translate-y-0.5">
                                                     Login to Enroll
                                                 </button>
                                             ) : (
-                                                <button onClick={() => navigate(`/marketplace/course/${id}`)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-indigo-500/30 text-sm">
-                                                    View Course
+                                                <button onClick={() => navigate(`/marketplace/course/${id}`)} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-indigo-500/30 text-sm hover:-translate-y-0.5">
+                                                    Unlock Full Course
                                                 </button>
                                             )}
                                         </div>
@@ -775,7 +777,7 @@ const CourseView = () => {
                                             <button
                                                 onClick={handleNextLecture}
                                                 disabled={getFlattenedLectures().findIndex(l => l._id === selectedLecture._id) === getFlattenedLectures().length - 1}
-                                                className="group flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:scale-100 disabled:cursor-not-allowed transition-all"
+                                                className="group flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-20 disabled:scale-100 disabled:cursor-not-allowed transition-all"
                                             >
                                                 <span>Next</span>
                                                 <FaStepForward className="group-hover:translate-x-0.5 transition-transform text-xs" />

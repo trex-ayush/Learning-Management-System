@@ -35,44 +35,48 @@ const activityLogger = async (req, res, next) => {
             else if (url.includes('/register')) { action = 'Registered'; details = 'User registered'; }
             else if (url.includes('/updatepassword')) { action = 'Password Updated'; details = 'User updated password'; }
             // Course management
-            else if (url.includes('/enroll') && req.method === 'DELETE') { action = 'Unenrolled'; }
-            else if (url.includes('/enroll')) { action = 'Enrolled'; }
-            else if (url.includes('/comments')) { action = 'Comment'; }
-            else if (url.match(/\/lectures\/[a-f0-9]{24}\/progress/i)) { action = 'Status Updated'; }
-            else if (url.match(/\/lectures\/[a-f0-9]{24}\/toggle-revision/i)) { action = 'Revision Toggled'; }
-            else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Lecture Updated'; }
-            else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Lecture Deleted'; }
-            else if (url.match(/\/sections\/[a-f0-9]{24}\/lectures/i)) { action = 'Lecture Added'; }
-            else if (url.match(/\/sections\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Section Updated'; }
-            else if (url.match(/\/sections\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Section Deleted'; }
-            else if (url.match(/\/sections$/i) && req.method === 'POST') { action = 'Section Added'; }
-            else if (url.match(/\/courses\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Course Updated'; }
-            else if (url.match(/\/courses\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Course Deleted'; }
-            else if (url.match(/\/courses$/i) && req.method === 'POST') { action = 'Course Created'; }
+            else if (url.includes('/enroll') && req.method === 'DELETE') { action = 'Unenrolled'; details = 'Student removed from course'; }
+            else if (url.includes('/enroll')) { action = 'Enrolled'; details = 'Enrolled in course'; }
+            else if (url.includes('/comments')) { action = 'Comment'; details = 'Added a comment on a lecture'; }
+            else if (url.match(/\/lectures\/[a-f0-9]{24}\/progress/i)) { action = 'Status Updated'; details = `Lecture progress updated`; }
+            else if (url.match(/\/lectures\/[a-f0-9]{24}\/toggle-revision/i)) { action = 'Revision Toggled'; details = 'Toggled revision bookmark on a lecture'; }
+            else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Lecture Updated'; details = `Updated lecture${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.match(/\/lectures\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Lecture Deleted'; details = 'Deleted a lecture'; }
+            else if (url.match(/\/sections\/[a-f0-9]{24}\/lectures/i)) { action = 'Lecture Added'; details = `Added new lecture${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.match(/\/sections\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Section Updated'; details = `Updated section${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.match(/\/sections\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Section Deleted'; details = 'Deleted a section'; }
+            else if (url.match(/\/sections$/i) && req.method === 'POST') { action = 'Section Added'; details = `Added new section${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.match(/\/courses\/[a-f0-9]{24}$/i) && req.method === 'PUT') { action = 'Course Updated'; details = 'Updated course settings'; }
+            else if (url.match(/\/courses\/[a-f0-9]{24}$/i) && req.method === 'DELETE') { action = 'Course Deleted'; details = 'Deleted a course'; }
+            else if (url.match(/\/courses$/i) && req.method === 'POST') { action = 'Course Created'; details = `Created new course${eventData.title ? ': ' + eventData.title : ''}`; }
             // Teachers
-            else if (url.includes('/teachers') && req.method === 'POST') { action = 'Teacher Added'; }
-            else if (url.includes('/teachers/leave')) { action = 'Teacher Left'; }
-            else if (url.includes('/teachers') && req.method === 'DELETE') { action = 'Teacher Removed'; }
-            else if (url.includes('/teachers') && req.method === 'PUT') { action = 'Teacher Updated'; }
+            else if (url.includes('/teachers') && req.method === 'POST') { action = 'Teacher Added'; details = 'Added a teacher to the course'; }
+            else if (url.includes('/teachers/leave')) { action = 'Teacher Left'; details = 'Left the course as teacher'; }
+            else if (url.includes('/teachers') && req.method === 'DELETE') { action = 'Teacher Removed'; details = 'Removed a teacher from the course'; }
+            else if (url.includes('/teachers') && req.method === 'PUT') { action = 'Teacher Updated'; details = 'Updated teacher permissions'; }
             // Broadcasts
-            else if (url.includes('/broadcasts') && url.includes('/mark-read')) { action = 'Broadcast Read'; }
-            else if (url.includes('/broadcasts') && url.includes('/settings')) { action = 'Broadcast Settings'; }
-            else if (url.includes('/broadcasts') && req.method === 'POST') { action = 'Broadcast Created'; }
-            else if (url.includes('/broadcasts') && req.method === 'PUT') { action = 'Broadcast Updated'; }
-            else if (url.includes('/broadcasts') && req.method === 'DELETE') { action = 'Broadcast Deleted'; }
+            else if (url.includes('/broadcasts') && url.includes('/mark-read')) { action = 'Broadcast Read'; details = 'Marked announcements as read'; }
+            else if (url.includes('/broadcasts') && url.includes('/settings')) { action = 'Broadcast Settings'; details = 'Updated broadcast settings'; }
+            else if (url.includes('/broadcasts') && req.method === 'POST') { action = 'Broadcast Created'; details = `Sent announcement${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.includes('/broadcasts') && req.method === 'PUT') { action = 'Broadcast Updated'; details = 'Updated an announcement'; }
+            else if (url.includes('/broadcasts') && req.method === 'DELETE') { action = 'Broadcast Deleted'; details = 'Deleted an announcement'; }
             // Quizzes
-            else if (url.includes('/quizzes') && url.includes('/start')) { action = 'Quiz Started'; }
-            else if (url.includes('/quizzes') && url.includes('/submit')) { action = 'Quiz Submitted'; }
-            else if (url.includes('/quizzes') && req.method === 'POST') { action = 'Quiz Created'; }
-            else if (url.includes('/quizzes') && req.method === 'PUT') { action = 'Quiz Updated'; }
-            else if (url.includes('/quizzes') && req.method === 'DELETE') { action = 'Quiz Deleted'; }
+            else if (url.includes('/quizzes') && url.includes('/start')) { action = 'Quiz Started'; details = 'Started a quiz attempt'; }
+            else if (url.includes('/quizzes') && url.includes('/submit')) { action = 'Quiz Submitted'; details = 'Submitted a quiz'; }
+            else if (url.includes('/quizzes') && req.method === 'POST') { action = 'Quiz Created'; details = `Created new quiz${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.includes('/quizzes') && req.method === 'PUT') { action = 'Quiz Updated'; details = 'Updated a quiz'; }
+            else if (url.includes('/quizzes') && req.method === 'DELETE') { action = 'Quiz Deleted'; details = 'Deleted a quiz'; }
+            // Resources
+            else if (url.includes('/resources') && url.includes('/toggle-student-uploads')) { action = 'Resource Settings'; details = 'Toggled student upload permission'; }
+            else if (url.includes('/resources') && req.method === 'POST') { action = 'Resource Uploaded'; details = `Uploaded a resource${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.includes('/resources') && req.method === 'DELETE') { action = 'Resource Deleted'; details = 'Deleted a resource'; }
             // Admin actions
-            else if (url.includes('/warn')) { action = 'User Warned'; }
-            else if (url.includes('/block') && url.includes('/users')) { action = 'User Blocked'; }
-            else if (url.includes('/unblock') && url.includes('/users')) { action = 'User Unblocked'; }
-            else if (url.includes('/role')) { action = 'Role Changed'; }
-            else if (url.includes('/block') && url.includes('/courses')) { action = 'Course Blocked'; }
-            else if (url.includes('/unblock') && url.includes('/courses')) { action = 'Course Unblocked'; }
+            else if (url.includes('/warn')) { action = 'User Warned'; details = 'Sent a warning to a user'; }
+            else if (url.includes('/block') && url.includes('/users')) { action = 'User Blocked'; details = 'Blocked a user'; }
+            else if (url.includes('/unblock') && url.includes('/users')) { action = 'User Unblocked'; details = 'Unblocked a user'; }
+            else if (url.includes('/role')) { action = 'Role Changed'; details = 'Changed a user role'; }
+            else if (url.includes('/block') && url.includes('/courses')) { action = 'Course Blocked'; details = 'Blocked a course'; }
+            else if (url.includes('/unblock') && url.includes('/courses')) { action = 'Course Unblocked'; details = 'Unblocked a course'; }
 
             // Extract lecture ID from URL pattern /lectures/:id
             const lectureMatch = url.match(/\/lectures\/([a-f0-9]{24})/i);
@@ -85,7 +89,7 @@ const activityLogger = async (req, res, next) => {
                 method: req.method,
                 url: req.originalUrl,
                 data: eventData,
-                details: details || `Request to ${req.originalUrl}`
+                details: details || action || `${req.method} action performed`
             };
 
             if (lectureId) logData.lecture = lectureId;

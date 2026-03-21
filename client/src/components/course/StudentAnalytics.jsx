@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { FaCheckCircle, FaBook, FaClipboardList, FaTrophy, FaClock, FaExclamationTriangle, FaChartLine, FaFire, FaBullseye } from 'react-icons/fa';
+import { FaCheckCircle, FaBook, FaClipboardList, FaTrophy, FaClock, FaChartLine, FaFire, FaBullseye, FaHistory, FaLayerGroup, FaCheck, FaPlay, FaPen, FaBookmark, FaBullhorn } from 'react-icons/fa';
 import {
-    BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+    XAxis, YAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 
 const STATUS_COLORS = {
     'Completed': '#10b981',
-    'In Progress': '#3b82f6',
-    'Not Started': '#e2e8f0',
+    'In Progress': '#6366f1',
+    'Not Started': '#475569',
 };
 const FALLBACK_COLORS = ['#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444'];
 
@@ -35,7 +35,7 @@ const StudentAnalytics = ({ courseId }) => {
     if (loading) return (
         <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-slate-200 dark:border-slate-700 border-t-slate-600 dark:border-t-slate-300 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
                 <p className="text-xs text-slate-400">Loading analytics...</p>
             </div>
         </div>
@@ -58,16 +58,16 @@ const StudentAnalytics = ({ courseId }) => {
         color: STATUS_COLORS[name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]
     }));
 
-    // Progress ring params
-    const radius = 58;
+    const totalLectures = overview.totalLectures;
+    const radius = 54;
     const circumference = 2 * Math.PI * radius;
     const strokeDash = (overview.overallPercent / 100) * circumference;
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (!active || !payload?.length) return null;
         return (
-            <div className="bg-slate-900 dark:bg-slate-700 text-white px-3 py-1.5 rounded-lg shadow-xl text-[11px] font-medium">
-                {label && <p className="text-slate-300 text-[10px] mb-0.5">{label}</p>}
+            <div className="bg-slate-900 dark:bg-slate-700 text-white px-3 py-2 rounded-lg shadow-xl text-[11px] font-medium border border-white/10">
+                {label && <p className="text-slate-400 text-[10px] mb-0.5">{label}</p>}
                 {payload.map((p, i) => (
                     <p key={i}>{p.name || 'Value'}: <span className="font-bold">{p.value}</span></p>
                 ))}
@@ -75,62 +75,79 @@ const StudentAnalytics = ({ courseId }) => {
         );
     };
 
+    const getActivityConfig = (action) => {
+        if (action?.includes('Completed')) return { icon: FaCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' };
+        if (action?.includes('Started') || action?.includes('In Progress')) return { icon: FaPlay, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' };
+        if (action?.includes('Quiz')) return { icon: FaClipboardList, color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-500/10' };
+        if (action?.includes('Note')) return { icon: FaPen, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' };
+        if (action?.includes('Revision')) return { icon: FaBookmark, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-500/10' };
+        if (action?.includes('Broadcast') || action?.includes('Lecture Added')) return { icon: FaBullhorn, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10' };
+        return { icon: FaChartLine, color: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800' };
+    };
+
     return (
-        <div className="space-y-5">
-            {/* Hero: Progress Ring + Key Stats */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-                    {/* Progress Ring */}
-                    <div className="relative w-36 h-36 shrink-0">
-                        <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140">
-                            <circle cx="70" cy="70" r={radius} fill="none" strokeWidth="10" className="stroke-slate-100 dark:stroke-slate-800" />
+        <div className="space-y-4 max-w-5xl mx-auto">
+
+            {/* ── Row 1: Progress Ring + 4 Stats ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                {/* Progress Ring */}
+                <div className="sm:col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-4 flex flex-col items-center justify-center">
+                    <div className="relative w-28 h-28">
+                        <svg className="w-full h-full -rotate-90" viewBox="0 0 130 130">
+                            <circle cx="65" cy="65" r={radius} fill="none" strokeWidth="9" className="stroke-slate-100 dark:stroke-slate-800" />
                             <circle
-                                cx="70" cy="70" r={radius} fill="none" strokeWidth="10" strokeLinecap="round"
-                                stroke={overview.overallPercent >= 80 ? '#10b981' : overview.overallPercent >= 40 ? '#3b82f6' : '#f59e0b'}
+                                cx="65" cy="65" r={radius} fill="none" strokeWidth="9" strokeLinecap="round"
+                                stroke={overview.overallPercent >= 80 ? '#10b981' : overview.overallPercent >= 40 ? '#6366f1' : '#f59e0b'}
                                 strokeDasharray={`${strokeDash} ${circumference}`}
                                 style={{ transition: 'stroke-dasharray 0.8s ease' }}
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-3xl font-bold text-slate-900 dark:text-white">{overview.overallPercent}%</span>
-                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">Complete</span>
+                            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{overview.overallPercent}%</span>
+                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Complete</span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Stat Cards */}
-                    <div className="flex-1 w-full grid grid-cols-2 gap-3">
-                        <StatCard icon={FaBook} color="blue" value={overview.completedLectures} suffix={`/ ${overview.totalLectures}`} label="Lectures" />
-                        <StatCard icon={FaClipboardList} color="purple" value={overview.quizzesPassed} suffix={`/ ${overview.totalQuizzes}`} label="Quizzes Passed" />
-                        <StatCard icon={FaClock} color="emerald" value={submissions.onTime} label="On Time" />
-                        <StatCard icon={FaFire} color="amber" value={submissions.late} label={submissions.late === 0 ? 'No Late' : 'Late'} />
-                    </div>
+                {/* 4 Stat Cards */}
+                <div className="sm:col-span-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <StatCard icon={FaBook} color="indigo" value={overview.completedLectures} suffix={`/${overview.totalLectures}`} label="Lectures Done" />
+                    <StatCard icon={FaClipboardList} color="violet" value={overview.quizzesPassed} suffix={`/${overview.totalQuizzes}`} label="Quizzes Passed" />
+                    <StatCard icon={FaClock} color="emerald" value={submissions.onTime} label="On Time" />
+                    <StatCard icon={FaFire} color="amber" value={submissions.late} label={submissions.late === 0 ? 'No Late Work' : 'Late'} />
                 </div>
             </div>
 
-            {/* Activity Timeline + Status Donut */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* ── Row 2: Daily Activity + Status Breakdown ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white">Daily Activity</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">Daily Activity</h3>
                         <span className="text-[10px] text-slate-400 font-medium">Last 30 days</span>
                     </div>
-                    <div className="h-44">
+                    <div className="h-48">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={activityTimeline} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+                            <AreaChart data={activityTimeline} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
                                 <defs>
                                     <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.2} />
+                                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
                                         <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <XAxis
                                     dataKey="date"
                                     tickFormatter={(d) => { const dt = new Date(d); return `${dt.getDate()}/${dt.getMonth() + 1}`; }}
-                                    tick={{ fontSize: 9, fill: '#94a3b8' }}
+                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
                                     axisLine={false} tickLine={false}
-                                    interval={6}
+                                    interval={4}
                                 />
-                                <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={30} />
+                                <YAxis
+                                    allowDecimals={false}
+                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                    axisLine={false} tickLine={false}
+                                    width={30}
+                                    domain={[0, (dataMax) => Math.max(dataMax, 5)]}
+                                />
                                 <Tooltip content={<CustomTooltip />} />
                                 <Area type="monotone" dataKey="count" name="Actions" stroke="#6366f1" strokeWidth={2} fill="url(#aGrad)" dot={false} activeDot={{ r: 4, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
                             </AreaChart>
@@ -139,13 +156,13 @@ const StudentAnalytics = ({ courseId }) => {
                 </div>
 
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
-                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white mb-4">Status Breakdown</h3>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Status Breakdown</h3>
                     {pieData.length > 0 ? (
                         <>
-                            <div className="h-36 -mt-1">
+                            <div className="h-36">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2} dataKey="value" strokeWidth={0}>
+                                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={58} paddingAngle={3} dataKey="value" strokeWidth={0}>
                                             {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />
@@ -156,10 +173,10 @@ const StudentAnalytics = ({ courseId }) => {
                                 {pieData.map((entry, i) => (
                                     <div key={i} className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
                                             <span className="text-xs text-slate-600 dark:text-slate-400">{entry.name}</span>
                                         </div>
-                                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{entry.value}</span>
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{entry.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -170,20 +187,27 @@ const StudentAnalytics = ({ courseId }) => {
                 </div>
             </div>
 
-            {/* Section Progress - Custom bars */}
+            {/* ── Row 3: Section Progress ── */}
             {sectionProgress.length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
-                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white mb-4">Section Progress</h3>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Section Progress</h3>
                     <div className="space-y-3">
                         {sectionProgress.map((sec, i) => (
                             <div key={i}>
                                 <div className="flex items-center justify-between mb-1.5">
                                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate max-w-[70%]">{sec.title}</span>
-                                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 shrink-0">{sec.completed}/{sec.total}</span>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{sec.completed}/{sec.total}</span>
+                                        {sec.percent === 100 && <FaCheckCircle className="text-emerald-500 text-[10px]" />}
+                                    </div>
                                 </div>
                                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-500 ${sec.percent === 100 ? 'bg-emerald-500' : sec.percent >= 50 ? 'bg-blue-500' : sec.percent > 0 ? 'bg-indigo-500' : 'bg-transparent'}`}
+                                        className={`h-full rounded-full transition-all duration-500 ${
+                                            sec.percent === 100 ? 'bg-emerald-500' :
+                                            sec.percent >= 50 ? 'bg-indigo-500' :
+                                            sec.percent > 0 ? 'bg-violet-500' : 'bg-transparent'
+                                        }`}
                                         style={{ width: `${sec.percent}%` }}
                                     />
                                 </div>
@@ -193,17 +217,17 @@ const StudentAnalytics = ({ courseId }) => {
                 </div>
             )}
 
-            {/* Quiz Performance */}
+            {/* ── Row 4: Quiz Performance ── */}
             {quizPerformance.length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
-                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white mb-4">Quiz Performance</h3>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Quiz Performance</h3>
                     <div className="space-y-3">
                         {quizPerformance.map((quiz, i) => (
                             <div key={i} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
                                 <div className="flex items-center justify-between gap-3 mb-2.5">
                                     <div className="min-w-0">
                                         <h4 className="text-sm font-semibold text-slate-800 dark:text-white truncate">{quiz.title}</h4>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">{quiz.totalAttempts} attempt{quiz.totalAttempts !== 1 ? 's' : ''} &middot; Pass: {quiz.passingScore}%</p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">{quiz.totalAttempts} attempt{quiz.totalAttempts !== 1 ? 's' : ''} · Pass: {quiz.passingScore}%</p>
                                     </div>
                                     {quiz.passed ? (
                                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full shrink-0">
@@ -217,13 +241,12 @@ const StudentAnalytics = ({ courseId }) => {
                                         <span className="text-[11px] text-slate-400 shrink-0">Not attempted</span>
                                     )}
                                 </div>
-
                                 {quiz.scores.length > 0 && (
                                     <div className="flex items-end gap-[3px] h-10 mt-1">
                                         {quiz.scores.map((s, j) => (
                                             <div
                                                 key={j}
-                                                className={`flex-1 rounded-sm transition-all ${s.score >= quiz.passingScore ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                                className={`flex-1 rounded-sm ${s.score >= quiz.passingScore ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
                                                 style={{ height: `${Math.max(s.score, 8)}%` }}
                                                 title={`#${j + 1}: ${s.score}%`}
                                             />
@@ -236,10 +259,10 @@ const StudentAnalytics = ({ courseId }) => {
                 </div>
             )}
 
-            {/* Recent Activity */}
+            {/* ── Row 5: Recent Activity ── */}
             {recentActivity.length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
-                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white mb-4">Recent Activity</h3>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Recent Activity</h3>
                     <div className="relative pl-4 border-l-2 border-slate-100 dark:border-slate-800 space-y-4">
                         {recentActivity.map((act, i) => (
                             <div key={i} className="relative">
@@ -247,7 +270,7 @@ const StudentAnalytics = ({ courseId }) => {
                                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">{act.details || act.action}</p>
                                 <p className="text-[10px] text-slate-400 mt-0.5">
                                     {new Date(act.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    {' '}
+                                    {' · '}
                                     {new Date(act.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -261,21 +284,21 @@ const StudentAnalytics = ({ courseId }) => {
 
 const StatCard = ({ icon: Icon, color, value, suffix, label }) => {
     const colorMap = {
-        blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-        purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+        indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500',
+        violet: 'bg-violet-50 dark:bg-violet-900/20 text-violet-500',
+        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500',
+        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-500',
     };
     return (
-        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
-            <div className={`w-7 h-7 rounded-md flex items-center justify-center mb-2 ${colorMap[color]}`}>
-                <Icon className="text-xs" />
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-4">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${colorMap[color]}`}>
+                <Icon className="text-sm" />
             </div>
-            <p className="text-lg font-bold text-slate-900 dark:text-white leading-none">
+            <p className="text-xl font-extrabold text-slate-900 dark:text-white leading-none">
                 {value}
                 {suffix && <span className="text-xs font-normal text-slate-400 ml-0.5">{suffix}</span>}
             </p>
-            <p className="text-[10px] text-slate-400 mt-1 font-medium">{label}</p>
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">{label}</p>
         </div>
     );
 };

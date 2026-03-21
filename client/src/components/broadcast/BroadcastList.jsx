@@ -130,10 +130,10 @@ const BroadcastList = ({
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-5xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-white">
                     {isOwner ? 'Broadcasts' : 'Announcements'}
                 </h2>
                 <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ const BroadcastList = ({
                     {canBroadcast && (
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium transition-colors bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90"
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20"
                         >
                             <FaPlus size={10} /> New
                         </button>
@@ -163,16 +163,16 @@ const BroadcastList = ({
 
             {/* Filters */}
             {broadcasts.length > 0 && (
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-4">
                     {/* Search */}
                     <div className="relative flex-1">
-                        <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={10} />
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={12} />
                         <input
                             type="text"
-                            placeholder="Search..."
+                            placeholder="Search announcements..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-7 pr-3 py-1.5 text-xs rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
                         />
                     </div>
 
@@ -180,7 +180,7 @@ const BroadcastList = ({
                     <select
                         value={priorityFilter}
                         onChange={(e) => setPriorityFilter(e.target.value)}
-                        className="text-xs px-2 py-1.5 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
+                        className="text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
                     >
                         <option value="all">All</option>
                         <option value="urgent">Urgent</option>
@@ -192,10 +192,10 @@ const BroadcastList = ({
                     {hasActiveFilters && (
                         <button
                             onClick={clearFilters}
-                            className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             title="Clear filters"
                         >
-                            <FaTimes size={10} />
+                            <FaTimes size={12} />
                         </button>
                     )}
                 </div>
@@ -205,69 +205,81 @@ const BroadcastList = ({
             {broadcasts.length > 0 ? (
                 <>
                     {filteredBroadcasts.length > 0 ? (
-                        <div className="space-y-2">
-                            {filteredBroadcasts.map((broadcast) => (
+                        <div className="space-y-3">
+                            {filteredBroadcasts.map((broadcast) => {
+                                const borderColor = broadcast.priority === 'urgent' ? 'border-l-red-500' : broadcast.priority === 'important' ? 'border-l-amber-500' : 'border-l-slate-300 dark:border-l-slate-700';
+                                return (
                                 <div
                                     key={broadcast._id}
-                                    className={`group bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-3 hover:border-gray-300 dark:hover:border-slate-700 transition-all ${broadcast.isActive === false ? 'opacity-50' : ''
-                                        }`}
+                                    className={`group bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 border-l-[3px] ${borderColor} rounded-xl p-4 hover:shadow-md dark:hover:border-slate-700 transition-all ${broadcast.isActive === false ? 'opacity-50' : ''}`}
                                 >
                                     {/* Top row: Title + Priority + Actions */}
-                                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getPriorityIndicator(broadcast.priority)}`} />
-                                            <h4 className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${getPriorityIndicator(broadcast.priority)}`} />
+                                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                                                 {broadcast.title}
                                             </h4>
                                             {broadcast.isActive === false && (
-                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
+                                                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                                                     Inactive
                                                 </span>
                                             )}
                                         </div>
                                         {canEditBroadcast(broadcast) && (
-                                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                 <button
                                                     onClick={() => {
                                                         setEditingBroadcast({ ...broadcast });
                                                         setIsEditModalOpen(true);
                                                     }}
-                                                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                                 >
-                                                    <FaEdit size={10} />
+                                                    <FaEdit size={11} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(broadcast._id)}
-                                                    className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
+                                                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
                                                 >
-                                                    <FaTrash size={10} />
+                                                    <FaTrash size={11} />
                                                 </button>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Message - compact */}
-                                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 mb-2 pl-3.5">
-                                        {broadcast.message.split(/(\bhttps?:\/\/\S+)/g).map((part, i) =>
-                                            /^https?:\/\//.test(part)
-                                                ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline break-all" onClick={e => e.stopPropagation()}>{part}</a>
-                                                : part
-                                        )}
+                                    {/* Message - with truncated URLs */}
+                                    <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 mb-3 pl-[18px]">
+                                        {broadcast.message.split(/(\bhttps?:\/\/\S+)/g).map((part, i) => {
+                                            if (/^https?:\/\//.test(part)) {
+                                                // Extract a friendly label from the URL
+                                                let label;
+                                                try {
+                                                    const urlObj = new URL(part);
+                                                    const path = urlObj.pathname.replace(/\/$/, '');
+                                                    const lastSegment = path.split('/').filter(Boolean).pop();
+                                                    label = lastSegment ? `${urlObj.hostname}/…/${decodeURIComponent(lastSegment).substring(0, 30)}` : urlObj.hostname;
+                                                } catch {
+                                                    label = part.substring(0, 40) + '…';
+                                                }
+                                                return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-500 hover:text-indigo-400 hover:underline font-medium" onClick={e => e.stopPropagation()}>🔗 {label}</a>;
+                                            }
+                                            return part;
+                                        })}
                                     </p>
 
                                     {/* Footer - inline */}
-                                    <div className="flex items-center justify-between pl-3.5">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                    <div className="flex items-center justify-between pl-[18px]">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                                                <span className="text-[10px] font-bold text-white">
                                                     {broadcast.createdBy?.name?.charAt(0)?.toUpperCase() || '?'}
                                                 </span>
                                             </div>
-                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                                                 {broadcast.createdBy?.name || 'Unknown'}
                                             </span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                             {new Date(broadcast.createdAt).toLocaleDateString(undefined, {
                                                 month: 'short',
                                                 day: 'numeric'
@@ -275,7 +287,7 @@ const BroadcastList = ({
                                         </span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     ) : (
                         <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
@@ -313,15 +325,18 @@ const BroadcastList = ({
                     )}
                 </>
             ) : (
-                <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
-                    <FaBullhorn className="mx-auto text-xl text-slate-300 dark:text-slate-600 mb-2" />
-                    <p className="text-sm text-slate-500 dark:text-slate-400">No broadcasts yet</p>
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <FaBullhorn className="text-indigo-400 dark:text-indigo-500/80" size={32} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No Announcements</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">Stay tuned! Important updates from the instructor will appear here.</p>
                     {canBroadcast && (
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium transition-colors bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90"
+                            className="inline-flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-semibold transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-500/30"
                         >
-                            <FaPlus size={10} /> Create
+                            <FaPlus size={10} /> Create Announcement
                         </button>
                     )}
                 </div>
