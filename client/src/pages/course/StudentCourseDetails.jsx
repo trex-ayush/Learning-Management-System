@@ -1186,7 +1186,7 @@ const StudentCourseDetails = () => {
                 {activeTab === 'revision' && renderRevisionTab()}
                 {activeTab === 'quizzes' && renderQuizzesTab()}
                 {activeTab === 'announcements' && renderAnnouncementsTab()}
-                {activeTab === 'resources' && <ResourceManager courseId={id} userId={user?._id || user?.id} />}
+                {activeTab === 'resources' && <ResourceManager courseId={id} userId={user?._id || user?.id} sections={course?.sections || []} />}
                 {activeTab === 'analytics' && <StudentAnalytics courseId={id} />}
                 {activeTab === 'ai-assistant' && <AIChatPanel courseId={id} courseTitle={course?.title} />}
             </div>

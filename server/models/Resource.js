@@ -46,6 +46,21 @@ const resourceSchema = new mongoose.Schema({
         type: String,
         enum: ['teacher', 'student'],
         default: 'teacher'
+    },
+    // Linking to section or lecture (optional — null/course = course-level resource)
+    linkedType: {
+        type: String,
+        enum: ['course', 'section', 'lecture'],
+        default: 'course'
+    },
+    sectionId: {
+        type: String,  // Mongoose sub-doc ID (sections are embedded in Course)
+        default: null
+    },
+    lectureId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lecture',
+        default: null
     }
 }, {
     timestamps: true
@@ -53,5 +68,6 @@ const resourceSchema = new mongoose.Schema({
 
 resourceSchema.index({ course: 1, createdAt: -1 });
 resourceSchema.index({ course: 1, uploadedBy: 1 });
+resourceSchema.index({ lectureId: 1 });
 
 module.exports = mongoose.model('Resource', resourceSchema);

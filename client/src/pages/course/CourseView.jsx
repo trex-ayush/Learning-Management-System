@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUserGraduate, FaCheckCircle, FaSearch, FaBookmark, FaRegBookmark } from 'react-icons/fa';
+import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars, FaTimes, FaStepBackward, FaStepForward, FaStickyNote, FaSave, FaLock, FaUserGraduate, FaCheckCircle, FaSearch, FaBookmark, FaRegBookmark, FaFolderOpen, FaDownload, FaFilePdf, FaImage, FaFileAlt, FaLink as FaLinkIcon, FaEye } from 'react-icons/fa';
 import StatusSelector from '../../components/ui/StatusSelector';
 import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
@@ -45,8 +45,15 @@ const CourseView = () => {
     const [expandedSections, setExpandedSections] = useState({});
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar
     const [isSidebarVisible, setIsSidebarVisible] = useState(true); // Desktop sidebar toggle - open by default
-    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion'
+    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion' | 'resources'
 
+    // Lecture-linked resources
+    const [lectureResources, setLectureResources] = useState([]);
+    const [lectureResourcesLoading, setLectureResourcesLoading] = useState(false);
+    const [viewingResource, setViewingResource] = useState(null);
+    const [viewTextContent, setViewTextContent] = useState(null);
+    const [viewUrl, setViewUrl] = useState(null);
+    const [resourceCounts, setResourceCounts] = useState({}); // lectureId -> count
 
     // Peer progress state
     const [showPeerSelector, setShowPeerSelector] = useState(false);
@@ -106,6 +113,14 @@ const CourseView = () => {
                         setSelectedLecture(firstLec);
                         fetchComments(firstLec._id);
                     }
+                }
+                
+                // Fetch resource counts for this course
+                try {
+                    const countsRes = await api.get(`/resources/${id}/counts`);
+                    setResourceCounts(countsRes.data.counts || {});
+                } catch (err) {
+                    console.warn('Failed to fetch resource counts', err);
                 }
             } catch (err) {
                 console.error(err);
@@ -187,6 +202,12 @@ const CourseView = () => {
         const lectureProgress = progressMap[lecture._id];
         setNotes(lectureProgress?.notes || '');
 
+        // Reset lecture resources when switching lectures
+        setLectureResources([]);
+        if (activeTab === 'resources') {
+            fetchLectureResources(lecture._id);
+        }
+
         // Auto-expand the section containing this lecture
         if (course && course.sections) {
             const section = course.sections.find(s => s.lectures.some(l => l._id === lecture._id));
@@ -195,6 +216,88 @@ const CourseView = () => {
             }
         }
     };
+
+    // Fetch resources linked to a lecture
+    const fetchLectureResources = async (lecId) => {
+        setLectureResourcesLoading(true);
+        try {
+            const res = await api.get(`/resources/${id}/lecture/${lecId}`);
+            setLectureResources(res.data.resources || []);
+        } catch {
+            setLectureResources([]);
+        } finally {
+            setLectureResourcesLoading(false);
+        }
+    };
+
+    // Handle resource download
+    const handleResourceDownload = async (resource) => {
+        if (resource.fileType === 'link') {
+            window.open(resource.url, '_blank');
+            return;
+        }
+        try {
+            const res = await api.get(`/resources/${id}/${resource._id}/download`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', resource.fileName || 'download');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            toast.error('Download failed');
+        }
+    };
+
+    // Handle inline view
+    const handleResourceView = async (resource) => {
+        if (resource.fileType === 'link') {
+            window.open(resource.url, '_blank');
+            return;
+        }
+        try {
+            const res = await api.get(`/resources/${id}/${resource._id}/view`, { responseType: 'blob' });
+            const blob = new Blob([res.data], { type: resource.mimeType });
+            
+            if (resource.mimeType?.includes('csv') || resource.mimeType?.includes('txt') || resource.mimeType?.includes('text')) {
+                const text = await blob.text();
+                setViewTextContent(text);
+            } else {
+                setViewTextContent(null);
+            }
+
+            const blobUrl = window.URL.createObjectURL(blob);
+            setViewUrl(blobUrl);
+            setViewingResource(resource);
+        } catch {
+            toast.error('Failed to load resource');
+        }
+    };
+
+    const closeViewer = () => {
+        if (viewUrl) window.URL.revokeObjectURL(viewUrl);
+        setViewUrl(null);
+        setViewingResource(null);
+        setViewTextContent(null);
+    };
+
+    const FILE_TYPE_ICONS = { pdf: FaFilePdf, image: FaImage, document: FaFileAlt, link: FaLinkIcon };
+    const FILE_TYPE_COLORS = { pdf: 'text-red-500', image: 'text-blue-500', document: 'text-amber-500', link: 'text-indigo-500' };
+    const formatFileSize = (bytes) => {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+
+    // Fetch resources when switching to resources tab
+    useEffect(() => {
+        if (activeTab === 'resources' && selectedLecture?._id && lectureResources.length === 0 && !lectureResourcesLoading) {
+            fetchLectureResources(selectedLecture._id);
+        }
+    }, [activeTab, selectedLecture?._id]);
 
     // Initialize View based on URL or Default
     useEffect(() => {
@@ -378,6 +481,84 @@ const CourseView = () => {
 
     return (
         <div className="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 font-sans transition-colors duration-300 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Resource Viewer Modal */}
+            {viewingResource && viewUrl && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeViewer}>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-white truncate">{viewingResource.title}</h3>
+                                {viewingResource.description && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{viewingResource.description}</p>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 ml-3">
+                                <button
+                                    onClick={() => handleResourceDownload(viewingResource)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-xs font-bold hover:opacity-90 transition-all"
+                                >
+                                    <FaDownload size={10} /> Download
+                                </button>
+                                <button onClick={closeViewer} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                                    <FaTimes size={14} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-auto p-1 bg-slate-100 dark:bg-slate-950" style={{ minHeight: '400px' }}>
+                            {viewingResource.fileType === 'pdf' ? (
+                                <iframe src={viewUrl} className="w-full h-full min-h-[70vh] rounded-lg" title={viewingResource.title} />
+                            ) : viewingResource.fileType === 'image' ? (
+                                <div className="flex items-center justify-center p-4 h-full">
+                                    <img src={viewUrl} alt={viewingResource.title} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg" />
+                                </div>
+                            ) : viewingResource.mimeType?.includes('csv') && viewTextContent ? (
+                                <div className="w-full h-full bg-white dark:bg-slate-900 rounded-lg overflow-x-auto shadow-inner min-h-[70vh]">
+                                    <table className="w-full text-left border-collapse min-w-max text-xs md:text-sm">
+                                        <thead className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 shadow-sm">
+                                            <tr>
+                                                {viewTextContent.split('\n')[0]?.split(',').map((header, i) => (
+                                                    <th key={i} className="border-b dark:border-slate-700 px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                                        {header.replace(/^"|"$/g, '')}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800/80">
+                                            {viewTextContent.split('\n').slice(1).map((line, i) => line.trim() ? (
+                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                    {line.split(',').map((cell, j) => (
+                                                        <td key={j} className="px-4 py-2.5 text-slate-600 dark:text-slate-400">
+                                                            {cell.replace(/^"|"$/g, '')}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ) : null)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : viewingResource.mimeType?.includes('text') && viewTextContent ? (
+                                <div className="w-full h-full bg-white dark:bg-slate-900 p-6 rounded-lg overflow-auto shadow-inner min-h-[70vh]">
+                                    <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed">
+                                        {viewTextContent}
+                                    </pre>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full py-20 gap-4 min-h-[70vh]">
+                                    <FaFileAlt className="text-slate-300 dark:text-slate-700" size={56} />
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Preview not available for this format.</p>
+                                    <button
+                                        onClick={() => handleResourceDownload(viewingResource)}
+                                        className="flex items-center gap-2 px-6 py-2.5 mt-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg text-sm font-bold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all"
+                                    >
+                                        <FaDownload size={12} /> Download to View
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Mobile Header */}
             <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-3 flex items-center justify-between z-50 sticky top-0">
@@ -584,6 +765,7 @@ const CourseView = () => {
                                                         sectionImportance={section.importance}
                                                         peerStatus={selectedPeerId ? (peerLectureMap[lec._id]?.status || 'Not Started') : null}
                                                         markedForRevision={progressMap[lec._id]?.markedForRevision || false}
+                                                        resourceCount={resourceCounts[lec._id] || 0}
                                                     />
                                                 );
                                             })}
@@ -791,6 +973,7 @@ const CourseView = () => {
                             <div className="flex border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4">
                                 {[
                                     { id: 'overview', label: 'Overview' },
+                                    { id: 'resources', label: 'Resources', icon: <FaFolderOpen className="text-emerald-400 text-[10px]" />, badge: resourceCounts[selectedLecture?._id] > 0 ? resourceCounts[selectedLecture._id] : null },
                                     { id: 'notes', label: 'Notes', icon: <FaStickyNote className="text-amber-400 text-[10px]" /> },
                                     { id: 'discussion', label: `Discussion${comments.length > 0 ? ` (${comments.length})` : ''}` },
                                 ].map(tab => (
@@ -802,7 +985,13 @@ const CourseView = () => {
                                             : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                             }`}
                                     >
-                                        {tab.icon}{tab.label}
+                                        {tab.icon}
+                                        <span>{tab.label}</span>
+                                        {tab.badge && (
+                                            <span className="ml-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold bg-red-500 text-white shadow-sm">
+                                                {tab.badge}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -817,6 +1006,70 @@ const CourseView = () => {
                                             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{selectedLecture.description}</p>
                                         ) : (
                                             <p className="text-sm text-slate-400 dark:text-slate-500">No description for this lecture.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Resources Tab */}
+                                {activeTab === 'resources' && (
+                                    <div className="space-y-3">
+                                        {lectureResourcesLoading ? (
+                                            <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                                                <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                                <p className="text-xs text-slate-500 animate-pulse">Loading resources...</p>
+                                            </div>
+                                        ) : lectureResources.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <FaFolderOpen className="text-emerald-400" size={24} />
+                                                </div>
+                                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">No Resources</h3>
+                                                <p className="text-xs text-slate-400">No resources have been linked to this lecture yet.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {lectureResources.map(resource => {
+                                                    const Icon = FILE_TYPE_ICONS[resource.fileType] || FaFileAlt;
+                                                    const iconColor = FILE_TYPE_COLORS[resource.fileType] || 'text-slate-500';
+                                                    const canView = resource.fileType === 'pdf' || resource.fileType === 'image' || resource.mimeType?.includes('csv') || resource.mimeType?.includes('text') || resource.mimeType?.includes('txt');
+                                                    return (
+                                                        <div key={resource._id} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 flex items-start gap-3 group hover:shadow-sm transition-all">
+                                                            <div className={`w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 ${iconColor}`}>
+                                                                <Icon size={18} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className="text-sm font-semibold text-slate-800 dark:text-white truncate">{resource.title}</h4>
+                                                                {resource.description && (
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{resource.description}</p>
+                                                                )}
+                                                                <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
+                                                                    <span>{resource.uploadedBy?.name || 'Unknown'}</span>
+                                                                    <span>{new Date(resource.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                                    {resource.fileSize && <span>{formatFileSize(resource.fileSize)}</span>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                {canView && (
+                                                                    <button
+                                                                        onClick={() => handleResourceView(resource)}
+                                                                        className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                                                        title="View"
+                                                                    >
+                                                                        <FaEye size={13} />
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => handleResourceDownload(resource)}
+                                                                    className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                                                    title={resource.fileType === 'link' ? 'Open Link' : 'Download'}
+                                                                >
+                                                                    {resource.fileType === 'link' ? <FaLinkIcon size={12} /> : <FaDownload size={12} />}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
                                     </div>
                                 )}

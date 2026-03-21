@@ -1,4 +1,4 @@
-import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaLock, FaBookmark } from 'react-icons/fa';
+import { FaPlayCircle, FaCheckCircle, FaRegCircle, FaLock, FaBookmark, FaFolderOpen } from 'react-icons/fa';
 
 const LectureSidebarItem = ({
     lecture,
@@ -10,7 +10,8 @@ const LectureSidebarItem = ({
     completedStatus = 'Completed',
     sectionImportance = '',
     peerStatus = null,
-    markedForRevision = false
+    markedForRevision = false,
+    resourceCount = 0
 }) => {
     // Resolve lecture importance (own or inherited from section)
     const importance = lecture.importance === 'None' ? '' : (lecture.importance || sectionImportance);
@@ -49,7 +50,15 @@ const LectureSidebarItem = ({
             </div>
 
             {/* Right Side Indicators & Chips */}
-            <div className="shrink-0 ml-2 flex items-center gap-1.5">
+            <div className="shrink-0 ml-2 flex items-center gap-1.5 pt-0.5">
+                {resourceCount > 0 && (
+                    <span 
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold tracking-tight bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"
+                        title={`${resourceCount} Resource(s)`}
+                    >
+                        <FaFolderOpen size={8} /> {resourceCount}
+                    </span>
+                )}
                 {importance && importance !== 'None' && (
                     <span className={`px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-wide leading-none ${
                         importance === 'Very Important' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :

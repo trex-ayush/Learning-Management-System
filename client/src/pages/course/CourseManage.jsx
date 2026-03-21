@@ -1320,7 +1320,7 @@ const CourseManage = () => {
                 {activeTab === 'broadcasts' && renderBroadcastsTab()}
                 {activeTab === 'students' && renderStudentsTab()}
                 {activeTab === 'teachers' && renderTeachersTab()}
-                {activeTab === 'resources' && <ResourceManager courseId={id} isTeacher={true} />}
+                {activeTab === 'resources' && <ResourceManager courseId={id} isTeacher={true} sections={course?.sections || []} />}
                 {activeTab === 'ai-notes' && <AINotesGenerator courseId={id} />}
             </div>
 
