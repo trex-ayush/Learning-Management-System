@@ -1,47 +1,45 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { FaGraduationCap, FaChalkboardTeacher, FaRobot, FaBullhorn, FaShieldAlt } from 'react-icons/fa';
+
+const GoogleIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+);
+
+const features = [
+    { icon: FaGraduationCap, text: 'Track your learning progress across all enrolled courses' },
+    { icon: FaChalkboardTeacher, text: 'Build and publish courses with a powerful curriculum editor' },
+    { icon: FaRobot, text: 'AI-powered study assistant for instant help with any topic' },
+    { icon: FaBullhorn, text: 'Real-time announcements and broadcasts from instructors' },
+];
 
 const Login = () => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const { login, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const { email, password } = formData;
+    const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const onChange = (e) => {
-        setFormData((prevState) => ({
-            ...prevState,
-            [e.target.name]: e.target.value
-        }));
-    };
-
-    const onSubmit = async (e) => {
-        e.preventDefault();
-        if (isLoading) return; // Prevent multiple submissions
-
-        setIsLoading(true);
+    const handleGoogleSuccess = async (tokenResponse) => {
+        setIsGoogleLoading(true);
         try {
-            const user = await login(email, password);
+            const user = await googleLogin(tokenResponse.access_token);
             navigate('/');
             if (user.warnings?.length > 0) {
                 toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
                     duration: 6000,
-                    style: {
-                        background: '#78350f',
-                        color: '#fef3c7',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        border: '1px solid #f59e0b',
-                        borderRadius: '10px',
-                        padding: '12px 16px',
-                    },
+                    style: { background: '#78350f', color: '#fef3c7', fontWeight: 600, fontSize: '13px', border: '1px solid #f59e0b', borderRadius: '10px', padding: '12px 16px' },
                 });
             } else {
                 toast.success('Logged in successfully');
@@ -51,15 +49,42 @@ const Login = () => {
             if (isBlocked) {
                 toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'} Contact admin for more information.`, {
                     duration: 8000,
-                    style: {
-                        background: '#450a0a',
-                        color: '#fecaca',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        border: '1px solid #ef4444',
-                        borderRadius: '10px',
-                        padding: '14px 16px',
-                    },
+                    style: { background: '#450a0a', color: '#fecaca', fontWeight: 600, fontSize: '13px', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' },
+                });
+            } else {
+                toast.error(error.response?.data?.message || 'Google sign-in failed');
+            }
+        } finally {
+            setIsGoogleLoading(false);
+        }
+    };
+
+    const loginWithGoogle = useGoogleLogin({
+        onSuccess: handleGoogleSuccess,
+        onError: () => toast.error('Google sign-in failed'),
+    });
+
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        if (isLoading) return;
+        setIsLoading(true);
+        try {
+            const user = await login(email, password);
+            navigate('/');
+            if (user.warnings?.length > 0) {
+                toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
+                    duration: 6000,
+                    style: { background: '#78350f', color: '#fef3c7', fontWeight: 600, fontSize: '13px', border: '1px solid #f59e0b', borderRadius: '10px', padding: '12px 16px' },
+                });
+            } else {
+                toast.success('Logged in successfully');
+            }
+        } catch (error) {
+            const isBlocked = error.response?.status === 403;
+            if (isBlocked) {
+                toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'} Contact admin for more information.`, {
+                    duration: 8000,
+                    style: { background: '#450a0a', color: '#fecaca', fontWeight: 600, fontSize: '13px', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' },
                 });
             } else {
                 toast.error(error.response?.data?.message || error.message || 'Invalid credentials');
@@ -70,141 +95,152 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="mx-auto h-12 w-12 rounded-xl bg-slate-900 dark:bg-blue-600 flex items-center justify-center text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-                        <path d="M11.7 2.805a.75.75 0 0 1 .6 0A60.65 60.65 0 0 1 22.83 8.72a.75.75 0 0 1-.231 1.337 49.949 49.949 0 0 0-9.902 3.912l-.003.002-.34.18a.75.75 0 0 1-.707 0A50.009 50.009 0 0 0 7.5 2.174v-.224c0-.131.067-.248.182-.305l9.9-4.28a.75.75 0 0 0 .6 0l5.035 2.175A60.8 60.8 0 0 1 11.7 2.805Z" />
-                        <path d="M13.06 15.473a48.45 48.45 0 0 1 7.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 0 1-.46.71 47.878 47.878 0 0 0-8.105 4.342.75.75 0 0 1-.832 0 47.877 47.877 0 0 0-8.104-4.342.75.75 0 0 1-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 0 1 6 13.18v1.27a1.5 1.5 0 0 0 1.5 1.5h1" />
-                        <path fillRule="evenodd" d="M14.408 10.65a46.416 46.416 0 0 0-5.202-2.321 48.009 48.009 0 0 1 6.094 3.743 48.995 48.995 0 0 1 2.508 1.84V13.5a1.5 1.5 0 0 0-1.5-1.5h-2.902Z" clipRule="evenodd" />
-                    </svg>
+        <div className="h-screen overflow-hidden flex bg-gray-50 dark:bg-slate-950">
+
+            {/* ── Left branding panel (hidden on mobile) ── */}
+            <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] relative flex-col bg-slate-900 dark:bg-slate-950 overflow-hidden">
+                {/* Background layers */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950" />
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4" />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-100" />
+
+                <div className="relative z-10 flex flex-col h-full p-8 xl:p-12 justify-center">
+                    {/* Hero text */}
+                    <div className="mb-6">
+                        <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight tracking-tight">
+                            Learn smarter,<br />
+                            <span className="text-blue-400">teach better.</span>
+                        </h1>
+                        <p className="mt-3 text-slate-400 text-sm xl:text-base leading-relaxed max-w-md">
+                            A complete platform to manage courses, track student progress, and learn with AI assistance.
+                        </p>
+                    </div>
+
+                    {/* Feature list */}
+                    <div className="space-y-3 mb-6">
+                        {features.map(({ icon: Icon, text }) => (
+                            <div key={text} className="flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Icon className="text-blue-400 text-xs" />
+                                </div>
+                                <p className="text-slate-400 text-sm leading-relaxed">{text}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Stats bar */}
+                    <div className="flex items-center gap-6 pt-5 border-t border-white/10">
+                        <div>
+                            <p className="text-white font-bold text-base">10k+</p>
+                            <p className="text-slate-500 text-xs">Students</p>
+                        </div>
+                        <div className="w-px h-7 bg-white/10" />
+                        <div>
+                            <p className="text-white font-bold text-base">500+</p>
+                            <p className="text-slate-500 text-xs">Courses</p>
+                        </div>
+                        <div className="w-px h-7 bg-white/10" />
+                        <div>
+                            <p className="text-white font-bold text-base">98%</p>
+                            <p className="text-slate-500 text-xs">Satisfaction</p>
+                        </div>
+                    </div>
                 </div>
-                <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Welcome back
-                </h2>
-                <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-                    Sign in to your account to continue learning
-                </p>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white dark:bg-slate-900 py-8 px-4 shadow-xl border border-gray-100 dark:border-slate-800 sm:rounded-xl sm:px-10">
-                    <form className="space-y-6" onSubmit={onSubmit}>
+            {/* ── Right form panel ── */}
+            <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-14 xl:px-20 bg-white dark:bg-slate-900 overflow-y-auto">
+                <div className="w-full max-w-sm mx-auto lg:mx-0">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        Welcome back
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Sign in to continue your learning journey
+                    </p>
+
+                    {/* Google button */}
+                    <button
+                        type="button"
+                        onClick={() => loginWithGoogle()}
+                        disabled={isGoogleLoading || isLoading}
+                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-750 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isGoogleLoading ? (
+                            <svg className="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                        ) : <GoogleIcon />}
+                        Continue with Google
+                    </button>
+
+                    {/* Divider */}
+                    <div className="my-4 flex items-center gap-3">
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">or sign in with email</span>
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                    </div>
+
+                    {/* Email/password form */}
+                    <form onSubmit={onSubmit} className="space-y-4">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+                            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Email address
                             </label>
-                            <div className="mt-2">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    value={email}
-                                    onChange={onChange}
-                                    className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:focus:ring-blue-500 sm:text-sm sm:leading-6 bg-transparent transition-all"
-                                    placeholder="Enter your email"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
-                                Password
-                            </label>
-                            <div className="mt-2">
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={password}
-                                    onChange={onChange}
-                                    className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:focus:ring-blue-500 sm:text-sm sm:leading-6 bg-transparent transition-all"
-                                    placeholder="Enter your password"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="flex w-full justify-center items-center gap-2 rounded-lg bg-slate-900 dark:bg-blue-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-slate-800 dark:hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Signing in...
-                                    </>
-                                ) : (
-                                    'Sign in'
-                                )}
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-200 dark:border-slate-700" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
-                                    Or continue with
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-center">
-                            <GoogleLogin
-                                onSuccess={async (credentialResponse) => {
-                                    setIsLoading(true);
-                                    try {
-                                        const user = await googleLogin(credentialResponse.credential);
-                                        navigate('/');
-                                        if (user.warnings?.length > 0) {
-                                            toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account.`, {
-                                                duration: 6000,
-                                                style: { background: '#78350f', color: '#fef3c7', fontWeight: 600, fontSize: '13px', border: '1px solid #f59e0b', borderRadius: '10px', padding: '12px 16px' },
-                                            });
-                                        } else {
-                                            toast.success('Logged in successfully');
-                                        }
-                                    } catch (error) {
-                                        const isBlocked = error.response?.status === 403;
-                                        if (isBlocked) {
-                                            toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'}`, {
-                                                duration: 8000,
-                                                style: { background: '#450a0a', color: '#fecaca', fontWeight: 600, fontSize: '13px', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' },
-                                            });
-                                        } else {
-                                            toast.error(error.response?.data?.message || 'Google sign-in failed');
-                                        }
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                onError={() => toast.error('Google sign-in failed')}
-                                shape="rectangular"
-                                size="large"
-                                width="100%"
-                                text="signin_with"
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                required
+                                value={email}
+                                onChange={onChange}
+                                placeholder="you@example.com"
+                                className="block w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:focus:border-blue-500 transition-all"
                             />
                         </div>
-                    </div>
 
-                    <div className="mt-6 text-center">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">New here? </span>
-                        <Link to="/register" className="font-medium text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Create an account
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autoComplete="current-password"
+                                required
+                                value={password}
+                                onChange={onChange}
+                                placeholder="••••••••"
+                                className="block w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:focus:border-blue-500 transition-all"
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="mt-1 flex w-full justify-center items-center gap-2 rounded-xl bg-slate-900 dark:bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 dark:hover:bg-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Signing in...
+                                </>
+                            ) : 'Sign in'}
+                        </button>
+                    </form>
+
+                    <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+                        Don't have an account?{' '}
+                        <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                            Create one free
                         </Link>
-                    </div>
+                    </p>
                 </div>
             </div>
         </div>
