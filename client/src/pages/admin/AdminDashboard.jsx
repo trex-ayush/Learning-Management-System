@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     FaUsers, FaChalkboardTeacher, FaGraduationCap, FaBook,
     FaRupeeSign, FaChartLine, FaMoneyCheckAlt, FaHistory,
     FaArrowRight, FaExclamationCircle, FaCheckCircle, FaSearch,
     FaBan, FaUnlock, FaExclamationTriangle, FaTimes, FaEdit,
-    FaChevronDown, FaChevronUp, FaShieldAlt, FaChevronLeft, FaChevronRight
+    FaChevronDown, FaChevronUp, FaShieldAlt, FaChevronLeft, FaChevronRight,
+    FaUserSecret, FaSignInAlt
 } from 'react-icons/fa';
+import AuthContext from '../../context/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -747,6 +749,145 @@ const UsersTab = () => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Impersonate Tab
+───────────────────────────────────────────────────────────────────────────── */
+const ImpersonateTab = () => {
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [foundUser, setFoundUser] = useState(null);
+    const { logout } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+
+        setLoading(true);
+        setFoundUser(null);
+        try {
+            const res = await api.get('/admin/users', { params: { search: email.trim(), page: 1, limit: 5 } });
+            const users = res.data.users || res.data;
+            const match = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+            if (match) {
+                setFoundUser(match);
+            } else if (users.length > 0) {
+                setFoundUser(null);
+                toast.error('No exact email match. Check spelling.');
+            } else {
+                toast.error('No user found with that email');
+            }
+        } catch {
+            toast.error('Failed to search user');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleImpersonate = async () => {
+        if (!foundUser) return;
+        setLoading(true);
+        try {
+            const res = await api.post('/admin/impersonate', { email: foundUser.email });
+            // Store the current admin token so we can return later
+            const currentToken = localStorage.getItem('token');
+            const currentCache = localStorage.getItem('userCache');
+            localStorage.setItem('adminToken', currentToken);
+            localStorage.setItem('adminUserCache', currentCache);
+
+            // Switch to the impersonated user
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('userCache', JSON.stringify({ user: res.data, timestamp: Date.now() }));
+            localStorage.setItem('isImpersonating', 'true');
+
+            toast.success(`Now logged in as ${res.data.name}`);
+            window.location.href = '/';
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Impersonation failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                        <FaUserSecret className="text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Login as User</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Enter a user's email to access their account</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSearch} className="flex gap-3 mb-6">
+                    <div className="flex-1 relative">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="Enter user email address"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            required
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading || !email.trim()}
+                        className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Searching…' : 'Find User'}
+                    </button>
+                </form>
+
+                {foundUser && (
+                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Avatar name={foundUser.name} color={foundUser.isBlocked ? 'red' : 'indigo'} size={12} blocked={foundUser.isBlocked} />
+                                <div>
+                                    <p className="font-semibold text-slate-900 dark:text-white text-base">{foundUser.name}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{foundUser.email}</p>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <Badge variant={foundUser.role === 'instructor' ? 'instructor' : foundUser.role === 'admin' ? 'active' : 'student'}>
+                                            {foundUser.role}
+                                        </Badge>
+                                        {foundUser.isBlocked && <Badge variant="blocked">Blocked</Badge>}
+                                        {foundUser.warnings?.length > 0 && (
+                                            <Badge variant="warned">{foundUser.warnings.length} warning{foundUser.warnings.length > 1 ? 's' : ''}</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleImpersonate}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-sm"
+                            >
+                                <FaSignInAlt />
+                                {loading ? 'Switching…' : 'Login as this user'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <FaExclamationTriangle className="text-amber-500 mt-0.5 shrink-0" />
+                        <div className="text-sm text-amber-800 dark:text-amber-300">
+                            <p className="font-medium mb-1">How to return to admin</p>
+                            <p className="text-amber-700 dark:text-amber-400">After impersonating, a banner will appear at the top of the page. Click "Return to Admin" to switch back to your admin account.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Main AdminDashboard
 ───────────────────────────────────────────────────────────────────────────── */
 const INSTRUCTORS_PER_PAGE = 12;
@@ -831,6 +972,7 @@ const AdminDashboard = () => {
         { id: 'instructors', label: 'Instructors', icon: FaChalkboardTeacher },
         { id: 'payouts', label: 'Payouts', icon: FaMoneyCheckAlt },
         { id: 'users', label: 'Users', icon: FaShieldAlt },
+        { id: 'impersonate', label: 'Login As', icon: FaUserSecret },
     ];
 
     return (
@@ -1059,6 +1201,9 @@ const AdminDashboard = () => {
 
                 {/* ── USERS TAB ────────────────────────────────────────────── */}
                 {activeTab === 'users' && <UsersTab />}
+
+                {/* ── IMPERSONATE TAB ─────────────────────────────────────── */}
+                {activeTab === 'impersonate' && <ImpersonateTab />}
 
             </div>{/* end tab content */}
 

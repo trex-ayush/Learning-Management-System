@@ -3,8 +3,20 @@
 @tailwind utilities;
 
 @layer base {
+    :root {
+        --navbar-height: 64px;
+    }
+    html.impersonating {
+        --navbar-height: 92px;
+    }
     body {
         @apply bg-background text-textPrimary;
+    }
+}
+
+@layer utilities {
+    .top-navbar {
+        top: var(--navbar-height);
     }
 }
 

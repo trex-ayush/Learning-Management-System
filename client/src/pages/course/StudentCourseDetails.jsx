@@ -1010,7 +1010,7 @@ const StudentCourseDetails = () => {
         <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-30 transition-colors duration-300 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-30 transition-colors duration-300 shadow-sm">
                 <div className="w-full px-4 md:px-8 xl:px-12 py-3 md:py-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                         <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">{course.title}</h1>
@@ -1124,7 +1124,7 @@ const StudentCourseDetails = () => {
             {/* Vertical Sidebar - Glass effect, icon-only → expands on hover */}
             {tabLayout === 'vertical' && (
                 <div
-                    className="glass-sidebar hidden md:flex fixed left-0 top-16 bottom-0 z-[60] flex-col pt-4 pb-4"
+                    className="glass-sidebar hidden md:flex fixed left-0 bottom-0 z-40 flex-col pt-4 pb-4 top-navbar"
                     onMouseEnter={() => setSidebarHovered(true)}
                     onMouseLeave={() => setSidebarHovered(false)}
                 >

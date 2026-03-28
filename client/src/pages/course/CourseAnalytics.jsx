@@ -42,7 +42,7 @@ const CourseAnalytics = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 pb-12 transition-colors duration-300">
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-10 transition-colors">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-10 transition-colors">
                 <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                         <button

@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -109,9 +112,68 @@ const updatePassword = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Authenticate with Google
+// @route   POST /api/auth/google
+// @access  Public
+const googleLogin = asyncHandler(async (req, res) => {
+    const { credential } = req.body;
+
+    if (!credential) {
+        res.status(400);
+        throw new Error('Google credential is required');
+    }
+
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const { sub: googleId, email, name, picture } = ticket.getPayload();
+
+    // Check if user exists by googleId or email
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (user) {
+        // If existing user found by email but no googleId, link the account
+        if (!user.googleId) {
+            user.googleId = googleId;
+            if (picture && !user.profileImage) user.profileImage = picture;
+            await user.save();
+        }
+
+        if (user.isBlocked) {
+            res.status(403);
+            throw new Error(user.blockReason || 'Your account has been blocked. Please contact support.');
+        }
+    } else {
+        // Create new user
+        user = await User.create({
+            name,
+            email,
+            googleId,
+            profileImage: picture || '',
+            role: 'student',
+        });
+    }
+
+    res.locals.user = user;
+
+    res.json({
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        warnings: user.warnings || [],
+        maxWarnings: user.maxWarnings || 2,
+        token: generateToken(user._id),
+    });
+});
+
 module.exports = {
     registerUser,
     loginUser,
+    googleLogin,
     getMe,
     updatePassword,
 };

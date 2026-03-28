@@ -14,7 +14,8 @@ const {
     unblockUser,
     changeUserRole,
     blockCourse,
-    unblockCourse
+    unblockCourse,
+    impersonateUser
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -36,5 +37,8 @@ router.post('/users/:id/role', protect, admin, changeUserRole);
 // Course moderation
 router.post('/courses/:id/block', protect, admin, blockCourse);
 router.post('/courses/:id/unblock', protect, admin, unblockCourse);
+
+// Impersonation
+router.post('/impersonate', protect, admin, impersonateUser);
 
 module.exports = router;
