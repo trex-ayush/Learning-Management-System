@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -11,7 +12,7 @@ const Register = () => {
         role: 'student'
     });
     const [isLoading, setIsLoading] = useState(false);
-    const { register } = useContext(AuthContext);
+    const { register, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const { name, email, password } = formData;
@@ -158,16 +159,39 @@ const Register = () => {
                             </div>
                             <div className="relative flex justify-center text-sm">
                                 <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
-                                    Already have an account?
+                                    Or continue with
                                 </span>
                             </div>
                         </div>
 
-                        <div className="mt-6 text-center">
-                            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                                Sign in
-                            </Link>
+                        <div className="mt-6 flex justify-center">
+                            <GoogleLogin
+                                onSuccess={async (credentialResponse) => {
+                                    setIsLoading(true);
+                                    try {
+                                        await googleLogin(credentialResponse.credential);
+                                        navigate('/');
+                                        toast.success('Account created successfully');
+                                    } catch (error) {
+                                        toast.error(error.response?.data?.message || 'Google sign-up failed');
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                onError={() => toast.error('Google sign-up failed')}
+                                shape="rectangular"
+                                size="large"
+                                width="100%"
+                                text="signup_with"
+                            />
                         </div>
+                    </div>
+
+                    <div className="mt-6 text-center">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">Already have an account? </span>
+                        <Link to="/login" className="font-medium text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                            Sign in
+                        </Link>
                     </div>
                 </div>
             </div>

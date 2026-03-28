@@ -401,6 +401,37 @@ const unblockCourse = asyncHandler(async (req, res) => {
     res.status(200).json({ _id: course._id, isAdminBlocked: false });
 });
 
+// @desc    Impersonate a user (login as them)
+// @route   POST /api/admin/impersonate
+// @access  Private (Admin)
+const impersonateUser = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        res.status(400);
+        throw new Error('Email is required');
+    }
+
+    const user = await User.findOne({ email }).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        warnings: user.warnings || [],
+        maxWarnings: user.maxWarnings || 2,
+        token,
+    });
+});
+
 module.exports = {
     getAdminDashboard,
     getInstructors,
@@ -415,5 +446,6 @@ module.exports = {
     unblockUser,
     changeUserRole,
     blockCourse,
-    unblockCourse
+    unblockCourse,
+    impersonateUser
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
-import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen, FaChevronDown, FaTimes } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen, FaChevronDown, FaTimes, FaUserSecret } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
 
@@ -12,6 +12,7 @@ const ALL_ACTIONS = [
     'Section Added', 'Section Updated',
     'Course Updated', 'Course Created',
     'Broadcast Created', 'Teacher Added',
+    'Impersonated',
 ];
 
 const GlobalActivity = () => {
@@ -100,6 +101,7 @@ const GlobalActivity = () => {
         if (action === 'Note Updated') return <FaStickyNote className="text-purple-500" />;
         if (action === 'Marked for Revision') return <FaBookmark className="text-amber-500" />;
         if (action === 'Removed from Revision') return <FaBookOpen className="text-slate-400" />;
+        if (action === 'Impersonated') return <FaUserSecret className="text-orange-500" />;
         if (action === 'Enrolled') return <FaUserPlus className="text-indigo-500" />;
         if (action === 'Unenrolled') return <FaTrash className="text-red-500" />;
         if (action === 'Comment') return <FaComment className="text-slate-500" />;
@@ -118,7 +120,7 @@ const GlobalActivity = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 pb-12 transition-colors duration-300">
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-10">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-10">
                 <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -278,6 +280,7 @@ const GlobalActivity = () => {
                                                             log.action === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
                                                             log.action === 'Started' || log.action === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
                                                             log.action === 'Enrolled' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' :
+                                                            log.action === 'Impersonated' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' :
                                                             log.action === 'Login' || log.action === 'Registered' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400' :
                                                             log.action === 'Comment' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' :
                                                             log.action === 'Note Updated' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
@@ -306,6 +309,7 @@ const GlobalActivity = () => {
                                                             <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
                                                                 {log.action === 'Login' || log.action === 'Registered' ? 'Authentication' :
                                                                  log.action === 'Password Updated' ? 'Account' :
+                                                                 log.action === 'Impersonated' ? 'Admin Panel' :
                                                                  log.action === 'Role Changed' || log.action === 'User Warned' || log.action === 'User Blocked' || log.action === 'User Unblocked' ? 'User Management' :
                                                                  'Platform Activity'}
                                                             </span>

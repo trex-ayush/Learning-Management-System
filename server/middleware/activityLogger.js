@@ -31,7 +31,9 @@ const activityLogger = async (req, res, next) => {
             let lectureId = null;
 
             // Auth
-            if (url.includes('/login')) { action = 'Login'; details = 'User logged in'; }
+            if (url.includes('/auth/google')) { action = 'Login'; details = 'User logged in via Google'; }
+            else if (url.includes('/impersonate')) { action = 'Impersonated'; details = `Admin logged in as ${eventData.email || 'a user'}`; }
+            else if (url.includes('/login')) { action = 'Login'; details = 'User logged in'; }
             else if (url.includes('/register')) { action = 'Registered'; details = 'User registered'; }
             else if (url.includes('/updatepassword')) { action = 'Password Updated'; details = 'User updated password'; }
             // Course management

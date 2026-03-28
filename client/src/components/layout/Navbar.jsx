@@ -2,7 +2,7 @@ import { useContext, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import ThemeContext from '../../context/ThemeContext';
-import { FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaGraduationCap, FaSearch, FaTimes, FaChevronDown, FaArrowLeft, FaStore, FaShoppingBag, FaChalkboardTeacher, FaRobot, FaChartLine } from 'react-icons/fa';
+import { FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaGraduationCap, FaSearch, FaTimes, FaChevronDown, FaArrowLeft, FaStore, FaShoppingBag, FaChalkboardTeacher, FaRobot, FaChartLine, FaUserSecret } from 'react-icons/fa';
 import api from '../../api/axios';
 
 const Navbar = () => {
@@ -140,9 +140,45 @@ const Navbar = () => {
         </>
     );
 
+    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
+
+    // Toggle CSS class on <html> so all sticky elements adjust via var(--navbar-height)
+    useEffect(() => {
+        if (isImpersonating) {
+            document.documentElement.classList.add('impersonating');
+        } else {
+            document.documentElement.classList.remove('impersonating');
+        }
+    }, [isImpersonating]);
+
+    const handleReturnToAdmin = () => {
+        const adminToken = localStorage.getItem('adminToken');
+        const adminUserCache = localStorage.getItem('adminUserCache');
+        if (adminToken) {
+            localStorage.setItem('token', adminToken);
+            localStorage.setItem('userCache', adminUserCache);
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUserCache');
+            localStorage.removeItem('isImpersonating');
+            window.location.href = '/admin/dashboard';
+        }
+    };
+
     return (
         <>
             <nav className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md transition-colors duration-300">
+                {isImpersonating && (
+                    <div className="bg-amber-500 text-white text-center py-1.5 px-4 text-xs font-medium flex items-center justify-center gap-2">
+                        <FaUserSecret className="text-[10px]" />
+                        <span>Viewing as <strong>{user?.name}</strong> ({user?.email})</span>
+                        <button
+                            onClick={handleReturnToAdmin}
+                            className="ml-1 px-2.5 py-0.5 bg-white text-amber-600 rounded text-[11px] font-bold hover:bg-amber-50 transition-colors"
+                        >
+                            Return to Admin
+                        </button>
+                    </div>
+                )}
                 <div className="w-full px-4 md:px-8 h-16 flex justify-between items-center">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2 group">

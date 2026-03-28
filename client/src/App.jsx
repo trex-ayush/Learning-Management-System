@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useContext, useState, useEffect, lazy, Suspense } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/layout/Navbar';
@@ -149,6 +150,7 @@ const AuthenticatedFloatingButton = () => {
 
 function App() {
   return (
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <AuthProvider>
       <ThemeProvider>
         <Router>
@@ -240,6 +242,7 @@ function App() {
         </Router>
       </ThemeProvider>
     </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

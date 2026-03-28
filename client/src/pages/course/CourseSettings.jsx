@@ -166,7 +166,7 @@ const CourseSettings = ({ isEmbedded = false }) => {
         <div className={`bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white ${!isEmbedded ? 'min-h-screen pb-12' : ''}`}>
             {/* Header - Only Show if NOT embedded */}
             {!isEmbedded && (
-                <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-16 z-10">
+                <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-10">
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                         <button
                             onClick={() => navigate(`/admin/course/${id}`)}
