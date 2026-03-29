@@ -31,10 +31,10 @@ const Login = () => {
     const { email, password } = formData;
     const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const handleGoogleSuccess = async (tokenResponse) => {
+    const handleGoogleSuccess = async (codeResponse) => {
         setIsGoogleLoading(true);
         try {
-            const user = await googleLogin(tokenResponse.access_token);
+            const user = await googleLogin(codeResponse.code);
             navigate('/');
             if (user.warnings?.length > 0) {
                 toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
@@ -60,6 +60,7 @@ const Login = () => {
     };
 
     const loginWithGoogle = useGoogleLogin({
+        flow: 'auth-code',
         onSuccess: handleGoogleSuccess,
         onError: () => toast.error('Google sign-in failed'),
     });
