@@ -5,10 +5,10 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 // Skip rate limiting in development
 const skipInDev = () => isDevelopment;
 
-// General API rate limiter - 100 requests per 15 minutes
+// General API rate limiter - 300 requests per 15 minutes
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    max: 300,
     message: {
         message: 'Too many requests. Please wait a few minutes before trying again.',
         retryAfter: 15
