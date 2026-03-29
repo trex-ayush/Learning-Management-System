@@ -171,10 +171,32 @@ const googleLogin = asyncHandler(async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        bio: user.bio || '',
+        profileImage: user.profileImage || '',
+        googleId: user.googleId || null,
+        createdAt: user.createdAt,
         warnings: user.warnings || [],
         maxWarnings: user.maxWarnings || 2,
         token: generateToken(user._id),
     });
+});
+
+// @desc    Update user profile (name, bio, profileImage)
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = asyncHandler(async (req, res) => {
+    const { name, bio, profileImage } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (name !== undefined) user.name = name.trim();
+    if (bio !== undefined) user.bio = bio.trim();
+    if (profileImage !== undefined) user.profileImage = profileImage.trim();
+
+    await user.save();
+
+    const updated = await User.findById(req.user.id).select('-password');
+    res.json(updated);
 });
 
 module.exports = {
@@ -183,4 +205,5 @@ module.exports = {
     googleLogin,
     getMe,
     updatePassword,
+    updateProfile,
 };

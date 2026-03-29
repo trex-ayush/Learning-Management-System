@@ -95,6 +95,13 @@ export const AuthProvider = ({ children }) => {
         return res.data;
     };
 
+    const updateProfile = async (data) => {
+        const res = await api.put('/auth/profile', data);
+        cacheUser(res.data);
+        setUser(res.data);
+        return res.data;
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         cacheUser(null);
@@ -102,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );
