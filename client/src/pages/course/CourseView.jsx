@@ -6,7 +6,7 @@ import { FaPlayCircle, FaChevronDown, FaChevronUp, FaArrowLeft, FaClock, FaBars,
 import StatusSelector from '../../components/ui/StatusSelector';
 import LectureSidebarItem from '../../components/course/LectureSidebarItem';
 import Pagination from '../../components/ui/Pagination';
-import toast from 'react-hot-toast';
+import { showSuccess, showError, showWarning } from '../../utils/toast';
 
 const getYouTubeEmbedUrl = (url) => {
     try {
@@ -173,21 +173,7 @@ const CourseView = () => {
             const status = progressMap[selectedLecture._id]?.status;
             const defaultStatus = course?.lectureStatuses?.[0]?.label || 'Not Started';
             if (!status || status === defaultStatus) {
-                toast('Don\'t forget to update your lecture status!', {
-                    id: 'lecture-status-reminder',
-                    icon: '⏰',
-                    duration: 4000,
-                    style: {
-                        background: '#0f172a',
-                        color: '#fff',
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        padding: '14px 20px',
-                        borderRadius: '12px',
-                        border: '1px solid #f59e0b',
-                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-                    },
-                });
+                showWarning('Don\'t forget to update your lecture status!');
             }
         }
     }, [selectedLecture?._id]);
@@ -246,7 +232,7 @@ const CourseView = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch {
-            toast.error('Download failed');
+            showError('Download failed');
         }
     };
 
@@ -271,7 +257,7 @@ const CourseView = () => {
             setViewUrl(blobUrl);
             setViewingResource(resource);
         } catch {
-            toast.error('Failed to load resource');
+            showError('Failed to load resource');
         }
     };
 
@@ -347,9 +333,9 @@ const CourseView = () => {
                     notes: notes
                 }
             }));
-            toast.success('Notes saved!');
+            showSuccess('Notes saved!');
         } catch (error) {
-            toast.error('Failed to save notes');
+            showError('Failed to save notes');
         } finally {
             setIsSavingNotes(false);
         }
@@ -359,7 +345,7 @@ const CourseView = () => {
         const lecId = targetLectureId || selectedLecture?._id;
         if (!lecId) return;
         if (!isEnrolled) {
-            toast.error("You are in Preview Mode (Not Enrolled). Progress cannot be saved.");
+            showError("You are in Preview Mode (Not Enrolled). Progress cannot be saved.");
             return;
         }
         try {
@@ -371,17 +357,17 @@ const CourseView = () => {
                 ...prev,
                 [lecId]: { status: newStatus, notes: existingNotes }
             }));
-            toast.success('Progress saved!');
+            showSuccess('Progress saved!');
         } catch (err) {
             console.error("Failed to update progress", err);
-            toast.error('Failed to save progress');
+            showError('Failed to save progress');
         }
     };
 
     const handleToggleRevision = async () => {
         if (!selectedLecture) return;
         if (!isEnrolled) {
-            toast.error("You are in Preview Mode (Not Enrolled). Cannot mark for revision.");
+            showError("You are in Preview Mode (Not Enrolled). Cannot mark for revision.");
             return;
         }
         try {
@@ -394,9 +380,9 @@ const CourseView = () => {
                     markedForRevision
                 }
             }));
-            toast.success(markedForRevision ? 'Marked for revision!' : 'Removed from revision list');
+            showSuccess(markedForRevision ? 'Marked for revision!' : 'Removed from revision list');
         } catch (err) {
-            toast.error('Failed to update revision mark');
+            showError('Failed to update revision mark');
         }
     };
 
@@ -412,9 +398,9 @@ const CourseView = () => {
 
             setNewComment('');
             fetchComments(selectedLecture._id);
-            toast.success('Comment posted!');
+            showSuccess('Comment posted!');
         } catch (error) {
-            toast.error('Error posting comment');
+            showError('Error posting comment');
         }
     };
 
@@ -446,7 +432,7 @@ const CourseView = () => {
             setPeerProgressLoading(true);
             api.get(`/courses/${id}/peers/${selectedPeerId}/progress`)
                 .then(res => setPeerProgressData(res.data))
-                .catch(() => { setPeerProgressData(null); setSelectedPeerId(null); toast.error('Failed to load peer progress'); })
+                .catch(() => { setPeerProgressData(null); setSelectedPeerId(null); showError('Failed to load peer progress'); })
                 .finally(() => setPeerProgressLoading(false));
         } else {
             setPeerProgressData(null);

@@ -8,7 +8,7 @@ import TeacherManagement from '../../components/course/TeacherManagement';
 import Pagination from '../../components/ui/Pagination';
 import AINotesGenerator from '../../components/course/AINotesGenerator';
 import ResourceManager from '../../components/course/ResourceManager';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 import AuthContext from '../../context/AuthContext';
 
 const CourseManage = () => {
@@ -205,7 +205,7 @@ const CourseManage = () => {
             setStudentProgressData(res.data);
         } catch (err) {
             console.error("Failed to fetch student progress", err);
-            toast.error('Failed to load student progress');
+            showError('Failed to load student progress');
             setSelectedStudentId(null);
             setStudentProgressData(null);
         } finally {
@@ -355,7 +355,7 @@ const CourseManage = () => {
                         title: `New Section: ${newSectionTitle}`,
                         message: broadcastMsg,
                         priority: sectionBroadcast.priority
-                    }).catch(() => toast.error('Section saved but broadcast failed'));
+                    }).catch(() => showError('Section saved but broadcast failed'));
                 }
             }
             setNewSectionTitle('');
@@ -365,9 +365,9 @@ const CourseManage = () => {
             setEditingSectionId(null);
             setSectionBroadcast({ enabled: false, message: '', priority: 'normal' });
             fetchCourse(true);
-            toast.success(editingSectionId ? 'Section updated!' : 'Section added!');
+            showSuccess(editingSectionId ? 'Section updated!' : 'Section added!');
         } catch (error) {
-            toast.error('Error saving section');
+            showError('Error saving section');
         }
     };
 
@@ -376,9 +376,9 @@ const CourseManage = () => {
         try {
             await api.delete(`/courses/${id}/sections/${sectionId}`);
             fetchCourse(true);
-            toast.success('Section deleted');
+            showSuccess('Section deleted');
         } catch (error) {
-            toast.error('Error deleting section');
+            showError('Error deleting section');
         }
     };
 
@@ -399,7 +399,7 @@ const CourseManage = () => {
                         title: `New Lecture: ${newLecture.title}`,
                         message: broadcastMsg || defaultMsg,
                         priority: lectureBroadcast.priority
-                    }).catch(() => toast.error('Lecture saved but broadcast failed'));
+                    }).catch(() => showError('Lecture saved but broadcast failed'));
                 }
             }
 
@@ -408,10 +408,10 @@ const CourseManage = () => {
             setEditingLectureId(null);
             setLectureBroadcast({ enabled: false, message: '', priority: 'normal' });
             fetchCourse(true);
-            toast.success(editingLectureId ? 'Lecture updated!' : 'Lecture added!');
+            showSuccess(editingLectureId ? 'Lecture updated!' : 'Lecture added!');
         } catch (error) {
             if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error saving lecture');
+                showError(error, 'Error saving lecture');
             }
         }
     };
@@ -437,9 +437,9 @@ const CourseManage = () => {
         try {
             await api.delete(`/courses/lectures/${lectureId}`);
             fetchCourse(true);
-            toast.success('Lecture deleted');
+            showSuccess('Lecture deleted');
         } catch (error) {
-            toast.error('Error deleting lecture');
+            showError('Error deleting lecture');
         }
     };
 
@@ -447,9 +447,9 @@ const CourseManage = () => {
         try {
             await api.put(`/courses/${id}/sections/${sectionId}`, { isPublic: !currentStatus });
             fetchCourse(true);
-            toast.success(currentStatus ? 'Section hidden' : 'Section is now Public');
+            showSuccess(currentStatus ? 'Section hidden' : 'Section is now Public');
         } catch (error) {
-            toast.error('Error updating visibility');
+            showError('Error updating visibility');
         }
     };
 
@@ -457,9 +457,9 @@ const CourseManage = () => {
         try {
             await api.put(`/courses/lectures/${lectureId}`, { isPublic: !currentStatus });
             fetchCourse(true);
-            toast.success(currentStatus ? 'Lecture hidden' : 'Lecture is now Public');
+            showSuccess(currentStatus ? 'Lecture hidden' : 'Lecture is now Public');
         } catch (error) {
-            toast.error('Error updating visibility');
+            showError('Error updating visibility');
         }
     };
 
@@ -475,9 +475,9 @@ const CourseManage = () => {
         try {
             const res = await api.put(`/broadcasts/course/${id}/settings`);
             setAllowStudentBroadcasts(res.data.allowStudentBroadcasts);
-            toast.success(res.data.allowStudentBroadcasts ? 'Students can now broadcast' : 'Student broadcasts disabled');
+            showSuccess(res.data.allowStudentBroadcasts ? 'Students can now broadcast' : 'Student broadcasts disabled');
         } catch (error) {
-            toast.error('Error updating broadcast settings');
+            showError('Error updating broadcast settings');
         }
     };
 
@@ -486,11 +486,11 @@ const CourseManage = () => {
         if (!window.confirm('Are you sure you want to leave this course? You will lose access to manage this course.')) return;
         try {
             await api.delete(`/courses/${id}/teachers/leave`);
-            toast.success('You have left the course');
+            showSuccess('You have left the course');
             navigate('/dashboard');
         } catch (error) {
             if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error leaving course');
+                showError(error, 'Error leaving course');
             }
         }
     };
@@ -502,11 +502,11 @@ const CourseManage = () => {
         try {
             await api.post(`/courses/${id}/enroll`, { email: enrollEmail });
             setEnrollEmail('');
-            toast.success('Student enrolled successfully');
+            showSuccess('Student enrolled successfully');
             fetchStudents(studentPage, debouncedStudentKeyword);
         } catch (error) {
             if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error enrolling student');
+                showError(error, 'Error enrolling student');
             }
         } finally {
             setIsEnrolling(false);
@@ -518,11 +518,11 @@ const CourseManage = () => {
         if (!window.confirm(`Are you sure you want to remove ${studentName} from this course? Progress will be lost.`)) return;
         try {
             await api.delete(`/courses/${id}/enroll/${studentId}`);
-            toast.success('Student removed from course');
+            showSuccess('Student removed from course');
             fetchStudents(studentPage, debouncedStudentKeyword);
         } catch (error) {
             if (!error.handled) {
-                toast.error('Failed to remove student');
+                showError('Failed to remove student');
             }
         }
     };
@@ -533,9 +533,9 @@ const CourseManage = () => {
             const newValue = !course.allowPeerProgress;
             await api.put(`/courses/${id}`, { allowPeerProgress: newValue });
             setCourse({ ...course, allowPeerProgress: newValue });
-            toast.success(newValue ? 'Students can now view peer progress' : 'Peer progress viewing disabled');
+            showSuccess(newValue ? 'Students can now view peer progress' : 'Peer progress viewing disabled');
         } catch (err) {
-            toast.error('Failed to update setting');
+            showError('Failed to update setting');
         }
     };
 

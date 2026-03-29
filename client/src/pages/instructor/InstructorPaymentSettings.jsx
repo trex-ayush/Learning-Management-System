@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaBuildingColumns, FaMobileScreen } from 'react-icons/fa6';
 import { FaPaypal, FaSave, FaCheckCircle } from 'react-icons/fa';
 import api from '../../api/axios';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const InstructorPaymentSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -47,16 +47,16 @@ const InstructorPaymentSettings = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.accountHolderName.trim()) {
-            toast.error('Account holder name is required');
+            showError('Account holder name is required');
             return;
         }
         setSaving(true);
         try {
             await api.post('/instructor/bank-details', form);
-            toast.success('Payment details saved');
+            showSuccess('Payment details saved');
             setSaved(true);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save');
+            showError(error, 'Failed to save');
         } finally {
             setSaving(false);
         }

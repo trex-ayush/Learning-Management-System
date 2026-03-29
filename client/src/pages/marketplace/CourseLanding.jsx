@@ -10,7 +10,7 @@ import StarRating from '../../components/ui/StarRating';
 import PriceDisplay from '../../components/ui/PriceDisplay';
 import InstructorProfileCard from '../../components/review/InstructorProfileCard';
 import ReviewCard from '../../components/review/ReviewCard';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const CourseLanding = () => {
     const { id } = useParams();
@@ -49,7 +49,7 @@ const CourseLanding = () => {
             setReviews(res.data.reviews);
             // All sections collapsed by default
         } catch (error) {
-            toast.error('Course not found');
+            showError('Course not found');
             navigate('/marketplace');
         } finally {
             setLoading(false);
@@ -85,7 +85,7 @@ const CourseLanding = () => {
         }
 
         if (!reviewComment.trim()) {
-            toast.error('Please write a comment');
+            showError('Please write a comment');
             return;
         }
 
@@ -96,19 +96,19 @@ const CourseLanding = () => {
                     rating: reviewRating,
                     comment: reviewComment
                 });
-                toast.success('Review updated!');
+                showSuccess('Review updated!');
             } else {
                 await api.post('/reviews', {
                     courseId: id,
                     rating: reviewRating,
                     comment: reviewComment
                 });
-                toast.success('Review submitted!');
+                showSuccess('Review submitted!');
             }
             fetchCourse();
             fetchMyReview();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to submit review');
+            showError(error, 'Failed to submit review');
         } finally {
             setSubmittingReview(false);
         }
@@ -120,7 +120,7 @@ const CourseLanding = () => {
             await api.post(`/reviews/${reviewId}/helpful`);
             fetchCourse();
         } catch (error) {
-            toast.error('Failed to mark review as helpful');
+            showError('Failed to mark review as helpful');
         }
     };
 
@@ -133,9 +133,9 @@ const CourseLanding = () => {
                 courseId: id
             });
             setCouponApplied(res.data);
-            toast.success('Coupon applied successfully!');
+            showSuccess('Coupon applied successfully!');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Invalid coupon');
+            showError(error, 'Invalid coupon');
             setCouponApplied(null);
         }
     };
@@ -160,7 +160,7 @@ const CourseLanding = () => {
                 throw new Error('Failed to get checkout URL');
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to start checkout');
+            showError(error, 'Failed to start checkout');
             setPurchasing(false);
         }
     };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPlay, FaBook, FaCalendar, FaFileInvoice } from 'react-icons/fa';
 import api from '../../api/axios';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const MyPurchases = () => {
     const [purchases, setPurchases] = useState([]);
@@ -17,7 +17,7 @@ const MyPurchases = () => {
             const res = await api.get('/purchase/my-purchases');
             setPurchases(res.data);
         } catch (error) {
-            toast.error('Failed to load purchases');
+            showError('Failed to load purchases');
         } finally {
             setLoading(false);
         }

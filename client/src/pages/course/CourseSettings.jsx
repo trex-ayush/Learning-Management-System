@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaPalette, FaStore, FaTag, FaTimes, FaTicketAlt, FaCog, FaChartBar, FaGift } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 import ManageCoupons from './ManageCoupons';
 
 const CourseSettings = ({ isEmbedded = false }) => {
@@ -85,7 +85,7 @@ const CourseSettings = ({ isEmbedded = false }) => {
             });
             setLoading(false);
         } catch (err) {
-            toast.error('Failed to load course settings');
+            showError('Failed to load course settings');
             navigate(`/admin/course/${id}`);
         }
     };
@@ -95,9 +95,9 @@ const CourseSettings = ({ isEmbedded = false }) => {
         setSaving(true);
         try {
             await api.put(`/courses/${id}`, formData);
-            toast.success('Settings saved successfully');
+            showSuccess('Settings saved successfully');
         } catch (error) {
-            toast.error('Error saving settings');
+            showError('Error saving settings');
         } finally {
             setSaving(false);
         }

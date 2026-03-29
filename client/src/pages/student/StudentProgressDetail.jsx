@@ -12,7 +12,7 @@ import {
     FaEnvelope,
     FaCalendarAlt
 } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const StudentProgressDetail = () => {
     const { courseId, studentId } = useParams();
@@ -34,7 +34,7 @@ const StudentProgressDetail = () => {
                 setExpandedSections(expanded);
             } catch (err) {
                 console.error(err);
-                toast.error(err.response?.data?.message || 'Failed to load student progress');
+                showError(err, 'Failed to load student progress');
             } finally {
                 setLoading(false);
             }

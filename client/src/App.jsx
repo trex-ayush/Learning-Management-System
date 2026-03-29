@@ -157,25 +157,40 @@ function App() {
           <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 flex flex-col">
             <Navbar />
             <div className="flex-1">
-              <Toaster position="top-right" toastOptions={{
-                duration: 3000,
-                style: {
-                  background: '#333',
-                  color: '#fff',
-                },
-                success: {
+              <Toaster
+                position="top-center"
+                reverseOrder={false}
+                gutter={10}
+                toastOptions={{
+                  duration: 3000,
                   style: {
-                    background: '#10B981', // green-500
-                    color: '#fff',
+                    background: '#1e293b',
+                    color: '#f1f5f9',
+                    fontSize: '13.5px',
+                    fontWeight: 500,
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    maxWidth: '420px',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                   },
-                },
-                error: {
-                  style: {
-                    background: '#EF4444', // red-500
-                    color: '#fff',
+                  success: {
+                    style: {
+                      background: '#064e3b',
+                      border: '1px solid #059669',
+                    },
+                    iconTheme: { primary: '#34d399', secondary: '#064e3b' },
                   },
-                },
-              }} />
+                  error: {
+                    style: {
+                      background: '#450a0a',
+                      border: '1px solid #dc2626',
+                    },
+                    iconTheme: { primary: '#f87171', secondary: '#450a0a' },
+                    duration: 4000,
+                  },
+                }}
+              />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/login" element={<Login />} />

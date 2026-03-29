@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 import api from '../../api/axios';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Shared helpers
@@ -136,7 +136,7 @@ const PayoutsTab = () => {
             setPayouts(res.data.payouts);
             setTotalPages(res.data.pages);
         } catch {
-            toast.error('Failed to load payouts');
+            showError('Failed to load payouts');
         } finally {
             setLoading(false);
         }
@@ -240,7 +240,7 @@ const UsersTab = () => {
             const res = await api.get('/admin/users');
             setUsers(res.data);
         } catch {
-            toast.error('Failed to load users');
+            showError('Failed to load users');
         } finally {
             setLoading(false);
         }
@@ -264,31 +264,31 @@ const UsersTab = () => {
     const isLastWarning = (user) => (user.warnings?.length || 0) + 1 >= (user.maxWarnings || 2);
 
     const handleWarn = async () => {
-        if (!warnReason.trim()) { toast.error('Please provide a reason'); return; }
+        if (!warnReason.trim()) { showError('Please provide a reason'); return; }
         setWarnLoading(true);
         try {
             const res = await api.post(`/admin/users/${warnModal.user._id}/warn`, { reason: warnReason });
             setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
-            toast.success(res.data.isBlocked ? 'Warning issued — user auto-blocked' : 'Warning issued');
+            showSuccess(res.data.isBlocked ? 'Warning issued — user auto-blocked' : 'Warning issued');
             setWarnModal({ open: false, user: null });
             setWarnReason('');
         } catch (e) {
-            toast.error(e.response?.data?.message || 'Failed to warn user');
+            showError(e, 'Failed to warn user');
         } finally { setWarnLoading(false); }
     };
 
     const handleBlock = async () => {
-        if (!blockReason.trim()) { toast.error('Please provide a reason'); return; }
+        if (!blockReason.trim()) { showError('Please provide a reason'); return; }
         setBlockLoading(true);
         try {
             const res = await api.post(`/admin/users/${blockModal.user._id}/block`, { reason: blockReason, hideCourses });
             setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
-            toast.success('User blocked');
+            showSuccess('User blocked');
             setBlockModal({ open: false, user: null });
             setBlockReason('');
             setHideCourses(false);
         } catch (e) {
-            toast.error(e.response?.data?.message || 'Failed to block user');
+            showError(e, 'Failed to block user');
         } finally { setBlockLoading(false); }
     };
 
@@ -296,35 +296,35 @@ const UsersTab = () => {
         try {
             const res = await api.post(`/admin/users/${userId}/unblock`);
             setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
-            toast.success('User unblocked');
-        } catch { toast.error('Failed to unblock user'); }
+            showSuccess('User unblocked');
+        } catch { showError('Failed to unblock user'); }
     };
 
     const handleChangeRole = async (userId, role) => {
         try {
             const res = await api.post(`/admin/users/${userId}/role`, { role });
             setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
-            toast.success(`Role changed to ${role}`);
-        } catch { toast.error('Failed to change role'); }
+            showSuccess(`Role changed to ${role}`);
+        } catch { showError('Failed to change role'); }
     };
 
     const handleRemoveWarning = async (userId, index) => {
         try {
             const res = await api.delete(`/admin/users/${userId}/warnings/${index}`);
             setUsers(prev => prev.map(u => u._id === res.data._id ? res.data : u));
-            toast.success('Warning removed');
-        } catch { toast.error('Failed to remove warning'); }
+            showSuccess('Warning removed');
+        } catch { showError('Failed to remove warning'); }
     };
 
     const handleSetMaxWarnings = async (userId) => {
         const val = parseInt(maxWarningsInput[userId]);
-        if (!val || val < 1) { toast.error('Must be at least 1'); return; }
+        if (!val || val < 1) { showError('Must be at least 1'); return; }
         try {
             await api.post(`/admin/users/${userId}/max-warnings`, { maxWarnings: val });
             setUsers(prev => prev.map(u => u._id === userId ? { ...u, maxWarnings: val } : u));
             setEditMaxWarnings(prev => ({ ...prev, [userId]: false }));
-            toast.success('Max warnings updated');
-        } catch { toast.error('Failed to update'); }
+            showSuccess('Max warnings updated');
+        } catch { showError('Failed to update'); }
     };
 
     const filterOptions = [
@@ -772,12 +772,12 @@ const ImpersonateTab = () => {
                 setFoundUser(match);
             } else if (users.length > 0) {
                 setFoundUser(null);
-                toast.error('No exact email match. Check spelling.');
+                showError('No exact email match. Check spelling.');
             } else {
-                toast.error('No user found with that email');
+                showError('No user found with that email');
             }
         } catch {
-            toast.error('Failed to search user');
+            showError('Failed to search user');
         } finally {
             setLoading(false);
         }
@@ -799,10 +799,10 @@ const ImpersonateTab = () => {
             localStorage.setItem('userCache', JSON.stringify({ user: res.data, timestamp: Date.now() }));
             localStorage.setItem('isImpersonating', 'true');
 
-            toast.success(`Now logged in as ${res.data.name}`);
+            showSuccess(`Now logged in as ${res.data.name}`);
             window.location.href = '/';
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Impersonation failed');
+            showError(error, 'Impersonation failed');
         } finally {
             setLoading(false);
         }
@@ -918,7 +918,7 @@ const AdminDashboard = () => {
             setDashboard(dashRes.data);
             setInstructors(instRes.data);
         } catch {
-            toast.error('Failed to load dashboard');
+            showError('Failed to load dashboard');
         } finally {
             setLoading(false);
         }
@@ -932,7 +932,7 @@ const AdminDashboard = () => {
 
     const handlePayout = async (e) => {
         e.preventDefault();
-        if (!payoutForm.amount || Number(payoutForm.amount) <= 0) { toast.error('Enter a valid amount'); return; }
+        if (!payoutForm.amount || Number(payoutForm.amount) <= 0) { showError('Enter a valid amount'); return; }
         setPayoutLoading(true);
         try {
             await api.post('/admin/payouts', {
@@ -942,11 +942,11 @@ const AdminDashboard = () => {
                 transactionId: payoutForm.transactionId,
                 note: payoutForm.note
             });
-            toast.success('Payout recorded');
+            showSuccess('Payout recorded');
             setShowPayoutModal(false);
             fetchData();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create payout');
+            showError(error, 'Failed to create payout');
         } finally { setPayoutLoading(false); }
     };
 

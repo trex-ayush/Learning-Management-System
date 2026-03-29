@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaArrowLeft, FaSave, FaTrash, FaRobot, FaKey, FaCheckCircle, FaSpinner, FaFlask } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const PROVIDERS = {
     openai: {
@@ -60,31 +60,31 @@ const StudentAISettings = () => {
     };
 
     const handleSave = async () => {
-        if (!apiKey) { toast.error('Please enter your API key'); return; }
+        if (!apiKey) { showError('Please enter your API key'); return; }
         setSaving(true);
         try {
             const res = await api.post('/student-ai/config', { provider, apiKey, model });
             setMaskedKey(res.data.apiKeyMasked);
             setApiKey('');
             setHasExisting(true);
-            toast.success('AI configuration saved!');
+            showSuccess('AI configuration saved!');
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to save');
+            showError(err, 'Failed to save');
         } finally { setSaving(false); }
     };
 
     const handleTest = async () => {
-        if (!apiKey) { toast.error('Enter your API key first'); return; }
+        if (!apiKey) { showError('Enter your API key first'); return; }
         setTesting(true);
         try {
             const res = await api.post('/student-ai/test', { provider, apiKey, model });
-            if (res.data.success) toast.success('Connection successful!');
-            else toast.error('Unexpected response');
+            if (res.data.success) showSuccess('Connection successful!');
+            else showError('Unexpected response');
         } catch (err) {
             const msg = err.response?.data?.message || 'Connection test failed';
             if (msg.includes('quota') || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-                toast.error('API key valid but quota exhausted. Enable billing or wait.');
-            } else toast.error(msg);
+                showError('API key valid but quota exhausted. Enable billing or wait.');
+            } else showError(msg);
         } finally { setTesting(false); }
     };
 
@@ -97,8 +97,8 @@ const StudentAISettings = () => {
             setMaskedKey('');
             setProvider('openai');
             setModel('gpt-4o');
-            toast.success('AI configuration removed');
-        } catch { toast.error('Failed to delete'); }
+            showSuccess('AI configuration removed');
+        } catch { showError('Failed to delete'); }
     };
 
     if (loading) return (

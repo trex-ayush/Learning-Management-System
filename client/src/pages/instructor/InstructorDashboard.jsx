@@ -7,7 +7,7 @@ import {
 } from 'react-icons/fa';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const InstructorDashboard = () => {
     const { user } = useContext(AuthContext);
@@ -40,7 +40,7 @@ const InstructorDashboard = () => {
             const res = await api.get('/instructor/dashboard');
             setDashboard(res.data);
         } catch (error) {
-            toast.error('Failed to load dashboard');
+            showError('Failed to load dashboard');
         } finally {
             setLoading(false);
         }
@@ -52,7 +52,7 @@ const InstructorDashboard = () => {
             const res = await api.get('/instructor/earnings');
             setEarnings(res.data);
         } catch (error) {
-            toast.error('Failed to load earnings');
+            showError('Failed to load earnings');
         } finally {
             setEarningsLoading(false);
         }

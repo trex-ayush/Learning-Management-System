@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaArrowLeft, FaSave, FaTrash, FaRobot, FaKey, FaCheckCircle, FaSpinner, FaFlask } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const PROVIDERS = {
     openai: {
@@ -66,12 +66,12 @@ const AISettings = () => {
 
     const handleSave = async () => {
         if (!apiKey && !hasExisting) {
-            toast.error('Please enter your API key');
+            showError('Please enter your API key');
             return;
         }
         if (!apiKey && hasExisting) {
             // Only updating provider/model without changing key — not supported, need key
-            toast.error('Please enter your API key to save');
+            showError('Please enter your API key to save');
             return;
         }
         setSaving(true);
@@ -80,9 +80,9 @@ const AISettings = () => {
             setMaskedKey(res.data.apiKeyMasked);
             setApiKey('');
             setHasExisting(true);
-            toast.success('AI configuration saved!');
+            showSuccess('AI configuration saved!');
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to save configuration');
+            showError(err, 'Failed to save configuration');
         } finally {
             setSaving(false);
         }
@@ -90,23 +90,23 @@ const AISettings = () => {
 
     const handleTest = async () => {
         if (!apiKey) {
-            toast.error('Enter your API key first to test');
+            showError('Enter your API key first to test');
             return;
         }
         setTesting(true);
         try {
             const res = await api.post('/ai/test', { provider, apiKey, model });
             if (res.data.success) {
-                toast.success('Connection successful!');
+                showSuccess('Connection successful!');
             } else {
-                toast.error('Test returned unexpected response');
+                showError('Test returned unexpected response');
             }
         } catch (err) {
             const msg = err.response?.data?.message || 'Connection test failed';
             if (msg.includes('quota') || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-                toast.error('API key is valid but your free quota is exhausted. Enable billing or wait and retry.');
+                showError('API key is valid but your free quota is exhausted. Enable billing or wait and retry.');
             } else {
-                toast.error(msg);
+                showError(msg);
             }
         } finally {
             setTesting(false);
@@ -122,9 +122,9 @@ const AISettings = () => {
             setMaskedKey('');
             setProvider('openai');
             setModel('gpt-4o');
-            toast.success('AI configuration removed');
+            showSuccess('AI configuration removed');
         } catch (err) {
-            toast.error('Failed to delete configuration');
+            showError('Failed to delete configuration');
         }
     };
 

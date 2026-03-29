@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import api from '../api/axios';
-import toast from 'react-hot-toast';
+import { showSuccess } from '../utils/toast';
 import { FaUserCircle, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 
 const Profile = () => {
@@ -24,7 +24,7 @@ const Profile = () => {
         try {
             await api.put('/auth/updatepassword', { currentPassword, newPassword });
             setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            toast.success('Password updated successfully');
+            showSuccess('Password updated successfully');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update password');
         } finally {

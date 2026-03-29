@@ -2,7 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showSuccess, showError, showWarning } from '../../utils/toast';
 import { FaGraduationCap, FaChalkboardTeacher, FaRobot, FaBullhorn, FaShieldAlt } from 'react-icons/fa';
 
 const GoogleIcon = () => (
@@ -37,22 +37,18 @@ const Login = () => {
             const user = await googleLogin(codeResponse.code);
             navigate('/');
             if (user.warnings?.length > 0) {
-                toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
-                    duration: 6000,
-                    style: { background: '#78350f', color: '#fef3c7', fontWeight: 600, fontSize: '13px', border: '1px solid #f59e0b', borderRadius: '10px', padding: '12px 16px' },
-                });
+                showWarning(`You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`);
             } else {
-                toast.success('Logged in successfully');
+                showSuccess('Logged in successfully');
             }
         } catch (error) {
-            const isBlocked = error.response?.status === 403;
-            if (isBlocked) {
-                toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'} Contact admin for more information.`, {
-                    duration: 8000,
-                    style: { background: '#450a0a', color: '#fecaca', fontWeight: 600, fontSize: '13px', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' },
-                });
-            } else {
-                toast.error(error.response?.data?.message || 'Google sign-in failed');
+            if (!error.handled) {
+                const isBlocked = error.response?.status === 403;
+                if (isBlocked) {
+                    showError('Your account has been blocked. Contact admin for help.');
+                } else {
+                    showError(error, 'Google sign-in failed');
+                }
             }
         } finally {
             setIsGoogleLoading(false);
@@ -62,7 +58,7 @@ const Login = () => {
     const loginWithGoogle = useGoogleLogin({
         flow: 'auth-code',
         onSuccess: handleGoogleSuccess,
-        onError: () => toast.error('Google sign-in failed'),
+        onError: () => showError('Google sign-in failed'),
     });
 
     const onSubmit = async (e) => {
@@ -73,22 +69,18 @@ const Login = () => {
             const user = await login(email, password);
             navigate('/');
             if (user.warnings?.length > 0) {
-                toast(`⚠️ You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`, {
-                    duration: 6000,
-                    style: { background: '#78350f', color: '#fef3c7', fontWeight: 600, fontSize: '13px', border: '1px solid #f59e0b', borderRadius: '10px', padding: '12px 16px' },
-                });
+                showWarning(`You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`);
             } else {
-                toast.success('Logged in successfully');
+                showSuccess('Logged in successfully');
             }
         } catch (error) {
-            const isBlocked = error.response?.status === 403;
-            if (isBlocked) {
-                toast.error(`🚫 ${error.response?.data?.message || 'Your account has been blocked.'} Contact admin for more information.`, {
-                    duration: 8000,
-                    style: { background: '#450a0a', color: '#fecaca', fontWeight: 600, fontSize: '13px', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 16px' },
-                });
-            } else {
-                toast.error(error.response?.data?.message || error.message || 'Invalid credentials');
+            if (!error.handled) {
+                const isBlocked = error.response?.status === 403;
+                if (isBlocked) {
+                    showError('Your account has been blocked. Contact admin for help.');
+                } else {
+                    showError(error, 'Invalid credentials');
+                }
             }
         } finally {
             setIsLoading(false);
