@@ -120,7 +120,8 @@ const getMyActivities = async (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
 
         const query = {
-            $or: [{ user: req.user._id }, { student: req.user._id }]
+            $or: [{ user: req.user._id }, { student: req.user._id }],
+            action: { $ne: 'Impersonated' }
         };
 
         if (req.query.dateFrom || req.query.dateTo) {

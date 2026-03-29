@@ -15,6 +15,7 @@ const ActivityFilters = ({
     methodDropdownOpen, setMethodDropdownOpen,
     dateDropdownOpen, setDateDropdownOpen,
     onReset, setPage,
+    actions = ALL_ACTIONS,
 }) => {
     const actionDropdownRef = useRef(null);
     const methodDropdownRef = useRef(null);
@@ -91,7 +92,7 @@ const ActivityFilters = ({
                                     className="w-full px-2.5 py-1.5 text-xs rounded-md bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" autoFocus />
                             </div>
                             <div className="max-h-64 overflow-y-auto py-1">
-                                {ALL_ACTIONS.filter(a => a.toLowerCase().includes(actionSearch.toLowerCase())).map(action => {
+                                {actions.filter(a => a.toLowerCase().includes(actionSearch.toLowerCase())).map(action => {
                                     const isSelected = selectedActions.includes(action);
                                     return (
                                         <button key={action} onClick={() => toggleAction(action)}

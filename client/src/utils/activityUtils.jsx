@@ -14,8 +14,9 @@ export const ALL_ACTIONS = [
     'Teacher Added', 'Teacher Removed', 'Teacher Left', 'Teacher Updated',
     'User Warned', 'User Blocked', 'User Unblocked', 'Role Changed',
     'Course Blocked', 'Course Unblocked',
-    'Impersonated',
 ];
+
+export const ALL_ACTIONS_ADMIN = [...ALL_ACTIONS, 'Impersonated'];
 
 export const DATE_PRESETS = [
     { label: 'All Time', value: 'all' },

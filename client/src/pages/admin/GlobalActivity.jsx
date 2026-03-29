@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
 import ActivityFilters from '../../components/activity/ActivityFilters';
 import ActivityDetailDrawer from '../../components/activity/ActivityDetailDrawer';
-import { getActionIcon, getActionBadgeClass, getResourceLabel } from '../../utils/activityUtils';
+import { getActionIcon, getActionBadgeClass, getResourceLabel, ALL_ACTIONS_ADMIN } from '../../utils/activityUtils';
 
 const GlobalActivity = () => {
     const navigate = useNavigate();
@@ -105,6 +105,7 @@ const GlobalActivity = () => {
                     methodDropdownOpen={methodDropdownOpen} setMethodDropdownOpen={setMethodDropdownOpen}
                     dateDropdownOpen={dateDropdownOpen} setDateDropdownOpen={setDateDropdownOpen}
                     onReset={handleReset} setPage={setPage}
+                    actions={ALL_ACTIONS_ADMIN}
                 />
 
                 {loading ? (
