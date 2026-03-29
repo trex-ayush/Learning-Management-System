@@ -182,6 +182,7 @@ const CourseView = () => {
         setSelectedLecture(lecture);
         setCurrentPage(1);
         fetchComments(lecture._id);
+        navigate(`/course/${id}/lecture/${lecture._id}`, { replace: true });
 
         // Sync Notes from progress map
         const lectureProgress = progressMap[lecture._id];
