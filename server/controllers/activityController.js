@@ -111,6 +111,62 @@ const getGlobalActivities = async (req, res) => {
     }
 };
 
+// @desc    Get current user's own activities
+// @route   GET /api/activities/me
+// @access  Private
+const getMyActivities = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+
+        const query = {
+            $or: [{ user: req.user._id }, { student: req.user._id }]
+        };
+
+        if (req.query.dateFrom || req.query.dateTo) {
+            query.createdAt = {};
+            if (req.query.dateFrom) query.createdAt.$gte = new Date(req.query.dateFrom);
+            if (req.query.dateTo) {
+                const to = new Date(req.query.dateTo);
+                to.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = to;
+            }
+        }
+
+        if (req.query.method) {
+            const methods = req.query.method.split(',').map(m => m.trim().toUpperCase()).filter(Boolean);
+            query.method = methods.length === 1 ? methods[0] : { $in: methods };
+        }
+
+        if (req.query.action && req.query.action !== 'All') {
+            const actions = req.query.action.split(',').map(a => a.trim()).filter(Boolean);
+            query.action = actions.length === 1 ? actions[0] : { $in: actions };
+        }
+
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
+            const searchCondition = { $or: [{ action: searchRegex }, { details: searchRegex }, { url: searchRegex }] };
+            query.$and = [{ $or: query.$or }, searchCondition];
+            delete query.$or;
+        }
+
+        const activities = await Activity.find(query)
+            .populate('user', 'name email role')
+            .populate('course', 'title')
+            .populate('lecture', 'title number')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        const total = await Activity.countDocuments(query);
+
+        res.status(200).json({ activities, page, pages: Math.ceil(total / limit), total });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
-    getGlobalActivities
+    getGlobalActivities,
+    getMyActivities
 };
