@@ -4,7 +4,11 @@ const asyncHandler = require('express-async-handler');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'postmessage'
+);
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -116,16 +120,19 @@ const updatePassword = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleLogin = asyncHandler(async (req, res) => {
-    const { credential } = req.body;
+    const { code } = req.body;
 
-    if (!credential) {
+    if (!code) {
         res.status(400);
-        throw new Error('Google credential is required');
+        throw new Error('Google authorization code is required');
     }
 
-    // Verify Google ID token
+    // Exchange authorization code for tokens
+    const { tokens } = await googleClient.getToken(code);
+
+    // Verify the ID token with audience check
     const ticket = await googleClient.verifyIdToken({
-        idToken: credential,
+        idToken: tokens.id_token,
         audience: process.env.GOOGLE_CLIENT_ID,
     });
 

@@ -87,8 +87,8 @@ export const AuthProvider = ({ children }) => {
         return res.data;
     };
 
-    const googleLogin = async (credential) => {
-        const res = await api.post('/auth/google', { credential });
+    const googleLogin = async (code) => {
+        const res = await api.post('/auth/google', { code });
         localStorage.setItem('token', res.data.token);
         cacheUser(res.data);
         setUser(res.data);

@@ -32,10 +32,10 @@ const Register = () => {
     const { name, email, password } = formData;
     const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const handleGoogleSuccess = async (tokenResponse) => {
+    const handleGoogleSuccess = async (codeResponse) => {
         setIsGoogleLoading(true);
         try {
-            await googleLogin(tokenResponse.access_token);
+            await googleLogin(codeResponse.code);
             navigate('/');
             toast.success('Account created successfully');
         } catch (error) {
@@ -46,6 +46,7 @@ const Register = () => {
     };
 
     const signUpWithGoogle = useGoogleLogin({
+        flow: 'auth-code',
         onSuccess: handleGoogleSuccess,
         onError: () => toast.error('Google sign-up failed'),
     });
