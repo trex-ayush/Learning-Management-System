@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaClock, FaCheckCircle, FaTimesCircle, FaArrowLeft, FaArrowRight, FaFlag, FaTrophy, FaRedo } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const QuizTake = () => {
     const { courseId, quizId } = useParams();
@@ -82,7 +82,7 @@ const QuizTake = () => {
                 setAnswers(existingAnswers);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to load quiz');
+            showError(error, 'Failed to load quiz');
             navigate(`/course/${courseId}?tab=quizzes`);
         } finally {
             setLoading(false);
@@ -116,9 +116,9 @@ const QuizTake = () => {
             });
 
             setResult(res.data);
-            toast.success(res.data.result.passed ? 'Congratulations! You passed!' : 'Quiz submitted');
+            showSuccess(res.data.result.passed ? 'Congratulations! You passed!' : 'Quiz submitted');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to submit quiz');
+            showError(error, 'Failed to submit quiz');
         } finally {
             setSubmitting(false);
         }
@@ -156,7 +156,7 @@ const QuizTake = () => {
             setQuiz(res.data.quiz);
             setAttempt(res.data.attempt);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to start new attempt');
+            showError(error, 'Failed to start new attempt');
             setReviewMode(true);
         } finally {
             setLoading(false);

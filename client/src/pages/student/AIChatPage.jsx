@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaRobot, FaPaperPlane, FaSpinner, FaPaperclip, FaTimes, FaFilePdf, FaImage, FaTrash, FaPlus, FaKey, FaCog, FaBars, FaComments } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const AIChatPage = () => {
     const [searchParams] = useSearchParams();
@@ -45,7 +45,7 @@ const AIChatPage = () => {
             setActiveConvo(res.data);
             setMessages(res.data.messages || []);
             setSidebarOpen(false);
-        } catch { toast.error('Failed to load conversation'); }
+        } catch { showError('Failed to load conversation'); }
     };
 
     const createNew = async () => {
@@ -57,7 +57,7 @@ const AIChatPage = () => {
             setMessages([]);
             loadConversations();
             setSidebarOpen(false);
-        } catch { toast.error('Failed to create conversation'); }
+        } catch { showError('Failed to create conversation'); }
     };
 
     const deleteConvo = async (id, e) => {
@@ -67,7 +67,7 @@ const AIChatPage = () => {
             await api.delete(`/student-ai/conversations/${id}`);
             if (activeConvo?._id === id) { setActiveConvo(null); setMessages([]); }
             loadConversations();
-        } catch { toast.error('Failed to delete'); }
+        } catch { showError('Failed to delete'); }
     };
 
     const handleSend = async () => {
@@ -82,7 +82,7 @@ const AIChatPage = () => {
                 await sendToConvo(res.data._id);
                 loadConversations();
                 return;
-            } catch { toast.error('Failed to create conversation'); return; }
+            } catch { showError('Failed to create conversation'); return; }
         }
         await sendToConvo(activeConvo._id);
         loadConversations();
@@ -112,8 +112,8 @@ const AIChatPage = () => {
             setMessages(prev => prev.filter(m => m._id !== 'temp-user'));
             setInput(currentInput);
             const msg = err.response?.data?.message || 'Failed to get response';
-            if (msg.includes('No AI configuration')) toast.error('Set up your API key first');
-            else toast.error(msg);
+            if (msg.includes('No AI configuration')) showError('Set up your API key first');
+            else showError(msg);
         } finally { setSending(false); }
     };
 

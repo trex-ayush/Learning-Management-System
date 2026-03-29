@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../../api/axios';
 import { FaRobot, FaSpinner, FaCopy, FaDownload, FaTrash } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const AINotesGenerator = ({ courseId }) => {
     const [topic, setTopic] = useState('');
@@ -11,7 +11,7 @@ const AINotesGenerator = ({ courseId }) => {
 
     const handleGenerate = async () => {
         if (!topic.trim()) {
-            toast.error('Please enter a topic');
+            showError('Please enter a topic');
             return;
         }
         setGenerating(true);
@@ -19,13 +19,13 @@ const AINotesGenerator = ({ courseId }) => {
         try {
             const res = await api.post('/ai/generate-notes', { courseId, topic, style });
             setNotes(res.data.notes);
-            toast.success('Notes generated!');
+            showSuccess('Notes generated!');
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to generate notes';
             if (msg.includes('No AI configuration')) {
-                toast.error('Set up your AI key first in AI Settings');
+                showError('Set up your AI key first in AI Settings');
             } else {
-                toast.error(msg);
+                showError(err, 'Failed to generate notes');
             }
         } finally {
             setGenerating(false);
@@ -34,7 +34,7 @@ const AINotesGenerator = ({ courseId }) => {
 
     const handleCopy = () => {
         navigator.clipboard.writeText(notes);
-        toast.success('Copied to clipboard!');
+        showSuccess('Copied to clipboard!');
     };
 
     const handleDownload = () => {

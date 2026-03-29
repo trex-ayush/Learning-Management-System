@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import { FaUpload, FaTrash, FaDownload, FaFilePdf, FaImage, FaFileAlt, FaLink, FaToggleOn, FaToggleOff, FaTimes, FaCloudUploadAlt, FaUserGraduate, FaChalkboardTeacher, FaEye, FaPaperclip, FaBook, FaEdit } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const FILE_TYPE_ICONS = {
     pdf: FaFilePdf,
@@ -77,7 +77,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
             setAllowStudentUploads(res.data.allowStudentUploads);
             setIsTeacherUser(res.data.isTeacher);
         } catch (err) {
-            toast.error('Failed to load resources');
+            showError('Failed to load resources');
         } finally {
             setLoading(false);
         }
@@ -102,7 +102,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
 
             if (uploadMode === 'link') {
                 if (!uploadUrl.trim()) {
-                    toast.error('Please enter a URL');
+                    showError('Please enter a URL');
                     setUploading(false);
                     return;
                 }
@@ -114,7 +114,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
                 });
             } else {
                 if (!uploadFile) {
-                    toast.error('Please select a file');
+                    showError('Please select a file');
                     setUploading(false);
                     return;
                 }
@@ -131,11 +131,11 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
                 });
             }
 
-            toast.success('Resource uploaded');
+            showSuccess('Resource uploaded');
             resetForm();
             fetchResources();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Upload failed');
+            showError(err, 'Upload failed');
         } finally {
             setUploading(false);
         }
@@ -146,9 +146,9 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
         try {
             await api.delete(`/resources/${courseId}/${resourceId}`);
             setResources(prev => prev.filter(r => r._id !== resourceId));
-            toast.success('Resource deleted');
+            showSuccess('Resource deleted');
         } catch (err) {
-            toast.error('Failed to delete resource');
+            showError('Failed to delete resource');
         }
     };
 
@@ -160,9 +160,9 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
             });
             setResources(prev => prev.map(r => r._id === resourceId ? res.data.resource : r));
             setEditingResourceId(null);
-            toast.success('Resource updated');
+            showSuccess('Resource updated');
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Update failed');
+            showError(err, 'Update failed');
         }
     };
 
@@ -170,9 +170,9 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
         try {
             const res = await api.put(`/resources/${courseId}/toggle-student-uploads`);
             setAllowStudentUploads(res.data.allowStudentUploads);
-            toast.success(res.data.allowStudentUploads ? 'Student uploads enabled' : 'Student uploads disabled');
+            showSuccess(res.data.allowStudentUploads ? 'Student uploads enabled' : 'Student uploads disabled');
         } catch (err) {
-            toast.error('Failed to toggle setting');
+            showError('Failed to toggle setting');
         }
     };
 
@@ -194,7 +194,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            toast.error('Download failed');
+            showError('Download failed');
         }
     };
 
@@ -220,7 +220,7 @@ const ResourceManager = ({ courseId, isTeacher = false, userId = null, sections 
             setViewUrl(blobUrl);
             setViewingResource(resource);
         } catch (err) {
-            toast.error('Failed to load resource for viewing');
+            showError('Failed to load resource for viewing');
         }
     };
 

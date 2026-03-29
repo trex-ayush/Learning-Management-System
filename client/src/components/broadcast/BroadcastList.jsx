@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { FaBullhorn, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaSearch, FaTimes } from 'react-icons/fa';
 import Modal from '../ui/Modal';
 import Pagination from '../ui/Pagination';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 import api from '../../api/axios';
 
 const BroadcastList = ({
@@ -62,11 +62,9 @@ const BroadcastList = ({
             setNewBroadcast({ title: '', message: '', priority: 'normal' });
             setIsCreateModalOpen(false);
             onRefresh();
-            toast.success('Broadcast sent!');
+            showSuccess('Broadcast sent!');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error sending broadcast');
-            }
+            showError(error, 'Error sending broadcast');
         } finally {
             setIsSubmitting(false);
         }
@@ -87,11 +85,9 @@ const BroadcastList = ({
             setIsEditModalOpen(false);
             setEditingBroadcast(null);
             onRefresh();
-            toast.success('Broadcast updated!');
+            showSuccess('Broadcast updated!');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error updating broadcast');
-            }
+            showError(error, 'Error updating broadcast');
         } finally {
             setIsSubmitting(false);
         }
@@ -103,11 +99,9 @@ const BroadcastList = ({
         try {
             await api.delete(`/broadcasts/${broadcastId}`);
             onRefresh();
-            toast.success('Broadcast deleted!');
+            showSuccess('Broadcast deleted!');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error deleting broadcast');
-            }
+            showError(error, 'Error deleting broadcast');
         }
     };
 

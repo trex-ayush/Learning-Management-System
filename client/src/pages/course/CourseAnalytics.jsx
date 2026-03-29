@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaArrowLeft, FaUsers, FaBook, FaChartLine, FaTrophy, FaUserPlus, FaCheckCircle } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const CourseAnalytics = () => {
     const { id } = useParams();
@@ -17,7 +17,7 @@ const CourseAnalytics = () => {
                 setAnalytics(res.data);
             } catch (error) {
                 if (!error.handled) {
-                    toast.error('Failed to load analytics');
+                    showError('Failed to load analytics');
                 }
                 navigate(`/admin/course/${id}`);
             } finally {

@@ -4,7 +4,7 @@ import { FaSearch, FaFilter, FaTimes, FaChevronDown, FaStore, FaGraduationCap, F
 import api from '../../api/axios';
 import CourseCard from '../../components/ui/CourseCard';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const Marketplace = () => {
     const { user } = useContext(AuthContext);
@@ -80,7 +80,7 @@ const Marketplace = () => {
             setCourses(res.data.courses);
             setPagination(res.data.pagination);
         } catch (error) {
-            toast.error('Failed to load courses');
+            showError('Failed to load courses');
         } finally {
             setLoading(false);
         }

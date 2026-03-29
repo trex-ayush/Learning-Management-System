@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaTimes, FaImage, FaVideo, FaSave, FaArrowLeft } from 'react-icons/fa';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const CreateMarketplaceCourse = () => {
     const navigate = useNavigate();
@@ -83,17 +83,17 @@ const CreateMarketplaceCourse = () => {
         switch (stepNum) {
             case 1:
                 if (!formData.title.trim()) {
-                    toast.error('Please enter a course title');
+                    showError('Please enter a course title');
                     return false;
                 }
                 if (!formData.description.trim()) {
-                    toast.error('Please enter a course description');
+                    showError('Please enter a course description');
                     return false;
                 }
                 return true;
             case 2:
                 if (!formData.price || formData.price <= 0) {
-                    toast.error('Please enter a valid price');
+                    showError('Please enter a valid price');
                     return false;
                 }
                 return true;
@@ -127,10 +127,10 @@ const CreateMarketplaceCourse = () => {
             };
 
             const res = await api.post('/instructor/course', payload);
-            toast.success('Course created successfully!');
+            showSuccess('Course created successfully!');
             navigate(`/admin/course/${res.data._id}`);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create course');
+            showError(error, 'Failed to create course');
         } finally {
             setLoading(false);
         }

@@ -7,7 +7,7 @@ import AIChatPanel from '../../components/chat/AIChatPanel';
 import StudentAnalytics from '../../components/course/StudentAnalytics';
 import ResourceManager from '../../components/course/ResourceManager';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const StudentCourseDetails = () => {
     const { id } = useParams();
@@ -710,9 +710,9 @@ const StudentCourseDetails = () => {
                 ...prev,
                 [lectureId]: { ...prev[lectureId], markedForRevision: false }
             }));
-            toast.success('Removed from revision list');
+            showSuccess('Removed from revision list');
         } catch {
-            toast.error('Failed to remove from revision list');
+            showError('Failed to remove from revision list');
         }
     };
 

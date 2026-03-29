@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaDownload, FaCheckCircle, FaClock, FaShareAlt } from 'react-icons/fa';
 import api from '../../api/axios';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const InvoicePage = () => {
     const { invoiceNumber } = useParams();
@@ -19,7 +19,7 @@ const InvoicePage = () => {
             const res = await api.get(`/purchase/invoice/${invoiceNumber}`);
             setInvoice(res.data);
         } catch (error) {
-            toast.error('Invoice not found');
+            showError('Invoice not found');
         } finally {
             setLoading(false);
         }
@@ -40,7 +40,7 @@ const InvoicePage = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            toast.error('Failed to download invoice');
+            showError('Failed to download invoice');
         } finally {
             setDownloading(false);
         }
@@ -49,7 +49,7 @@ const InvoicePage = () => {
     const handleShare = () => {
         const url = window.location.href;
         navigator.clipboard.writeText(url);
-        toast.success('Invoice link copied to clipboard!');
+        showSuccess('Invoice link copied to clipboard!');
     };
 
     const formatDate = (date) => {

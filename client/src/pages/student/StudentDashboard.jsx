@@ -3,7 +3,7 @@ import api from '../../api/axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import { FaBook, FaCheckCircle, FaPlus, FaCog, FaUsers, FaEye, FaEyeSlash, FaTrash, FaGraduationCap, FaChalkboardTeacher, FaStore, FaRobot, FaArrowRight } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const StudentDashboard = ({ defaultTab }) => {
     const { user } = useContext(AuthContext);
@@ -59,7 +59,7 @@ const StudentDashboard = ({ defaultTab }) => {
     const handleCreateCourse = async (e) => {
         e.preventDefault();
         if (!newCourse.title.trim() || !newCourse.description.trim()) {
-            toast.error('Please fill all fields');
+            showError('Please fill all fields');
             return;
         }
 
@@ -69,12 +69,10 @@ const StudentDashboard = ({ defaultTab }) => {
             setCreatedCourses([res.data, ...createdCourses]);
             setShowCreateModal(false);
             setNewCourse({ title: '', description: '' });
-            toast.success('Course created successfully');
+            showSuccess('Course created successfully');
             navigate(`/admin/course/${res.data._id}`);
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Failed to create course');
-            }
+            showError(error, 'Failed to create course');
         } finally {
             setCreating(false);
         }
@@ -89,11 +87,9 @@ const StudentDashboard = ({ defaultTab }) => {
             setCreatedCourses(createdCourses.filter(c => c._id !== courseToDelete._id));
             setShowDeleteModal(false);
             setCourseToDelete(null);
-            toast.success('Course deleted successfully');
+            showSuccess('Course deleted successfully');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Failed to delete course');
-            }
+            showError(error, 'Failed to delete course');
         } finally {
             setDeleting(false);
         }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaTag, FaPercent, FaRupeeSign, FaChevronLeft, FaChevronRight, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import api from '../../api/axios';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const ManageCoupons = ({ embeddedCourseId }) => {
     const courseId = embeddedCourseId;
@@ -51,7 +51,7 @@ const ManageCoupons = ({ embeddedCourseId }) => {
                 setTotalCoupons(couponsRes.data.length);
             }
         } catch (error) {
-            toast.error('Failed to load coupons');
+            showError('Failed to load coupons');
         } finally {
             setLoading(false);
         }
@@ -85,15 +85,15 @@ const ManageCoupons = ({ embeddedCourseId }) => {
         e.preventDefault();
 
         if (!formData.code.trim()) {
-            toast.error('Please enter a coupon code');
+            showError('Please enter a coupon code');
             return;
         }
         if (!formData.discountValue || formData.discountValue <= 0) {
-            toast.error('Please enter a valid discount value');
+            showError('Please enter a valid discount value');
             return;
         }
         if (!formData.validUntil) {
-            toast.error('Please select an expiry date');
+            showError('Please select an expiry date');
             return;
         }
 
@@ -110,16 +110,16 @@ const ManageCoupons = ({ embeddedCourseId }) => {
 
             if (editingCoupon) {
                 await api.put(`/coupons/${editingCoupon._id}`, payload);
-                toast.success('Coupon updated successfully!');
+                showSuccess('Coupon updated successfully!');
             } else {
                 await api.post('/coupons', payload);
-                toast.success('Coupon created successfully!');
+                showSuccess('Coupon created successfully!');
             }
 
             resetForm();
             fetchData(page);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save coupon');
+            showError(error, 'Failed to save coupon');
         } finally {
             setSubmitting(false);
         }
@@ -136,12 +136,12 @@ const ManageCoupons = ({ embeddedCourseId }) => {
         setDeleting(true);
         try {
             await api.delete(`/coupons/${couponToDelete._id}`);
-            toast.success('Coupon deleted');
+            showSuccess('Coupon deleted');
             fetchData(page);
             setShowDeleteModal(false);
             setCouponToDelete(null);
         } catch (error) {
-            toast.error('Failed to delete coupon');
+            showError('Failed to delete coupon');
         } finally {
             setDeleting(false);
         }
@@ -150,10 +150,10 @@ const ManageCoupons = ({ embeddedCourseId }) => {
     const toggleCouponStatus = async (coupon) => {
         try {
             await api.put(`/coupons/${coupon._id}`, { isActive: !coupon.isActive });
-            toast.success(coupon.isActive ? 'Coupon deactivated' : 'Coupon activated');
+            showSuccess(coupon.isActive ? 'Coupon deactivated' : 'Coupon activated');
             fetchData(page);
         } catch (error) {
-            toast.error('Failed to update coupon');
+            showError('Failed to update coupon');
         }
     };
 

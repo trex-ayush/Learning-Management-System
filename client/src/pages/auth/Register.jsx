@@ -2,7 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 import { FaCheckCircle } from 'react-icons/fa';
 
 const GoogleIcon = () => (
@@ -37,9 +37,9 @@ const Register = () => {
         try {
             await googleLogin(tokenResponse.access_token);
             navigate('/');
-            toast.success('Account created successfully');
+            showSuccess('Account created successfully');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Google sign-up failed');
+            if (!error.handled) showError(error, 'Google sign-up failed');
         } finally {
             setIsGoogleLoading(false);
         }
@@ -47,7 +47,7 @@ const Register = () => {
 
     const signUpWithGoogle = useGoogleLogin({
         onSuccess: handleGoogleSuccess,
-        onError: () => toast.error('Google sign-up failed'),
+        onError: () => showError('Google sign-up failed'),
     });
 
     const onSubmit = async (e) => {
@@ -57,9 +57,9 @@ const Register = () => {
         try {
             await register(name, email, password);
             navigate('/');
-            toast.success('Account created successfully');
+            showSuccess('Account created successfully');
         } catch (error) {
-            toast.error(error.message || 'Registration failed');
+            if (!error.handled) showError(error, 'Registration failed');
         } finally {
             setIsLoading(false);
         }

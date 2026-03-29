@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaChalkboardTeacher } from 'react-icons/fa';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const BecomeInstructor = () => {
     const navigate = useNavigate();
@@ -15,10 +15,10 @@ const BecomeInstructor = () => {
         try {
             const res = await api.post('/instructor/become');
             setUser(res.data.user || { ...user, role: 'instructor' });
-            toast.success('You are now an instructor!');
+            showSuccess('You are now an instructor!');
             navigate('/instructor/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to become instructor');
+            showError(error, 'Failed to become instructor');
         } finally {
             setLoading(false);
         }

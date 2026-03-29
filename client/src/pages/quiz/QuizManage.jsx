@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaChartBar, FaClock, FaCheckCircle, FaTimesCircle, FaQuestionCircle, FaRobot, FaSpinner } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 
 const QuizManage = () => {
     const { courseId } = useParams();
@@ -61,7 +61,7 @@ const QuizManage = () => {
             setQuizzes(quizzesRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            toast.error('Failed to load data');
+            showError('Failed to load data');
         } finally {
             setLoading(false);
         }
@@ -103,12 +103,12 @@ const QuizManage = () => {
 
     const handleSaveQuiz = async () => {
         if (!formData.title.trim()) {
-            toast.error('Please enter a quiz title');
+            showError('Please enter a quiz title');
             return;
         }
 
         if (formData.questions.length === 0) {
-            toast.error('Please add at least one question');
+            showError('Please add at least one question');
             return;
         }
 
@@ -119,7 +119,7 @@ const QuizManage = () => {
                     sectionId: formData.sectionId || null
                 });
                 setQuizzes(quizzes.map(q => q._id === editingQuiz._id ? res.data : q));
-                toast.success('Quiz updated successfully');
+                showSuccess('Quiz updated successfully');
             } else {
                 const res = await api.post('/quizzes', {
                     courseId,
@@ -127,12 +127,12 @@ const QuizManage = () => {
                     sectionId: formData.sectionId || null
                 });
                 setQuizzes([...quizzes, res.data]);
-                toast.success('Quiz created successfully');
+                showSuccess('Quiz created successfully');
             }
             setShowModal(false);
             resetForm();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save quiz');
+            showError(error, 'Failed to save quiz');
         }
     };
 
@@ -142,9 +142,9 @@ const QuizManage = () => {
         try {
             await api.delete(`/quizzes/${quizId}`);
             setQuizzes(quizzes.filter(q => q._id !== quizId));
-            toast.success('Quiz deleted successfully');
+            showSuccess('Quiz deleted successfully');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete quiz');
+            showError(error, 'Failed to delete quiz');
         }
     };
 
@@ -152,9 +152,9 @@ const QuizManage = () => {
         try {
             const res = await api.put(`/quizzes/${quiz._id}`, { isActive: !quiz.isActive });
             setQuizzes(quizzes.map(q => q._id === quiz._id ? res.data : q));
-            toast.success(res.data.isActive ? 'Quiz activated' : 'Quiz deactivated');
+            showSuccess(res.data.isActive ? 'Quiz activated' : 'Quiz deactivated');
         } catch (error) {
-            toast.error('Failed to update quiz status');
+            showError('Failed to update quiz status');
         }
     };
 
@@ -190,14 +190,14 @@ const QuizManage = () => {
 
     const handleSaveQuestion = () => {
         if (!questionForm.questionText.trim()) {
-            toast.error('Please enter question text');
+            showError('Please enter question text');
             return;
         }
 
         if (questionForm.questionType === 'mcq') {
             const validOptions = questionForm.options.filter(o => o.trim());
             if (validOptions.length < 2) {
-                toast.error('Please add at least 2 options');
+                showError('Please add at least 2 options');
                 return;
             }
         }
@@ -234,7 +234,7 @@ const QuizManage = () => {
     // AI Generate handler
     const handleAIGenerate = async () => {
         if (!aiForm.topic.trim()) {
-            toast.error('Please enter a topic');
+            showError('Please enter a topic');
             return;
         }
         setAiGenerating(true);
@@ -248,7 +248,7 @@ const QuizManage = () => {
             });
             const generated = res.data.questions || [];
             if (generated.length === 0) {
-                toast.error('AI returned no questions. Try a different topic.');
+                showError('AI returned no questions. Try a different topic.');
                 return;
             }
             // Open quiz creation modal pre-filled with AI questions
@@ -261,13 +261,13 @@ const QuizManage = () => {
             }));
             setShowAIModal(false);
             setShowModal(true);
-            toast.success(`${generated.length} questions generated! Review and save.`);
+            showSuccess(`${generated.length} questions generated! Review and save.`);
         } catch (err) {
             const msg = err.response?.data?.message || 'AI generation failed';
             if (msg.includes('No AI configuration')) {
-                toast.error('Set up your AI key first in AI Settings');
+                showError('Set up your AI key first in AI Settings');
             } else {
-                toast.error(msg);
+                showError(msg);
             }
         } finally {
             setAiGenerating(false);

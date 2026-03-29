@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { FaUserTie, FaPlus, FaTrash, FaCrown, FaSearch, FaTimes, FaEdit, FaUser } from 'react-icons/fa';
 import Modal from '../ui/Modal';
-import toast from 'react-hot-toast';
+import { showSuccess, showError } from '../../utils/toast';
 import api from '../../api/axios';
 import AuthContext from '../../context/AuthContext';
 
@@ -78,7 +78,7 @@ const TeacherManagement = ({
             setCreator(res.data.creator);
             setTeachers(res.data.teachers);
         } catch {
-            toast.error('Failed to load teachers');
+            showError('Failed to load teachers');
         } finally {
             setLoading(false);
         }
@@ -100,14 +100,14 @@ const TeacherManagement = ({
     const handleAdd = async (e) => {
         e.preventDefault();
         if (!newTeacher.email.trim()) {
-            toast.error('Please enter an email');
+            showError('Please enter an email');
             return;
         }
 
         // Check if at least one permission is selected
         const hasPermission = Object.values(newTeacher.permissions).some(v => v);
         if (!hasPermission) {
-            toast.error('Please select at least one permission');
+            showError('Please select at least one permission');
             return;
         }
 
@@ -125,11 +125,9 @@ const TeacherManagement = ({
             });
             setIsAddModalOpen(false);
             fetchTeachers();
-            toast.success('Teacher added!');
+            showSuccess('Teacher added!');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error adding teacher');
-            }
+            showError(error, 'Error adding teacher');
         } finally {
             setIsSubmitting(false);
         }
@@ -142,7 +140,7 @@ const TeacherManagement = ({
 
         const hasPermission = Object.values(editingTeacher.permissions).some(v => v);
         if (!hasPermission) {
-            toast.error('Please select at least one permission');
+            showError('Please select at least one permission');
             return;
         }
 
@@ -154,11 +152,9 @@ const TeacherManagement = ({
             setIsEditModalOpen(false);
             setEditingTeacher(null);
             fetchTeachers();
-            toast.success('Permissions updated!');
+            showSuccess('Permissions updated!');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error updating permissions');
-            }
+            showError(error, 'Error updating permissions');
         } finally {
             setIsSubmitting(false);
         }
@@ -170,11 +166,9 @@ const TeacherManagement = ({
         try {
             await api.delete(`/courses/${courseId}/teachers/${teacherId}`);
             fetchTeachers();
-            toast.success('Teacher removed');
+            showSuccess('Teacher removed');
         } catch (error) {
-            if (!error.handled) {
-                toast.error(error.response?.data?.message || 'Error removing teacher');
-            }
+            showError(error, 'Error removing teacher');
         }
     };
 

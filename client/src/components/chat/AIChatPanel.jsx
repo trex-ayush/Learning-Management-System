@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { FaRobot, FaPaperPlane, FaSpinner, FaPaperclip, FaTimes, FaFilePdf, FaImage, FaTrash, FaPlus, FaKey } from 'react-icons/fa';
-import toast from 'react-hot-toast';
+import { showError } from '../../utils/toast';
 
 const AIChatPanel = ({ courseId, courseTitle }) => {
     const [hasConfig, setHasConfig] = useState(null);
@@ -43,7 +43,7 @@ const AIChatPanel = ({ courseId, courseTitle }) => {
             const res = await api.get(`/student-ai/conversations/${id}`);
             setActiveConvo(res.data);
             setMessages(res.data.messages || []);
-        } catch { toast.error('Failed to load conversation'); }
+        } catch { showError('Failed to load conversation'); }
     };
 
     const createNew = async () => {
@@ -52,7 +52,7 @@ const AIChatPanel = ({ courseId, courseTitle }) => {
             setActiveConvo(res.data);
             setMessages([]);
             loadConversations();
-        } catch { toast.error('Failed to create conversation'); }
+        } catch { showError('Failed to create conversation'); }
     };
 
     const deleteConvo = async (id, e) => {
@@ -62,7 +62,7 @@ const AIChatPanel = ({ courseId, courseTitle }) => {
             await api.delete(`/student-ai/conversations/${id}`);
             if (activeConvo?._id === id) { setActiveConvo(null); setMessages([]); }
             loadConversations();
-        } catch { toast.error('Failed to delete'); }
+        } catch { showError('Failed to delete'); }
     };
 
     const handleSend = async () => {
@@ -75,7 +75,7 @@ const AIChatPanel = ({ courseId, courseTitle }) => {
                 await sendToConvo(res.data._id);
                 loadConversations();
                 return;
-            } catch { toast.error('Failed to create conversation'); return; }
+            } catch { showError('Failed to create conversation'); return; }
         }
         await sendToConvo(activeConvo._id);
         loadConversations();
@@ -105,8 +105,8 @@ const AIChatPanel = ({ courseId, courseTitle }) => {
             setMessages(prev => prev.filter(m => m._id !== 'temp-user'));
             setInput(currentInput);
             const msg = err.response?.data?.message || 'Failed to get response';
-            if (msg.includes('No AI configuration')) toast.error('Set up your API key first in AI Chat Settings');
-            else toast.error(msg);
+            if (msg.includes('No AI configuration')) showError('Set up your API key first in AI Chat Settings');
+            else showError(err, 'Failed to get response');
         } finally { setSending(false); }
     };
 
