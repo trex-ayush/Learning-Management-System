@@ -133,12 +133,11 @@ const CourseView = () => {
         const fetchProgress = async () => {
             if (!user) return; // Skip if guest
             try {
-                const res = await api.get('/courses/my/enrolled');
-                const currentCourseProgress = res.data.find(p => p.course._id === id || p.course === id);
+                const res = await api.get(`/courses/${id}/my-progress`);
 
-                if (currentCourseProgress && currentCourseProgress.completedLectures) {
+                if (res.data && res.data.completedLectures && res.data.completedLectures.length > 0) {
                     const map = {};
-                    currentCourseProgress.completedLectures.forEach(item => {
+                    res.data.completedLectures.forEach(item => {
                         map[item.lecture] = {
                             status: item.status,
                             notes: item.notes,

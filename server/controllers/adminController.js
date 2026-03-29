@@ -74,37 +74,48 @@ const getInstructors = asyncHandler(async (req, res) => {
         .select('name email bio profileImage createdAt')
         .sort({ createdAt: -1 });
 
-    // Get earnings and payout data for each instructor
-    const instructorData = await Promise.all(
-        instructors.map(async (instructor) => {
-            const [earningsResult, payoutResult, courseCount, bankDetail] = await Promise.all([
-                Purchase.aggregate([
-                    { $match: { instructor: instructor._id, status: 'completed' } },
-                    { $group: { _id: null, total: { $sum: '$amount' }, sales: { $sum: 1 } } }
-                ]),
-                Payout.aggregate([
-                    { $match: { instructor: instructor._id, status: 'completed' } },
-                    { $group: { _id: null, total: { $sum: '$amount' } } }
-                ]),
-                Course.countDocuments({ user: instructor._id, isMarketplace: true }),
-                BankDetail.findOne({ user: instructor._id })
-            ]);
+    const instructorIds = instructors.map(i => i._id);
 
-            const earnings = earningsResult[0] || { total: 0, sales: 0 };
-            const paidOut = payoutResult[0]?.total || 0;
+    // Run 4 bulk queries instead of 4 * N individual ones
+    const [earningsByInstructor, payoutsByInstructor, coursesByInstructor, bankDetails] = await Promise.all([
+        Purchase.aggregate([
+            { $match: { instructor: { $in: instructorIds }, status: 'completed' } },
+            { $group: { _id: '$instructor', total: { $sum: '$amount' }, sales: { $sum: 1 } } }
+        ]),
+        Payout.aggregate([
+            { $match: { instructor: { $in: instructorIds }, status: 'completed' } },
+            { $group: { _id: '$instructor', total: { $sum: '$amount' } } }
+        ]),
+        Course.aggregate([
+            { $match: { user: { $in: instructorIds }, isMarketplace: true } },
+            { $group: { _id: '$user', count: { $sum: 1 } } }
+        ]),
+        BankDetail.find({ user: { $in: instructorIds } }).select('user preferredMethod').lean()
+    ]);
 
-            return {
-                ...instructor.toObject(),
-                totalEarnings: earnings.total,
-                totalSales: earnings.sales,
-                totalPaidOut: paidOut,
-                pendingAmount: earnings.total - paidOut,
-                courseCount,
-                hasBankDetails: !!bankDetail,
-                preferredMethod: bankDetail?.preferredMethod || null
-            };
-        })
-    );
+    // Index results by instructor ID for O(1) lookup
+    const earningsMap = Object.fromEntries(earningsByInstructor.map(e => [e._id.toString(), e]));
+    const payoutsMap = Object.fromEntries(payoutsByInstructor.map(p => [p._id.toString(), p]));
+    const coursesMap = Object.fromEntries(coursesByInstructor.map(c => [c._id.toString(), c.count]));
+    const bankMap = Object.fromEntries(bankDetails.map(b => [b.user.toString(), b]));
+
+    const instructorData = instructors.map(instructor => {
+        const id = instructor._id.toString();
+        const earnings = earningsMap[id] || { total: 0, sales: 0 };
+        const paidOut = payoutsMap[id]?.total || 0;
+        const bank = bankMap[id];
+
+        return {
+            ...instructor.toObject(),
+            totalEarnings: earnings.total,
+            totalSales: earnings.sales,
+            totalPaidOut: paidOut,
+            pendingAmount: earnings.total - paidOut,
+            courseCount: coursesMap[id] || 0,
+            hasBankDetails: !!bank,
+            preferredMethod: bank?.preferredMethod || null
+        };
+    });
 
     res.status(200).json(instructorData);
 });
