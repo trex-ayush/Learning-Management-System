@@ -36,6 +36,7 @@ const activityLogger = async (req, res, next) => {
             else if (url.includes('/login')) { action = 'Login'; details = 'User logged in'; }
             else if (url.includes('/register')) { action = 'Registered'; details = 'User registered'; }
             else if (url.includes('/updatepassword')) { action = 'Password Updated'; details = 'User updated password'; }
+            else if (url.includes('/auth/profile')) { action = 'Profile Updated'; details = 'Updated profile information'; }
             // Course management
             else if (url.includes('/enroll') && req.method === 'DELETE') { action = 'Unenrolled'; details = 'Student removed from course'; }
             else if (url.includes('/enroll')) { action = 'Enrolled'; details = 'Enrolled in course'; }

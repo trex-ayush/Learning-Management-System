@@ -1,19 +1,50 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
-import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen, FaChevronDown, FaTimes, FaUserSecret } from 'react-icons/fa';
+import { FaHistory, FaCheckCircle, FaPlayCircle, FaBook, FaUser, FaClock, FaStickyNote, FaUserPlus, FaComment, FaSignInAlt, FaTrash, FaPen, FaPlus, FaBullhorn, FaUserTie, FaBookmark, FaBookOpen, FaChevronDown, FaTimes, FaUserSecret, FaCalendarAlt, FaExclamationTriangle, FaBan, FaUnlock, FaUserShield, FaUpload, FaClipboardList } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../components/ui/Pagination';
 
 const ALL_ACTIONS = [
-    'Login', 'Registered', 'Enrolled', 'Unenrolled',
+    'Login', 'Registered', 'Profile Updated', 'Password Updated',
+    'Enrolled', 'Unenrolled',
     'Status Updated', 'Marked for Revision', 'Removed from Revision',
     'Completed', 'Started', 'Comment', 'Note Updated',
     'Lecture Added', 'Lecture Updated', 'Lecture Deleted',
-    'Section Added', 'Section Updated',
-    'Course Updated', 'Course Created',
-    'Broadcast Created', 'Teacher Added',
+    'Section Added', 'Section Updated', 'Section Deleted',
+    'Course Created', 'Course Updated', 'Course Deleted',
+    'Broadcast Created', 'Broadcast Updated', 'Broadcast Deleted',
+    'Quiz Created', 'Quiz Updated', 'Quiz Deleted', 'Quiz Started', 'Quiz Submitted',
+    'Resource Uploaded', 'Resource Deleted',
+    'Teacher Added', 'Teacher Removed', 'Teacher Left', 'Teacher Updated',
+    'User Warned', 'User Blocked', 'User Unblocked', 'Role Changed',
+    'Course Blocked', 'Course Unblocked',
     'Impersonated',
 ];
+
+const DATE_PRESETS = [
+    { label: 'All Time', value: 'all' },
+    { label: 'Today', value: 'today' },
+    { label: 'Yesterday', value: 'yesterday' },
+    { label: 'Last 7 Days', value: '7d' },
+    { label: 'Last 30 Days', value: '30d' },
+    { label: 'This Month', value: 'this_month' },
+    { label: 'Last Month', value: 'last_month' },
+    { label: 'Custom Range', value: 'custom' },
+];
+
+const getDateRange = (preset) => {
+    const now = new Date();
+    const startOfDay = (d) => { const dt = new Date(d); dt.setHours(0,0,0,0); return dt; };
+    switch (preset) {
+        case 'today': return { from: startOfDay(now).toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+        case 'yesterday': { const y = new Date(now); y.setDate(y.getDate()-1); return { from: startOfDay(y).toISOString().split('T')[0], to: startOfDay(y).toISOString().split('T')[0] }; }
+        case '7d': { const d = new Date(now); d.setDate(d.getDate()-7); return { from: d.toISOString().split('T')[0], to: now.toISOString().split('T')[0] }; }
+        case '30d': { const d = new Date(now); d.setDate(d.getDate()-30); return { from: d.toISOString().split('T')[0], to: now.toISOString().split('T')[0] }; }
+        case 'this_month': return { from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+        case 'last_month': { const first = new Date(now.getFullYear(), now.getMonth()-1, 1); const last = new Date(now.getFullYear(), now.getMonth(), 0); return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] }; }
+        default: return { from: '', to: '' };
+    }
+};
 
 const GlobalActivity = () => {
     const navigate = useNavigate();
@@ -34,6 +65,21 @@ const GlobalActivity = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [debouncedUser, setDebouncedUser] = useState('');
 
+    // Method filter
+    const [selectedMethod, setSelectedMethod] = useState('');
+    const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
+    const methodDropdownRef = useRef(null);
+
+    // Action search inside dropdown
+    const [actionSearch, setActionSearch] = useState('');
+
+    // Date filter
+    const [datePreset, setDatePreset] = useState('all');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+    const dateDropdownRef = useRef(null);
+
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
         return () => clearTimeout(timer);
@@ -44,13 +90,27 @@ const GlobalActivity = () => {
         return () => clearTimeout(timer);
     }, [userFilter]);
 
-    // Close action dropdown on outside click
+    // Close dropdowns on outside click
     useEffect(() => {
         if (!actionDropdownOpen) return;
         const handler = (e) => { if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target)) setActionDropdownOpen(false); };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [actionDropdownOpen]);
+
+    useEffect(() => {
+        if (!methodDropdownOpen) return;
+        const handler = (e) => { if (methodDropdownRef.current && !methodDropdownRef.current.contains(e.target)) setMethodDropdownOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [methodDropdownOpen]);
+
+    useEffect(() => {
+        if (!dateDropdownOpen) return;
+        const handler = (e) => { if (dateDropdownRef.current && !dateDropdownRef.current.contains(e.target)) setDateDropdownOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [dateDropdownOpen]);
 
     useEffect(() => {
         const fetchActivities = async () => {
@@ -62,7 +122,10 @@ const GlobalActivity = () => {
                     limit,
                     search: debouncedSearch,
                     action: selectedActions.length > 0 ? selectedActions.join(',') : '',
-                    user: debouncedUser
+                    user: debouncedUser,
+                    ...(selectedMethod && { method: selectedMethod }),
+                    ...(dateFrom && { dateFrom }),
+                    ...(dateTo && { dateTo }),
                 };
                 const res = await api.get('/activities', { params });
                 setActivities(res.data.activities);
@@ -77,7 +140,7 @@ const GlobalActivity = () => {
         };
 
         fetchActivities();
-    }, [page, limit, debouncedSearch, selectedActions, debouncedUser]);
+    }, [page, limit, debouncedSearch, selectedActions, debouncedUser, selectedMethod, dateFrom, dateTo]);
 
     const toggleAction = (action) => {
         setSelectedActions(prev =>
@@ -90,6 +153,23 @@ const GlobalActivity = () => {
         setSearchTerm('');
         setSelectedActions([]);
         setUserFilter('');
+        setSelectedMethod('');
+        setDatePreset('all');
+        setDateFrom('');
+        setDateTo('');
+        setPage(1);
+    };
+
+    const handleDatePreset = (preset) => {
+        setDatePreset(preset);
+        if (preset === 'custom') {
+            // keep dropdown open for custom inputs
+            return;
+        }
+        const range = getDateRange(preset);
+        setDateFrom(range.from);
+        setDateTo(range.to);
+        setDateDropdownOpen(false);
         setPage(1);
     };
 
@@ -107,12 +187,30 @@ const GlobalActivity = () => {
         if (action === 'Comment') return <FaComment className="text-slate-500" />;
         if (action === 'Registered') return <FaUserPlus className="text-emerald-500" />;
         if (action === 'Login') return <FaSignInAlt className="text-cyan-500" />;
+        if (action === 'Profile Updated') return <FaUser className="text-teal-500" />;
         if (action === 'Password Updated') return <FaPen className="text-violet-500" />;
+        // Teacher
+        if (action === 'Teacher Added') return <FaUserTie className="text-emerald-500" />;
+        if (action === 'Teacher Removed') return <FaUserTie className="text-red-500" />;
+        if (action === 'Teacher Left') return <FaUserTie className="text-slate-400" />;
+        if (action === 'Teacher Updated') return <FaUserTie className="text-violet-500" />;
+        // Admin actions
+        if (action === 'User Warned') return <FaExclamationTriangle className="text-amber-500" />;
+        if (action === 'User Blocked') return <FaBan className="text-red-500" />;
+        if (action === 'User Unblocked') return <FaUnlock className="text-green-500" />;
+        if (action === 'Role Changed') return <FaUserShield className="text-indigo-500" />;
+        if (action === 'Course Blocked') return <FaBan className="text-red-400" />;
+        if (action === 'Course Unblocked') return <FaUnlock className="text-green-400" />;
+        // Quiz
+        if (action === 'Quiz Started') return <FaPlayCircle className="text-indigo-500" />;
+        if (action === 'Quiz Submitted') return <FaClipboardList className="text-green-500" />;
+        // Resource
+        if (action === 'Resource Uploaded') return <FaUpload className="text-emerald-500" />;
+        // Generic fallbacks
         if (action.includes('Deleted')) return <FaTrash className="text-red-500" />;
         if (action.includes('Added') || action.includes('Created')) return <FaPlus className="text-emerald-500" />;
         if (action.includes('Updated')) return <FaPen className="text-violet-500" />;
         if (action.includes('Broadcast')) return <FaBullhorn className="text-amber-500" />;
-        if (action.includes('Teacher')) return <FaUserTie className="text-blue-500" />;
         if (action.includes('Quiz')) return <FaBook className="text-indigo-500" />;
         return <FaHistory className="text-slate-400" />;
     };
@@ -135,30 +233,33 @@ const GlobalActivity = () => {
             <div className="container mx-auto px-4 py-8">
                 {/* Filters Bar */}
                 <div className="flex flex-col gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="flex-1">
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {/* Search Details */}
+                        <div className="relative flex-1 min-w-[160px]">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M16.65 16.65A7.5 7.5 0 1116.65 2a7.5 7.5 0 010 14.65z"/></svg>
                             <input
                                 type="text"
                                 placeholder="Search details..."
-                                className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white placeholder-slate-400"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex-1">
+                        {/* User Filter */}
+                        <div className="relative flex-1 min-w-[160px]">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             <input
                                 type="text"
-                                placeholder="Filter by User Name..."
-                                className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                                placeholder="Filter by user name or email..."
+                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white placeholder-slate-400"
                                 value={userFilter}
                                 onChange={(e) => setUserFilter(e.target.value)}
                             />
                         </div>
-
                         {/* Multi-select Action Filter */}
-                        <div className="relative w-full md:w-56" ref={actionDropdownRef}>
+                        <div className="relative w-48 shrink-0" ref={actionDropdownRef}>
                             <button
-                                onClick={() => setActionDropdownOpen(prev => !prev)}
+                                onClick={() => { setActionDropdownOpen(prev => !prev); setActionSearch(''); }}
                                 className={`w-full flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border text-sm transition-colors ${actionDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-slate-700'} text-slate-900 dark:text-white`}
                             >
                                 <span className="truncate text-sm text-slate-500 dark:text-slate-400">
@@ -169,8 +270,18 @@ const GlobalActivity = () => {
 
                             {actionDropdownOpen && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                    <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                        <input
+                                            type="text"
+                                            placeholder="Search actions..."
+                                            value={actionSearch}
+                                            onChange={e => setActionSearch(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs rounded-md bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            autoFocus
+                                        />
+                                    </div>
                                     <div className="max-h-64 overflow-y-auto py-1">
-                                        {ALL_ACTIONS.map(action => {
+                                        {ALL_ACTIONS.filter(a => a.toLowerCase().includes(actionSearch.toLowerCase())).map(action => {
                                             const isSelected = selectedActions.includes(action);
                                             return (
                                                 <button
@@ -201,10 +312,92 @@ const GlobalActivity = () => {
                             )}
                         </div>
 
+                        {/* Method Filter Dropdown */}
+                        <div className="relative w-36 shrink-0" ref={methodDropdownRef}>
+                            <button
+                                onClick={() => setMethodDropdownOpen(prev => !prev)}
+                                className={`w-full flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border text-sm transition-colors ${methodDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-slate-700'} text-slate-900 dark:text-white`}
+                            >
+                                <span className={`truncate text-sm font-medium ${selectedMethod ? (
+                                    selectedMethod === 'POST' ? 'text-emerald-600 dark:text-emerald-400' :
+                                    selectedMethod === 'PUT' ? 'text-amber-600 dark:text-amber-400' :
+                                    selectedMethod === 'DELETE' ? 'text-red-600 dark:text-red-400' :
+                                    'text-violet-600 dark:text-violet-400'
+                                ) : 'text-slate-500 dark:text-slate-400'}`}>
+                                    {selectedMethod || 'All Methods'}
+                                </span>
+                                <FaChevronDown className={`text-slate-400 text-xs shrink-0 ml-2 transition-transform ${methodDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {methodDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                                    {[{ label: 'All Methods', value: '', color: 'text-slate-500 dark:text-slate-400' },
+                                      { label: 'POST', value: 'POST', color: 'text-emerald-600 dark:text-emerald-400' },
+                                      { label: 'PUT', value: 'PUT', color: 'text-amber-600 dark:text-amber-400' },
+                                      { label: 'DELETE', value: 'DELETE', color: 'text-red-600 dark:text-red-400' },
+                                      { label: 'PATCH', value: 'PATCH', color: 'text-violet-600 dark:text-violet-400' },
+                                    ].map(m => (
+                                        <button
+                                            key={m.label}
+                                            onClick={() => { setSelectedMethod(m.value); setMethodDropdownOpen(false); setPage(1); }}
+                                            className={`w-full px-3 py-2 text-xs font-bold text-left transition-colors ${selectedMethod === m.value ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-slate-700'} ${m.color}`}
+                                        >
+                                            {m.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Date Range Filter */}
+                        <div className="relative w-44 shrink-0" ref={dateDropdownRef}>
+                            <button
+                                onClick={() => setDateDropdownOpen(prev => !prev)}
+                                className={`w-full flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border text-sm transition-colors ${dateDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-slate-700'} text-slate-900 dark:text-white`}
+                            >
+                                <span className="flex items-center gap-2 truncate text-sm text-slate-500 dark:text-slate-400">
+                                    <FaCalendarAlt className="text-xs shrink-0" />
+                                    {DATE_PRESETS.find(p => p.value === datePreset)?.label || 'All Time'}
+                                </span>
+                                <FaChevronDown className={`text-slate-400 text-xs shrink-0 ml-2 transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {dateDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                    <div className="py-1">
+                                        {DATE_PRESETS.map(preset => (
+                                            <button
+                                                key={preset.value}
+                                                onClick={() => handleDatePreset(preset.value)}
+                                                className={`w-full px-3 py-2 text-xs text-left transition-colors ${datePreset === preset.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {datePreset === 'custom' && (
+                                        <div className="border-t border-gray-100 dark:border-slate-700 px-3 py-3 space-y-2">
+                                            <div>
+                                                <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase">From</label>
+                                                <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+                                                    className="w-full mt-1 px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase">To</label>
+                                                <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+                                                    className="w-full mt-1 px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         <button
                             onClick={handleReset}
-                            className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors shrink-0"
+                            className="ml-auto px-4 py-2 text-sm font-medium text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors shrink-0 flex items-center gap-1.5"
                         >
+                            <FaTimes size={11} />
                             Reset
                         </button>
                     </div>
@@ -308,10 +501,11 @@ const GlobalActivity = () => {
                                                         ) : (
                                                             <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
                                                                 {log.action === 'Login' || log.action === 'Registered' ? 'Authentication' :
-                                                                 log.action === 'Password Updated' ? 'Account' :
+                                                                 log.action === 'Profile Updated' || log.action === 'Password Updated' ? 'Account Settings' :
                                                                  log.action === 'Impersonated' ? 'Admin Panel' :
                                                                  log.action === 'Role Changed' || log.action === 'User Warned' || log.action === 'User Blocked' || log.action === 'User Unblocked' ? 'User Management' :
-                                                                 'Platform Activity'}
+                                                                 log.action === 'Course Blocked' || log.action === 'Course Unblocked' ? 'Course Management' :
+                                                                 'General'}
                                                             </span>
                                                         )}
                                                         {log.lecture && (

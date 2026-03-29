@@ -12,7 +12,25 @@ const getGlobalActivities = async (req, res) => {
         // Build query
         const query = {};
 
-        // 1. Action Filter (supports comma-separated multiple values)
+        // 1. Date Range Filter
+        if (req.query.dateFrom || req.query.dateTo) {
+            query.createdAt = {};
+            if (req.query.dateFrom) query.createdAt.$gte = new Date(req.query.dateFrom);
+            if (req.query.dateTo) {
+                const to = new Date(req.query.dateTo);
+                to.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = to;
+            }
+        }
+
+        // 2. HTTP Method Filter
+        if (req.query.method) {
+            const methods = req.query.method.split(',').map(m => m.trim().toUpperCase()).filter(Boolean);
+            if (methods.length === 1) query.method = methods[0];
+            else if (methods.length > 1) query.method = { $in: methods };
+        }
+
+        // 3. Action Filter (supports comma-separated multiple values)
         if (req.query.action && req.query.action !== 'All') {
             const actions = req.query.action.split(',').map(a => a.trim()).filter(Boolean);
             query.action = actions.length === 1 ? actions[0] : { $in: actions };
