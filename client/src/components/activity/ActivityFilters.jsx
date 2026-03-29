@@ -42,6 +42,7 @@ const ActivityFilters = ({
         return () => document.removeEventListener('mousedown', handler);
     }, [dateDropdownOpen]);
 
+
     const toggleAction = (action) => {
         setSelectedActions(prev => prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action]);
         setPage(1);
@@ -61,7 +62,7 @@ const ActivityFilters = ({
     const dropdownBtnClass = (open) => `w-full flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border text-sm transition-colors ${open ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-slate-700'} text-slate-900 dark:text-white`;
 
     return (
-        <div className="flex flex-col gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm sticky top-navbar z-20">
             <div className="flex flex-wrap gap-2 items-center">
                 {/* Search Details */}
                 <div className="relative flex-1 min-w-[160px]">
