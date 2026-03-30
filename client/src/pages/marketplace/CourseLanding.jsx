@@ -183,7 +183,7 @@ const CourseLanding = () => {
     if (!course) return null;
 
     const finalPrice = couponApplied ? couponApplied.finalPrice : course.price;
-    const totalLectures = course.sections?.reduce((acc, s) => acc + s.lectures.length, 0) || 0;
+    const totalLectures = course.sections?.reduce((acc, s) => s.isPublic !== false ? acc + s.lectures.filter(l => l.isPublic !== false).length : acc, 0) || 0;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950">

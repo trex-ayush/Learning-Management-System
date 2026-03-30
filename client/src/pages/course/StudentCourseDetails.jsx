@@ -108,7 +108,7 @@ const StudentCourseDetails = () => {
                 totalCount: section.totalCount,
                 progressPercent: section.progressPercent
             };
-            section.lectures?.forEach(lec => {
+            section.lectures?.filter(l => l.isPublic !== false).forEach(lec => {
                 peerLectureMap[lec._id] = { status: lec.status };
             });
         });
@@ -315,12 +315,18 @@ const StudentCourseDetails = () => {
     const getProgressStats = () => {
         if (!course) return { completed: 0, total: 0, percent: 0 };
         let totalLectures = 0;
-        course.sections.forEach(s => totalLectures += s.lectures.length);
+        course.sections.forEach(s => {
+            if (s.isPublic !== false) totalLectures += s.lectures.filter(l => l.isPublic !== false).length;
+        });
 
         let completed = 0;
         const completionLabel = course.completedStatus || 'Completed';
-        Object.values(progressMap).forEach(p => {
-            if (p.status === completionLabel) completed++;
+        course.sections.forEach(s => {
+            if (s.isPublic !== false) {
+                s.lectures.filter(l => l.isPublic !== false).forEach(l => {
+                    if (progressMap[l._id]?.status === completionLabel) completed++;
+                });
+            }
         });
 
         const percent = totalLectures === 0 ? 0 : Math.round((completed / totalLectures) * 100);
@@ -489,9 +495,10 @@ const StudentCourseDetails = () => {
                         {course.sections && course.sections.length > 0 ? (
                             course.sections.filter(section => section.isPublic).map((section) => {
                                 // Section Progress Logic
-                                const totalSecLectures = section.lectures ? section.lectures.length : 0;
+                                const visibleLectures = section.lectures ? section.lectures.filter(l => l.isPublic !== false) : [];
+                                const totalSecLectures = visibleLectures.length;
                                 const completionLabel = course.completedStatus || 'Completed';
-                                const completedSecLectures = section.lectures ? section.lectures.filter(l => progressMap[l._id]?.status === completionLabel).length : 0;
+                                const completedSecLectures = visibleLectures.filter(l => progressMap[l._id]?.status === completionLabel).length;
                                 const secPercent = totalSecLectures > 0 ? Math.round((completedSecLectures / totalSecLectures) * 100) : 0;
                                 const isExpanded = expandedSections[section._id];
 

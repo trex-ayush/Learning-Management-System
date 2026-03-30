@@ -69,7 +69,9 @@ const CourseView = () => {
     // Navigation Helpers
     const getFlattenedLectures = () => {
         if (!course || !course.sections) return [];
-        return course.sections.flatMap(section => section.lectures || []);
+        return course.sections
+            .filter(s => s.isPublic !== false)
+            .flatMap(section => section.lectures?.filter(l => l.isPublic !== false) || []);
     };
 
     const handleNextLecture = () => {
@@ -682,11 +684,12 @@ const CourseView = () => {
                             </div>
                         )}
 
-                        {course.sections && course.sections.map((section) => {
+                        {course.sections && course.sections.filter(s => s.isPublic !== false).map((section) => {
                             // Section Progress Logic
-                            const totalSecLectures = section.lectures ? section.lectures.length : 0;
+                            const visibleLectures = section.lectures ? section.lectures.filter(l => l.isPublic !== false) : [];
+                            const totalSecLectures = visibleLectures.length;
                             const completionLabel = course.completedStatus || 'Completed';
-                            const completedSecLectures = section.lectures ? section.lectures.filter(l => progressMap[l._id]?.status === completionLabel).length : 0;
+                            const completedSecLectures = visibleLectures.filter(l => progressMap[l._id]?.status === completionLabel).length;
                             const secPercent = totalSecLectures > 0 ? Math.round((completedSecLectures / totalSecLectures) * 100) : 0;
 
                             return (
@@ -731,7 +734,7 @@ const CourseView = () => {
 
                                     {expandedSections[section._id] && (
                                         <div className="space-y-0.5 mt-0 mb-3 ml-2 border-l border-gray-100 dark:border-slate-800 pl-2">
-                                            {[...section.lectures].sort((a, b) => a.number - b.number).map((lec) => {
+                                            {[...section.lectures].filter(l => l.isPublic !== false).sort((a, b) => a.number - b.number).map((lec) => {
                                                 const status = progressMap[lec._id]?.status || 'Not Started';
                                                 const isSelected = selectedLecture && selectedLecture._id === lec._id;
 
@@ -785,7 +788,7 @@ const CourseView = () => {
                                             title={section.title}
                                         >
                                             {/* Lecture Numbers inside the bordered box */}
-                                            {section.lectures && [...section.lectures].sort((a, b) => a.number - b.number).map((lec) => {
+                                            {section.lectures && [...section.lectures].filter(l => l.isPublic !== false).sort((a, b) => a.number - b.number).map((lec) => {
                                                 const status = progressMap[lec._id]?.status || 'Not Started';
                                                 const isSelected = selectedLecture && selectedLecture._id === lec._id;
                                                 const completionLabel = course.completedStatus || 'Completed';
