@@ -6,6 +6,79 @@ A full-stack online learning and course marketplace platform. Supports multiple 
 
 ---
 
+## What's New (since initial release)
+
+### AI — Instructor Key Sharing with Students
+- Per-course toggle for instructors to share their AI key with enrolled students
+- Students can choose between their own key or the instructor's key via a source selector UI
+- Amber warning banner shown when a student is using the instructor's key
+- Students cannot delete conversations that used the instructor's key
+- Instructors can block individual students from using their key per course
+- Conversation auto-titled from the first message; title is inline-editable
+
+### AI — Instructor View of Student Conversations
+- Instructors can open a read-only drawer per student showing all AI conversations that used the instructor's key
+- Full message history visible with user/assistant bubbles
+- Only accessible when the per-course student AI toggle is enabled
+
+### Course Progress Fix
+- Hidden sections and lectures are now excluded from progress percentage calculations
+
+### Personal Activity Log
+- All users now have a personal activity log on their profile showing their own actions
+- Admin impersonation actions are hidden from personal logs
+- Activity log filter bar made sticky with multi-select chip UI
+
+### Profile Page Redesign
+- Avatar system with initials and color generation
+- Bio templates and a tabbed layout (Overview, Activity, Settings)
+
+### Google OAuth
+- Google login via authorization code flow (secure server-side exchange)
+- Admin impersonation — admins can log in as any user for support
+
+### Auth Pages Redesign
+- Split-panel layout for Login and Register with feature highlights
+
+### Resource Manager
+- Upload and link resources (PDFs, links) to courses
+- Inline resource viewer within the course page
+
+### Course View Improvements
+- Tabbed layout (Video, Notes, Comments) with collapsible sidebar
+- Lecture importance badges (Critical / Important / Standard)
+- Section numbers and sort by lecture number
+- Collapsed sections by default with state preserved on re-fetch
+
+### Student Progress Overlay
+- Instructors can view any student's lecture-by-lecture progress directly on the Curriculum tab
+- Importance inheritance from section to lectures
+
+### Peer Progress Visibility
+- Students can see anonymized peer progress within the same course
+
+### Vertical Sidebar Layout
+- Course management pages now support a switchable vertical sidebar or horizontal tabs
+- Mobile-friendly bottom navigation
+
+### Student Analytics
+- Per-student analytics panel with completion stats and learning trends
+- Glass sidebar UI for admin with hover animations
+
+### Mark for Revision
+- Students can flag lectures for revision; tracked in activity log with dedicated icons and filters
+
+### Auto-Broadcast on Content Changes
+- Adding a section or lecture auto-sends a course broadcast with section name and lecture link
+- URLs in broadcasts are rendered as clickable links
+
+### Activity Log Improvements
+- Multi-select action filter with dismissible chips
+- Descriptive resource names instead of generic IDs
+- Icons and badge colors for all action types including AI settings actions
+
+---
+
 ## Tech Stack
 
 **Frontend**
@@ -21,6 +94,7 @@ A full-stack online learning and course marketplace platform. Supports multiple 
 **Services**
 - Stripe — Payments, Webhooks, PDF Invoices
 - OpenAI / Google Gemini / Anthropic — AI features
+- Google OAuth 2.0 — Social login
 - Multer — File uploads (PDF, images)
 - PDFKit — Invoice PDF generation
 - express-rate-limit — Rate limiting
@@ -45,10 +119,11 @@ skill-path/
 │       │   ├── broadcast/
 │       │   │   └── BroadcastList.jsx           # Course announcement list
 │       │   ├── chat/
-│       │   │   └── AIChatPanel.jsx             # AI chat interface panel
+│       │   │   └── AIChatPanel.jsx             # AI chat panel with source selector, inline title edit
 │       │   ├── course/
 │       │   │   ├── AINotesGenerator.jsx        # AI notes generation UI
 │       │   │   ├── LectureSidebarItem.jsx      # Sidebar lecture item
+│       │   │   ├── ResourceManager.jsx         # Upload and link course resources
 │       │   │   ├── TeacherManagement.jsx       # Add/manage co-teachers
 │       │   │   └── VideoPlayer.jsx             # Embedded video player
 │       │   ├── layout/
@@ -68,13 +143,13 @@ skill-path/
 │       │
 │       ├── pages/
 │       │   ├── admin/
-│       │   │   ├── AdminDashboard.jsx          # Users, instructors, payouts tabs
-│       │   │   └── GlobalActivity.jsx          # Platform audit logs
+│       │   │   ├── AdminDashboard.jsx          # Users, instructors, payouts tabs + impersonation
+│       │   │   └── GlobalActivity.jsx          # Platform audit logs with multi-select filters
 │       │   ├── auth/
-│       │   │   ├── Login.jsx
-│       │   │   └── Register.jsx
+│       │   │   ├── Login.jsx                   # Split-panel login with Google OAuth
+│       │   │   └── Register.jsx                # Split-panel register
 │       │   ├── course/
-│       │   │   ├── CourseManage.jsx            # Create/edit sections & lectures
+│       │   │   ├── CourseManage.jsx            # Sections, lectures, students, AI access controls
 │       │   │   ├── CourseSettings.jsx          # Metadata, status, statuses config
 │       │   │   ├── CourseAnalytics.jsx         # Per-course analytics
 │       │   │   ├── CourseView.jsx              # Lecture viewer (video + notes + comments)
@@ -101,11 +176,13 @@ skill-path/
 │       │   │   ├── StudentDashboard.jsx        # My Learning + My Courses tabs
 │       │   │   ├── StudentDetail.jsx           # Instructor view of a student
 │       │   │   ├── StudentProgressDetail.jsx   # Detailed student progress
-│       │   │   ├── AIChatPage.jsx              # Full AI chat page
+│       │   │   ├── AIChatPage.jsx              # Full AI chat page with instructor key support
 │       │   │   └── StudentAISettings.jsx       # Student AI provider config
-│       │   ├── Profile.jsx                     # User profile + change password
+│       │   ├── Profile.jsx                     # User profile + avatar + bio + personal activity log
 │       │   └── NotFound.jsx                    # 404 page
 │       │
+│       ├── utils/
+│       │   └── activityUtils.jsx               # Action icons, badge colors, resource labels
 │       ├── config/
 │       │   └── redirect.js                     # Route redirect helpers
 │       ├── App.jsx                             # Route definitions
@@ -125,7 +202,7 @@ skill-path/
 │   │
 │   ├── models/
 │   │   ├── User.js                             # Roles, warnings, block status
-│   │   ├── Course.js                           # Sections, lectures, marketplace fields
+│   │   ├── Course.js                           # Sections, lectures, allowStudentAI, aiBlockedStudents
 │   │   ├── Section.js                          # Section grouping
 │   │   ├── Lecture.js                          # Resource URL, due date, preview flag
 │   │   ├── Progress.js                         # Per-lecture status, notes, timestamps
@@ -136,11 +213,11 @@ skill-path/
 │   │   ├── Review.js                           # Ratings, comments, helpful count
 │   │   ├── Broadcast.js                        # Announcements with priority levels
 │   │   ├── BroadcastView.js                    # Read tracking per user
-│   │   ├── Conversation.js                     # AI chat history + attachments
+│   │   ├── Conversation.js                     # AI chat history, useInstructorKey, titleEdited
 │   │   ├── CourseTeacher.js                    # Co-teacher roles + permissions
 │   │   ├── BankDetail.js                       # Instructor payment info
 │   │   ├── Payout.js                           # Instructor payout records
-│   │   ├── TeacherAIConfig.js                  # Encrypted AI provider keys
+│   │   ├── TeacherAIConfig.js                  # Encrypted AI provider keys per instructor
 │   │   └── Activity.js                         # Platform audit log
 │   │
 │   ├── controllers/                            # Route handlers (14 files)
@@ -150,6 +227,8 @@ skill-path/
 │   │   └── invoiceService.js                   # PDF invoice generation
 │   ├── utils/
 │   │   └── encryption.js                       # AES encryption for API keys
+│   ├── scripts/
+│   │   └── deleteRecentActivity.js             # Utility: delete N most recent activity log entries
 │   └── index.js                                # Express server entry point
 │
 └── README.md
@@ -167,6 +246,8 @@ skill-path/
 | POST | `/login` | Public (rate limited) | Login and get JWT |
 | GET | `/me` | Protected | Get current user profile |
 | PUT | `/updatepassword` | Protected | Change password |
+| GET | `/google` | Public | Initiate Google OAuth flow |
+| GET | `/google/callback` | Public | Google OAuth callback |
 
 ---
 
@@ -216,6 +297,12 @@ skill-path/
 | GET | `/:id/progress/:studentId` | Student management permission | Single student progress detail |
 | GET | `/:id/activity/:studentId` | Student management permission | Student activity log |
 | GET | `/:id/my-progress` | Protected | Current user's progress for course |
+
+#### Student AI Access (per course)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| PUT | `/:id/toggle-student-ai` | Owner only | Toggle whether students can use instructor's AI key |
+| PUT | `/:id/ai-block/:studentId` | Owner only | Block or unblock a student from using instructor's AI key |
 
 #### Teachers (Co-instructors)
 | Method | Endpoint | Auth | Description |
@@ -345,6 +432,7 @@ skill-path/
 | POST | `/test` | Instructor only | Test AI connection |
 | POST | `/generate-quiz` | Instructor only | Auto-generate quiz from course content |
 | POST | `/generate-notes` | Instructor only | Auto-generate study notes |
+| GET | `/course/:courseId/student-conversations` | Instructor only | View student AI conversations using instructor key (read-only) |
 
 ---
 
@@ -357,10 +445,12 @@ skill-path/
 | DELETE | `/config` | Protected | Remove AI config |
 | POST | `/test` | Protected | Test AI connection |
 | GET | `/conversations` | Protected | List all conversations |
-| POST | `/conversations` | Protected | Create new conversation |
+| POST | `/conversations` | Protected | Create new conversation (accepts `useInstructorKey`) |
 | GET | `/conversations/:id` | Protected | Get conversation with messages |
-| DELETE | `/conversations/:id` | Protected | Delete conversation |
+| DELETE | `/conversations/:id` | Protected | Delete conversation (blocked if using instructor key) |
 | POST | `/conversations/:id/messages` | Protected | Send message (supports PDF/image upload) |
+| PUT | `/conversations/:id/title` | Protected | Rename a conversation |
+| GET | `/course/:courseId/ai-status` | Protected | Course AI status (own key, instructor key availability, block status) |
 
 ---
 
@@ -374,6 +464,7 @@ skill-path/
 | GET | `/instructors/:id` | Admin only | Instructor detail + courses |
 | POST | `/payouts` | Admin only | Create instructor payout |
 | GET | `/payouts` | Admin only | List all payouts |
+| POST | `/impersonate/:userId` | Admin only | Log in as another user |
 
 #### User Management
 | Method | Endpoint | Auth | Description |
@@ -398,7 +489,8 @@ skill-path/
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/` | Admin only | Get global platform activity logs |
+| GET | `/` | Admin only | Get global platform activity logs (multi-select filter, sticky bar) |
+| GET | `/my` | Protected | Get personal activity log for current user |
 
 ---
 
@@ -407,10 +499,10 @@ skill-path/
 | Model | Purpose |
 |-------|---------|
 | `User` | Accounts with roles (admin/instructor/student), warnings, block status |
-| `Course` | Course metadata, sections, lecture statuses, marketplace fields |
-| `Section` | Groups lectures within a course |
-| `Lecture` | Resource URL, description, due date, public/preview flags |
-| `Progress` | Per-lecture status, notes, completion timestamp per student |
+| `Course` | Course metadata, sections, lecture statuses, marketplace fields, `allowStudentAI`, `aiBlockedStudents[]` |
+| `Section` | Groups lectures within a course, importance level |
+| `Lecture` | Resource URL, description, due date, section number, public/preview flags |
+| `Progress` | Per-lecture status, notes, revision flag, completion timestamp per student |
 | `Quiz` | Questions, passing score, time limit, attempt limit |
 | `QuizAttempt` | Student submission with answers and score |
 | `Purchase` | Stripe checkout, coupon applied, invoice number |
@@ -418,7 +510,7 @@ skill-path/
 | `Review` | Star rating, comment, helpful count |
 | `Broadcast` | Course announcement with Normal / Important / Urgent priority |
 | `BroadcastView` | Tracks which broadcasts each user has read |
-| `Conversation` | AI chat session with message history |
+| `Conversation` | AI chat session with message history, `useInstructorKey`, `titleEdited` |
 | `CourseTeacher` | Co-teacher assignment with granular permissions |
 | `BankDetail` | Instructor payment info (bank account, UPI, PayPal) |
 | `Payout` | Instructor payout records with status |
@@ -433,6 +525,7 @@ skill-path/
 - Node.js 18+
 - MongoDB Atlas account (or local MongoDB)
 - Stripe account
+- Google OAuth credentials (optional, for Google login)
 
 ### 1. Clone
 
@@ -459,6 +552,8 @@ NODE_ENV=development
 STRIPE_SECRET_KEY=sk_test_your_stripe_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 AI_ENCRYPTION_KEY=your_32_char_encryption_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ### 3. Client setup
