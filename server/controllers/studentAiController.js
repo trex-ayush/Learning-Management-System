@@ -132,6 +132,27 @@ const testConfig = asyncHandler(async (req, res) => {
     }
 });
 
+// ─── INSTRUCTOR: View student AI conversations (instructor key only) ──
+const getCourseStudentConversations = asyncHandler(async (req, res) => {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId).select('user allowStudentAI');
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+    if (course.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403); throw new Error('Not authorized');
+    }
+    if (!course.allowStudentAI) {
+        res.status(403); throw new Error('Student AI is not enabled for this course');
+    }
+
+    const conversations = await Conversation.find({ course: courseId, useInstructorKey: true })
+        .populate('user', 'name email')
+        .select('user title messages createdAt updatedAt')
+        .sort({ updatedAt: -1 })
+        .lean();
+
+    res.json(conversations);
+});
+
 // ─── CHAT ENDPOINTS ────────────────────────────────────────────────
 
 const createConversation = asyncHandler(async (req, res) => {
@@ -293,5 +314,5 @@ const sendMessage = asyncHandler(async (req, res) => {
 module.exports = {
     getConfig, saveConfig, deleteConfig, testConfig,
     createConversation, getConversations, getConversation, renameConversation, deleteConversation, sendMessage,
-    getCourseAIStatus
+    getCourseAIStatus, getCourseStudentConversations
 };
