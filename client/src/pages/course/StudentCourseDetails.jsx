@@ -1118,7 +1118,7 @@ const StudentCourseDetails = () => {
                             );
                         })}
                         <Link
-                            to="/ai-chat"
+                            to={`/ai-chat?courseId=${id}`}
                             className="relative flex-1 flex flex-col items-center gap-0.5 py-2 pt-2.5 text-slate-400 dark:text-slate-500"
                         >
                             <FaRobot className="text-[17px]" />
@@ -1168,7 +1168,7 @@ const StudentCourseDetails = () => {
                     </div>
                     <div className="flex flex-col gap-1 px-1.5">
                         <Link
-                            to="/ai-chat"
+                            to={`/ai-chat?courseId=${id}`}
                             className="glass-nav-item text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                             title="AI Chat Assistant"
                         >

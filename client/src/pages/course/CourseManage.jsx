@@ -527,6 +527,28 @@ const CourseManage = () => {
         }
     };
 
+    // Toggle AI block for a specific student
+    const handleToggleAIBlock = async (studentId) => {
+        try {
+            const res = await api.put(`/courses/${id}/ai-block/${studentId}`);
+            fetchCourse(true);
+            showSuccess(res.data.blocked ? 'Student blocked from using your AI key' : 'Student AI access restored');
+        } catch (error) {
+            showError('Failed to update AI block');
+        }
+    };
+
+    // Toggle student AI access
+    const handleToggleStudentAI = async () => {
+        try {
+            const res = await api.put(`/courses/${id}/toggle-student-ai`);
+            fetchCourse(true);
+            showSuccess(res.data.allowStudentAI ? 'Students can now use your AI key' : 'Student AI access disabled');
+        } catch (error) {
+            showError('Error updating AI access setting');
+        }
+    };
+
     // Toggle peer progress setting
     const handleTogglePeerProgress = async () => {
         try {
@@ -634,17 +656,31 @@ const CourseManage = () => {
                                 </div>
                             )}
                         </div>
-                        {/* Peer Progress Toggle */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">Peer Progress</span>
-                            <button
-                                type="button"
-                                onClick={handleTogglePeerProgress}
-                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${course.allowPeerProgress ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
-                                title={course.allowPeerProgress ? 'Students can view peer progress (click to disable)' : 'Students cannot view peer progress (click to enable)'}
-                            >
-                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${course.allowPeerProgress ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
-                            </button>
+                        {/* Toggles Group */}
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">Peer Progress</span>
+                                <button
+                                    type="button"
+                                    onClick={handleTogglePeerProgress}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${course.allowPeerProgress ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                    title={course.allowPeerProgress ? 'Students can view peer progress (click to disable)' : 'Students cannot view peer progress (click to enable)'}
+                                >
+                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${course.allowPeerProgress ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                </button>
+                            </div>
+                            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">Student AI</span>
+                                <button
+                                    type="button"
+                                    onClick={handleToggleStudentAI}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${course.allowStudentAI ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                    title={course.allowStudentAI ? 'AI Access: ON — Students without their own API key will use yours for AI chat in this course. Click to disable.' : 'AI Access: OFF — Students need their own API key for AI chat. Click to let them use yours.'}
+                                >
+                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${course.allowStudentAI ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -963,6 +999,22 @@ const CourseManage = () => {
                                                     >
                                                         <FaHistory size={14} />
                                                     </button>
+                                                    {course.allowStudentAI && (
+                                                        <button
+                                                            onClick={() => handleToggleAIBlock(prog.student?._id)}
+                                                            className={`p-2 rounded transition-colors sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 ${
+                                                                course.aiBlockedStudents?.some(id => id === prog.student?._id || id?.toString() === prog.student?._id)
+                                                                    ? 'text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                                                                    : 'text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                                                            }`}
+                                                            title={course.aiBlockedStudents?.some(id => id === prog.student?._id || id?.toString() === prog.student?._id)
+                                                                ? 'AI Blocked — Click to restore access'
+                                                                : 'Block student from using your AI key'
+                                                            }
+                                                        >
+                                                            <FaRobot size={14} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleRemoveStudent(prog.student?._id, prog.student?.name)}
                                                         className="text-red-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"

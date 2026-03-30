@@ -11,16 +11,60 @@ function maskKey(key) {
     return key.slice(0, 4) + '••••••••' + key.slice(-4);
 }
 
-async function getStudentAI(userId) {
-    const config = await TeacherAIConfig.findOne({ teacher: userId, isActive: true });
-    if (!config) {
-        const err = new Error('No AI configuration found. Set up your API key in AI Chat Settings.');
-        err.statusCode = 400;
-        throw err;
+async function getStudentAI(userId, courseId = null, useInstructorKey = false) {
+    // If student explicitly wants instructor key, skip own config
+    if (!useInstructorKey) {
+        const studentConfig = await TeacherAIConfig.findOne({ teacher: userId, isActive: true });
+        if (studentConfig) {
+            const apiKey = decrypt(studentConfig.apiKey);
+            return { apiKey, provider: studentConfig.provider, model: studentConfig.model, source: 'student' };
+        }
     }
-    const apiKey = decrypt(config.apiKey);
-    return { apiKey, provider: config.provider, model: config.model };
+
+    // Use instructor's config if course has allowStudentAI enabled
+    if (courseId) {
+        const course = await Course.findById(courseId).select('user allowStudentAI aiBlockedStudents');
+        if (course && course.allowStudentAI) {
+            const isBlocked = course.aiBlockedStudents?.some(id => id.toString() === userId.toString());
+            if (isBlocked) {
+                const err = new Error('Your access to the instructor\'s AI has been restricted for this course. Please contact your instructor.');
+                err.statusCode = 403;
+                throw err;
+            }
+            const instructorConfig = await TeacherAIConfig.findOne({ teacher: course.user, isActive: true });
+            if (instructorConfig) {
+                const apiKey = decrypt(instructorConfig.apiKey);
+                return { apiKey, provider: instructorConfig.provider, model: instructorConfig.model, source: 'instructor' };
+            }
+        }
+    }
+
+    const err = new Error('No AI configuration found. Set up your API key in AI Chat Settings.');
+    err.statusCode = 400;
+    throw err;
 }
+
+// ─── AI STATUS for a course ────────────────────────────────────────
+const getCourseAIStatus = asyncHandler(async (req, res) => {
+    const { courseId } = req.params;
+    const userId = req.user._id;
+
+    const [studentConfig, course] = await Promise.all([
+        TeacherAIConfig.findOne({ teacher: userId, isActive: true }).select('_id'),
+        Course.findById(courseId).select('user allowStudentAI aiBlockedStudents')
+    ]);
+
+    const hasOwnKey = !!studentConfig;
+    const allowStudentAI = course?.allowStudentAI || false;
+    const isBlocked = allowStudentAI && course?.aiBlockedStudents?.some(id => id.toString() === userId.toString());
+
+    let instructorHasKey = false;
+    if (allowStudentAI && !isBlocked && course?.user) {
+        instructorHasKey = !!(await TeacherAIConfig.findOne({ teacher: course.user, isActive: true }).select('_id'));
+    }
+
+    res.json({ hasOwnKey, allowStudentAI, isBlocked: !!isBlocked, instructorHasKey });
+});
 
 // ─── CONFIG CRUD ───────────────────────────────────────────────────
 
@@ -91,7 +135,7 @@ const testConfig = asyncHandler(async (req, res) => {
 // ─── CHAT ENDPOINTS ────────────────────────────────────────────────
 
 const createConversation = asyncHandler(async (req, res) => {
-    const { courseId, title } = req.body;
+    const { courseId, title, useInstructorKey } = req.body;
     const data = { user: req.user._id, title: title || 'New Conversation', messages: [] };
 
     if (courseId) {
@@ -99,6 +143,7 @@ const createConversation = asyncHandler(async (req, res) => {
         if (!course) { res.status(404); throw new Error('Course not found'); }
         data.course = courseId;
         data.title = title || `Chat about ${course.title}`;
+        if (useInstructorKey) data.useInstructorKey = true;
     }
 
     const conversation = await Conversation.create(data);
@@ -123,6 +168,7 @@ const getConversations = asyncHandler(async (req, res) => {
         lastMessage: c.messages.length > 0
             ? c.messages[c.messages.length - 1].content.substring(0, 100)
             : null,
+        useInstructorKey: c.useInstructorKey || false,
         updatedAt: c.updatedAt
     })));
 });
@@ -136,12 +182,25 @@ const getConversation = asyncHandler(async (req, res) => {
     res.json(conversation);
 });
 
-const deleteConversation = asyncHandler(async (req, res) => {
-    const conversation = await Conversation.findOneAndDelete({
-        _id: req.params.id,
-        user: req.user._id
-    });
+const renameConversation = asyncHandler(async (req, res) => {
+    const { title } = req.body;
+    if (!title?.trim()) { res.status(400); throw new Error('Title is required'); }
+    const conversation = await Conversation.findOne({ _id: req.params.id, user: req.user._id });
     if (!conversation) { res.status(404); throw new Error('Conversation not found'); }
+    conversation.title = title.trim().substring(0, 100);
+    conversation.titleEdited = true;
+    await conversation.save();
+    res.json({ title: conversation.title });
+});
+
+const deleteConversation = asyncHandler(async (req, res) => {
+    const conversation = await Conversation.findOne({ _id: req.params.id, user: req.user._id });
+    if (!conversation) { res.status(404); throw new Error('Conversation not found'); }
+    if (conversation.useInstructorKey) {
+        res.status(403);
+        throw new Error('Conversations using instructor\'s AI key cannot be deleted.');
+    }
+    await conversation.deleteOne();
     res.json({ message: 'Conversation deleted' });
 });
 
@@ -159,7 +218,7 @@ const sendMessage = asyncHandler(async (req, res) => {
         throw new Error('Message or file is required');
     }
 
-    const { apiKey, provider, model } = await getStudentAI(req.user._id);
+    const { apiKey, provider, model, source } = await getStudentAI(req.user._id, conversation.course?._id || null, conversation.useInstructorKey || false);
 
     let userText = message || '';
     let imageData = null;
@@ -212,8 +271,8 @@ const sendMessage = asyncHandler(async (req, res) => {
         const aiResponse = await callChat(provider, apiKey, model, systemPrompt, userText, imageData);
         conversation.messages.push({ role: 'assistant', content: aiResponse });
 
-        // Auto-title from first message
-        if (conversation.title === 'New Conversation' && conversation.messages.length <= 2) {
+        // Auto-title from first message (only if not manually renamed)
+        if (!conversation.titleEdited && conversation.messages.length <= 2) {
             conversation.title = userText.substring(0, 50) + (userText.length > 50 ? '...' : '');
         }
 
@@ -221,7 +280,8 @@ const sendMessage = asyncHandler(async (req, res) => {
         const msgs = conversation.messages;
         res.json({
             userMessage: msgs[msgs.length - 2],
-            assistantMessage: msgs[msgs.length - 1]
+            assistantMessage: msgs[msgs.length - 1],
+            source
         });
     } catch (error) {
         await conversation.save();
@@ -232,5 +292,6 @@ const sendMessage = asyncHandler(async (req, res) => {
 
 module.exports = {
     getConfig, saveConfig, deleteConfig, testConfig,
-    createConversation, getConversations, getConversation, deleteConversation, sendMessage
+    createConversation, getConversations, getConversation, renameConversation, deleteConversation, sendMessage,
+    getCourseAIStatus
 };
