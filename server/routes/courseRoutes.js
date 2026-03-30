@@ -31,7 +31,9 @@ const {
     getEnrolledStudentList,
     getPeerStudentList,
     getPeerStudentProgress,
-    getMyAnalytics
+    getMyAnalytics,
+    toggleStudentAI,
+    toggleAIBlockStudent
 } = require('../controllers/courseController');
 const {
     addTeacher,
@@ -102,6 +104,9 @@ router.get('/:id/peers/:studentId/progress', protect, getPeerStudentProgress);
 // Student progress route (for current user)
 router.get('/:id/my-progress', protect, getMyProgress);
 router.get('/:id/my-analytics', protect, getMyAnalytics);
+
+router.put('/:id/toggle-student-ai', protect, toggleStudentAI);
+router.put('/:id/ai-block/:studentId', protect, toggleAIBlockStudent);
 
 // Generic course routes (must be LAST)
 router.get('/:id', protect, getCourse);

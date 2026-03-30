@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaRobot, FaPaperPlane, FaSpinner, FaPaperclip, FaTimes, FaFilePdf, FaImage, FaTrash, FaPlus, FaKey, FaCog, FaBars, FaComments } from 'react-icons/fa';
+import { FaRobot, FaPaperPlane, FaSpinner, FaPaperclip, FaTimes, FaFilePdf, FaImage, FaTrash, FaPlus, FaKey, FaCog, FaBars, FaComments, FaExclamationTriangle } from 'react-icons/fa';
 import { showError } from '../../utils/toast';
 
 const AIChatPage = () => {
@@ -9,6 +9,7 @@ const AIChatPage = () => {
     const initialCourseId = searchParams.get('courseId');
 
     const [hasConfig, setHasConfig] = useState(null);
+    const [usingInstructorKey, setUsingInstructorKey] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [activeConvo, setActiveConvo] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -27,7 +28,22 @@ const AIChatPage = () => {
     const checkConfig = async () => {
         try {
             const res = await api.get('/student-ai/config');
-            setHasConfig(!!res.data);
+            if (res.data) {
+                setHasConfig(true);
+            } else if (initialCourseId) {
+                // No own key — check if course instructor allows student AI
+                try {
+                    const courseRes = await api.get(`/courses/${initialCourseId}`);
+                    if (courseRes.data?.allowStudentAI) {
+                        setHasConfig(true);
+                        setUsingInstructorKey(true);
+                    } else {
+                        setHasConfig(false);
+                    }
+                } catch { setHasConfig(false); }
+            } else {
+                setHasConfig(false);
+            }
         } catch { setHasConfig(false); }
         finally { setLoading(false); }
     };
@@ -104,6 +120,7 @@ const AIChatPage = () => {
             const res = await api.post(`/student-ai/conversations/${convoId}/messages`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+            if (res.data.source === 'instructor') setUsingInstructorKey(true);
             setMessages(prev => {
                 const filtered = prev.filter(m => m._id !== 'temp-user');
                 return [...filtered, res.data.userMessage, res.data.assistantMessage];
@@ -161,6 +178,14 @@ const AIChatPage = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Instructor Key Warning Banner */}
+            {usingInstructorKey && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+                    <FaExclamationTriangle className="shrink-0" />
+                    <span>This chat uses your instructor's AI key. Your conversations are visible to the instructor and subject to their usage policies.</span>
+                </div>
+            )}
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar */}

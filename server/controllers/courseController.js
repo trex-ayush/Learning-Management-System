@@ -1637,6 +1637,54 @@ const toggleLectureRevision = asyncHandler(async (req, res) => {
     res.status(200).json({ markedForRevision });
 });
 
+// @desc    Toggle AI block for a specific student in a course
+// @route   PUT /api/courses/:id/ai-block/:studentId
+// @access  Private (course owner/instructor)
+const toggleAIBlockStudent = asyncHandler(async (req, res) => {
+    const course = await Course.findById(req.params.id);
+    if (!course) { res.status(404); throw new Error('Course not found'); }
+    if (course.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403); throw new Error('Not authorized');
+    }
+    const studentId = req.params.studentId;
+    const isBlocked = course.aiBlockedStudents.some(id => id.toString() === studentId);
+    if (isBlocked) {
+        course.aiBlockedStudents = course.aiBlockedStudents.filter(id => id.toString() !== studentId);
+    } else {
+        course.aiBlockedStudents.push(studentId);
+    }
+    await course.save();
+    res.locals.activity = {
+        course: course._id,
+        action: !isBlocked ? 'Student AI Blocked' : 'Student AI Unblocked',
+        details: `${!isBlocked ? 'Blocked' : 'Unblocked'} student AI access in "${course.title}"`
+    };
+    res.json({ blocked: !isBlocked, studentId });
+});
+
+// @desc    Toggle allowStudentAI for a course
+// @route   PUT /api/courses/:id/toggle-student-ai
+// @access  Private (course owner/instructor)
+const toggleStudentAI = asyncHandler(async (req, res) => {
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+    if (course.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized');
+    }
+    course.allowStudentAI = !course.allowStudentAI;
+    await course.save();
+    res.locals.activity = {
+        course: course._id,
+        action: course.allowStudentAI ? 'Student AI Enabled' : 'Student AI Disabled',
+        details: `${course.allowStudentAI ? 'Enabled' : 'Disabled'} student AI access for "${course.title}"`
+    };
+    res.json({ allowStudentAI: course.allowStudentAI });
+});
+
 module.exports = {
     createCourse,
     updateCourse,
@@ -1668,5 +1716,7 @@ module.exports = {
     getEnrolledStudentList,
     getPeerStudentList,
     getPeerStudentProgress,
-    getMyAnalytics
+    getMyAnalytics,
+    toggleStudentAI,
+    toggleAIBlockStudent
 };

@@ -46,6 +46,14 @@ const courseSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    allowStudentAI: {
+        type: Boolean,
+        default: false
+    },
+    aiBlockedStudents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     sections: [{
         title: { type: String, required: true },
         isPublic: { type: Boolean, default: false },

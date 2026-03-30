@@ -32,7 +32,15 @@ const conversationSchema = new mongoose.Schema({
         type: String,
         default: 'New Conversation'
     },
-    messages: [messageSchema]
+    messages: [messageSchema],
+    useInstructorKey: {
+        type: Boolean,
+        default: false
+    },
+    titleEdited: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 conversationSchema.index({ user: 1, updatedAt: -1 });
