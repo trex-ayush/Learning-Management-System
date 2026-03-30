@@ -348,19 +348,28 @@ const getEnrolledCourses = asyncHandler(async (req, res) => {
     const optimizedProgresses = publishedProgresses.map(progress => {
         const course = progress.course;
         let totalLectures = 0;
+        const visibleLectureIds = new Set();
 
-        // Count lectures from sections (sections contain lecture IDs)
         if (course.sections) {
             course.sections.forEach(section => {
-                if (section.isPublic || req.user.role === 'admin') {
-                    totalLectures += section.lectures ? section.lectures.length : 0;
+                if (section.isPublic !== false) {
+                    section.lectures?.forEach(lec => {
+                        if (lec.isPublic !== false) {
+                            visibleLectureIds.add(lec._id.toString());
+                            totalLectures++;
+                        }
+                    });
                 }
             });
         }
 
+        const filteredCompletedLectures = progress.completedLectures.filter(
+            l => visibleLectureIds.has(l.lecture.toString())
+        );
+
         return {
             _id: progress._id,
-            completedLectures: progress.completedLectures,
+            completedLectures: filteredCompletedLectures,
             course: {
                 _id: course._id,
                 title: course.title,
@@ -780,21 +789,23 @@ const getPeerStudentProgress = asyncHandler(async (req, res) => {
     let totalLectures = 0, completedLectures = 0;
     const completedStatus = course.completedStatus || 'Completed';
 
-    const sectionsProgress = course.sections.map((section, si) => {
-        const lectures = section.lectures.map((lec, li) => {
-            totalLectures++;
-            const lp = lectureProgressMap.get(lec._id.toString());
-            const status = lp ? lp.status : 'Not Started';
-            if (status === completedStatus) completedLectures++;
-            return { _id: lec._id, title: lec.title, number: lec.number || li + 1, status, statusDate: lp?.completedAt || null };
+    const sectionsProgress = course.sections
+        .filter(section => section.isPublic !== false)
+        .map((section, si) => {
+            const lectures = section.lectures.filter(lec => lec.isPublic !== false).map((lec, li) => {
+                totalLectures++;
+                const lp = lectureProgressMap.get(lec._id.toString());
+                const status = lp ? lp.status : 'Not Started';
+                if (status === completedStatus) completedLectures++;
+                return { _id: lec._id, title: lec.title, number: lec.number || li + 1, status, statusDate: lp?.completedAt || null };
+            });
+            const sectionCompleted = lectures.filter(l => l.status === completedStatus).length;
+            return {
+                _id: section._id, title: section.title, sectionNumber: si + 1,
+                lectures, completedCount: sectionCompleted, totalCount: lectures.length,
+                progressPercent: lectures.length > 0 ? Math.round((sectionCompleted / lectures.length) * 100) : 0
+            };
         });
-        const sectionCompleted = lectures.filter(l => l.status === completedStatus).length;
-        return {
-            _id: section._id, title: section.title, sectionNumber: si + 1,
-            lectures, completedCount: sectionCompleted, totalCount: lectures.length,
-            progressPercent: lectures.length > 0 ? Math.round((sectionCompleted / lectures.length) * 100) : 0
-        };
-    });
 
     res.status(200).json({
         student: { _id: student._id, name: student.name, email: student.email },

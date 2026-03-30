@@ -70,7 +70,7 @@ const MyPurchases = () => {
                             const course = purchase.course;
                             if (!course) return null;
 
-                            const totalLectures = course.sections?.reduce((acc, s) => acc + (s.lectures?.length || 0), 0) || 0;
+                            const totalLectures = course.sections?.reduce((acc, s) => s.isPublic !== false ? acc + (s.lectures?.filter(l => l.isPublic !== false).length || 0) : acc, 0) || 0;
 
                             return (
                                 <div
