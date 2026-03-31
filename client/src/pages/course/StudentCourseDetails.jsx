@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen, FaBookmark } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen, FaBookmark, FaFilter } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
 import StudentAnalytics from '../../components/course/StudentAnalytics';
@@ -32,6 +32,34 @@ const StudentCourseDetails = () => {
     const [progressMap, setProgressMap] = useState({});
     const [isEnrolled, setIsEnrolled] = useState(false);
     const [expandedSections, setExpandedSections] = useState({});
+
+    // Curriculum filters (student)
+    const [currStatus, setCurrStatus] = useState('all'); // 'all' | 'not-started' | 'revision' | any status label from course.lectureStatuses
+    const [currImportance, setCurrImportance] = useState('all'); // all | Very Important | Important
+
+    // Shrink header on scroll (lock prevents layout-shift feedback loop)
+    const [headerScrolled, setHeaderScrolled] = useState(false);
+    const headerScrolledRef = useRef(false);
+    const scrollLockRef = useRef(false);
+    useEffect(() => {
+        const onScroll = () => {
+            if (scrollLockRef.current) return;
+            const y = window.scrollY;
+            if (!headerScrolledRef.current && y > 80) {
+                headerScrolledRef.current = true;
+                scrollLockRef.current = true;
+                setHeaderScrolled(true);
+                setTimeout(() => { scrollLockRef.current = false; }, 600);
+            } else if (headerScrolledRef.current && y < 20) {
+                headerScrolledRef.current = false;
+                scrollLockRef.current = true;
+                setHeaderScrolled(false);
+                setTimeout(() => { scrollLockRef.current = false; }, 600);
+            }
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     // Broadcast State
     const [broadcasts, setBroadcasts] = useState([]);
@@ -491,9 +519,61 @@ const StudentCourseDetails = () => {
                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{course.sections.length} Sections</span>
                     </div>
 
+                    {/* Curriculum Filters */}
+                    <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
+                        {/* Status Group — dynamic from course.lectureStatuses */}
+                        <div className="flex items-center shrink-0">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Status</span>
+                            {[
+                                { v: 'all', l: 'All' },
+                                { v: 'not-started', l: 'Not Started' },
+                                ...(course.lectureStatuses || []).filter(s => s.label !== 'Not Started').map(s => ({ v: s.label, l: s.label })),
+                                { v: 'revision', l: `Revision${revisionCount > 0 ? ` (${revisionCount})` : ''}` }
+                            ].map(f => (
+                                <button key={f.v} onClick={() => setCurrStatus(f.v)}
+                                    className={`px-3 py-2.5 text-[11px] sm:text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${currStatus === f.v
+                                        ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                                    {f.l}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Importance Group */}
+                        <div className="flex items-center shrink-0">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Importance</span>
+                            {[{ v: 'all', l: 'All' }, { v: 'Very Important', l: 'Critical' }, { v: 'Important', l: 'Important' }].map(f => (
+                                <button key={f.v} onClick={() => setCurrImportance(f.v)}
+                                    className={`px-3 py-2.5 text-[11px] sm:text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${currImportance === f.v
+                                        ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                                    {f.l}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="space-y-4 sm:space-y-6">
                         {course.sections && course.sections.length > 0 ? (
-                            course.sections.filter(section => section.isPublic).map((section) => {
+                            course.sections.filter(section => section.isPublic).filter(section => {
+                                const visibleLectures = section.lectures ? section.lectures.filter(l => l.isPublic !== false) : [];
+                                // Status filter
+                                if (currStatus === 'not-started') {
+                                    const has = visibleLectures.some(l => !progressMap[l._id]?.status || progressMap[l._id]?.status === 'Not Started');
+                                    if (!has) return false;
+                                } else if (currStatus === 'revision') {
+                                    const has = visibleLectures.some(l => progressMap[l._id]?.markedForRevision);
+                                    if (!has) return false;
+                                } else if (currStatus !== 'all') {
+                                    const has = visibleLectures.some(l => progressMap[l._id]?.status === currStatus);
+                                    if (!has) return false;
+                                }
+                                // Importance filter — section-level only
+                                if (currImportance !== 'all') {
+                                    const secImp = section.importance || '';
+                                    if (secImp !== currImportance) return false;
+                                }
+                                return true;
+                            }).map((section) => {
                                 // Section Progress Logic
                                 const visibleLectures = section.lectures ? section.lectures.filter(l => l.isPublic !== false) : [];
                                 const totalSecLectures = visibleLectures.length;
@@ -1017,11 +1097,11 @@ const StudentCourseDetails = () => {
         <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-30 transition-colors duration-300 shadow-sm">
-                <div className="w-full px-4 md:px-8 xl:px-12 py-3 md:py-4 flex items-center justify-between gap-3">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-30 transition-all duration-300 shadow-sm">
+                <div className={`w-full px-4 md:px-8 xl:px-12 flex items-center justify-between gap-3 transition-all duration-300 ${headerScrolled ? 'py-1.5' : 'py-3 md:py-4'}`}>
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">{course.title}</h1>
-                        <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{course.description}</p>
+                        <h1 className={`font-bold text-slate-900 dark:text-white leading-tight truncate transition-all duration-300 ${headerScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}>{course.title}</h1>
+                        <p className={`text-xs text-slate-500 dark:text-slate-400 line-clamp-1 transition-all duration-300 overflow-hidden ${headerScrolled ? 'max-h-0 opacity-0 mt-0' : 'max-h-10 opacity-100 mt-1 hidden sm:block'}`}>{course.description}</p>
                     </div>
                     <button
                         onClick={() => {
@@ -1030,9 +1110,9 @@ const StudentCourseDetails = () => {
                                 navigate(`/course/${id}/lecture/${resumeLec._id}`);
                             }
                         }}
-                        className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                        className={`shrink-0 flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${headerScrolled ? 'px-3 py-1.5 text-[10px]' : 'px-4 sm:px-5 py-2.5 text-xs sm:text-sm'}`}
                     >
-                        <FaPlayCircle size={14} /> {hasAnyProgress() ? 'Continue' : 'Start'}
+                        <FaPlayCircle size={headerScrolled ? 11 : 14} /> {hasAnyProgress() ? 'Continue' : 'Start'}
                     </button>
                 </div>
 
@@ -1050,12 +1130,12 @@ const StudentCourseDetails = () => {
                                         <button
                                             key={tab.id}
                                             onClick={() => handleTabChange(tab.id)}
-                                            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-[1px] whitespace-nowrap ${isActive
+                                            className={`flex items-center gap-1.5 font-medium transition-all duration-300 border-b-2 -mb-[1px] whitespace-nowrap ${headerScrolled ? 'px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs' : 'px-3 py-2.5 text-xs sm:text-sm'} ${isActive
                                                 ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
                                                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                                 }`}
                                         >
-                                            <Icon size={12} />
+                                            <Icon size={headerScrolled ? 10 : 12} />
                                             {tab.label}
                                             {showBadge && (
                                                 <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
