@@ -541,7 +541,7 @@ const StudentCourseDetails = () => {
                         {/* Importance Group */}
                         <div className="flex items-center shrink-0">
                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Importance</span>
-                            {[{ v: 'all', l: 'All' }, { v: 'Very Important', l: 'Critical' }, { v: 'Important', l: 'Important' }].map(f => (
+                            {[{ v: 'all', l: 'All' }, { v: 'Very Important', l: 'Critical' }, { v: 'Important', l: 'Important' }, { v: 'Normal', l: 'Normal' }, { v: 'Optional', l: 'Optional' }].map(f => (
                                 <button key={f.v} onClick={() => setCurrImportance(f.v)}
                                     className={`px-3 py-2.5 text-[11px] sm:text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${currImportance === f.v
                                         ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
