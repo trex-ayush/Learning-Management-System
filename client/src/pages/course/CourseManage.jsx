@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser, FaFilter } from 'react-icons/fa';
 import Modal from '../../components/ui/Modal';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import TeacherManagement from '../../components/course/TeacherManagement';
@@ -80,6 +80,34 @@ const CourseManage = () => {
     const [debouncedProgressKeyword, setDebouncedProgressKeyword] = useState('');
     const [showStudentSelector, setShowStudentSelector] = useState(false);
     const studentSelectorRef = useRef(null);
+
+    // Shrink header on scroll (lock prevents layout-shift feedback loop)
+    const [headerScrolled, setHeaderScrolled] = useState(false);
+    const headerScrolledRef = useRef(false);
+    const scrollLockRef = useRef(false);
+    useEffect(() => {
+        const onScroll = () => {
+            if (scrollLockRef.current) return;
+            const y = window.scrollY;
+            if (!headerScrolledRef.current && y > 80) {
+                headerScrolledRef.current = true;
+                scrollLockRef.current = true;
+                setHeaderScrolled(true);
+                setTimeout(() => { scrollLockRef.current = false; }, 600);
+            } else if (headerScrolledRef.current && y < 20) {
+                headerScrolledRef.current = false;
+                scrollLockRef.current = true;
+                setHeaderScrolled(false);
+                setTimeout(() => { scrollLockRef.current = false; }, 600);
+            }
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    // Curriculum filters (instructor)
+    const [currVisibility, setCurrVisibility] = useState('all'); // all | public | hidden
+    const [currImportance, setCurrImportance] = useState('all'); // all | Very Important | Important | Normal | Optional
 
     // Debounce progress student search keyword
     useEffect(() => {
@@ -740,10 +768,48 @@ const CourseManage = () => {
             </div>
             )}
 
+            {/* Curriculum Filters */}
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
+                {/* Visibility Group — Left */}
+                <div className="flex items-center shrink-0">
+                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Visibility</span>
+                    {[{ v: 'all', l: 'All' }, { v: 'public', l: 'Public' }, { v: 'hidden', l: 'Hidden' }].map(f => (
+                        <button key={f.v} onClick={() => setCurrVisibility(f.v)}
+                            className={`px-3 py-2.5 text-[11px] sm:text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${currVisibility === f.v
+                                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                            {f.l}
+                        </button>
+                    ))}
+                </div>
+                {/* Importance Group — Right */}
+                <div className="flex items-center shrink-0">
+                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Importance</span>
+                    {[{ v: 'all', l: 'All' }, { v: 'Very Important', l: 'Critical' }, { v: 'Important', l: 'Important' }, { v: 'Normal', l: 'Normal' }, { v: 'Optional', l: 'Optional' }].map(f => (
+                        <button key={f.v} onClick={() => setCurrImportance(f.v)}
+                            className={`px-3 py-2.5 text-[11px] sm:text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${currImportance === f.v
+                                ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                            {f.l}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Sections List */}
             <div className="space-y-4">
                 {course.sections && course.sections.length > 0 ? (
-                    course.sections.map((section, sectionIndex) => (
+                    course.sections
+                    .filter(section => {
+                        if (currVisibility === 'public' && !section.isPublic) return false;
+                        if (currVisibility === 'hidden' && section.isPublic) return false;
+                        if (currImportance !== 'all') {
+                            const secImp = section.importance || '';
+                            if (secImp !== currImportance) return false;
+                        }
+                        return true;
+                    })
+                    .map((section, sectionIndex) => (
                         <div key={section._id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden group transition-colors duration-300">
                             <div
                                 className="bg-gray-50/50 dark:bg-slate-950/50 px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center gap-2 transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/50"
@@ -1166,33 +1232,33 @@ const CourseManage = () => {
         <div className={`min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-gray-100 transition-all duration-300 ${tabLayout === 'vertical' ? `pb-20 md:pb-12 glass-content-area ${sidebarHovered ? 'glass-content-expanded' : ''}` : 'pb-12'}`}>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-30 transition-colors duration-300 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-navbar z-30 transition-all duration-300 shadow-sm">
                 <div className="container mx-auto px-3 sm:px-4">
-                    <div className="py-3 sm:py-4 flex items-center justify-between gap-2">
+                    <div className={`flex items-center justify-between gap-2 transition-all duration-300 ${headerScrolled ? 'py-1.5' : 'py-3 sm:py-4'}`}>
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">{course.title}</h1>
+                            <h1 className={`font-bold text-slate-900 dark:text-white leading-tight truncate transition-all duration-300 ${headerScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}>{course.title}</h1>
                             {course.description && (
-                                <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{course.description}</p>
+                                <p className={`text-xs text-slate-500 dark:text-slate-400 line-clamp-1 transition-all duration-300 overflow-hidden ${headerScrolled ? 'max-h-0 opacity-0 mt-0' : 'max-h-10 opacity-100 mt-1 hidden sm:block'}`}>{course.description}</p>
                             )}
                         </div>
                         <div className="flex gap-1.5 sm:gap-2 shrink-0">
                             <button
                                 onClick={() => navigate(`/course/${id}`)}
-                                className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors"
+                                className={`flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-[10px] sm:text-xs font-medium transition-all duration-300 ${headerScrolled ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'}`}
                             >
-                                <FaEye className="text-slate-400" size={10} /> <span className="hidden xs:inline">Preview</span><span className="xs:hidden">View</span>
+                                <FaEye className="text-slate-400" size={10} /> <span className={`hidden xs:inline transition-all duration-300 ${headerScrolled ? 'sm:inline' : ''}`}>Preview</span>
                             </button>
                             <button
                                 onClick={() => navigate(`/admin/course/${id}/analytics`)}
-                                className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors"
+                                className={`flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-[10px] sm:text-xs font-medium transition-all duration-300 ${headerScrolled ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'}`}
                             >
-                                <FaChartBar className="text-slate-400" size={10} /> <span className="hidden xs:inline">Analytics</span>
+                                <FaChartBar className="text-slate-400" size={10} /> <span className={`hidden xs:inline transition-all duration-300 ${headerScrolled ? 'sm:inline' : ''}`}>Analytics</span>
                             </button>
                             <button
                                 onClick={() => navigate(`/admin/course/${id}/settings`)}
-                                className="flex items-center gap-1 sm:gap-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium hover:opacity-90 transition-colors"
+                                className={`flex items-center gap-1 sm:gap-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-md text-[10px] sm:text-xs font-medium hover:opacity-90 transition-all duration-300 ${headerScrolled ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'}`}
                             >
-                                <FaCog size={10} /> <span className="hidden xs:inline">Settings</span>
+                                <FaCog size={10} /> <span className={`hidden xs:inline transition-all duration-300 ${headerScrolled ? 'sm:inline' : ''}`}>Settings</span>
                             </button>
                         </div>
                     </div>
@@ -1208,12 +1274,12 @@ const CourseManage = () => {
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
+                                            className={`flex items-center gap-1 sm:gap-2 font-medium border-b-2 transition-all duration-300 whitespace-nowrap ${headerScrolled ? 'px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs' : 'px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm'} ${activeTab === tab.id
                                                 ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
                                                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                                 }`}
                                         >
-                                            <Icon className="shrink-0 text-[12px] sm:text-sm" />
+                                            <Icon className={`shrink-0 transition-all duration-300 ${headerScrolled ? 'text-[10px] sm:text-xs' : 'text-[12px] sm:text-sm'}`} />
                                             {tab.label}
                                             {showBadge && (
                                                 <span className="bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
