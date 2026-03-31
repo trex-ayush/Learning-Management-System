@@ -41,6 +41,7 @@ const CurriculumTab = ({
     // Curriculum filters
     const [currVisibility, setCurrVisibility] = useState('all');
     const [currImportance, setCurrImportance] = useState('all');
+    const [lectureSearch, setLectureSearch] = useState('');
 
     // Student selector state
     const [showStudentSelector, setShowStudentSelector] = useState(false);
@@ -223,6 +224,18 @@ const CurriculumTab = ({
             </div>
             )}
 
+            {/* Curriculum Search */}
+            <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={11} />
+                <input
+                    type="text"
+                    placeholder="Search sections or lectures..."
+                    value={lectureSearch}
+                    onChange={(e) => setLectureSearch(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 transition-colors"
+                />
+            </div>
+
             {/* Curriculum Filters */}
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
                 {/* Visibility Group — Left */}
@@ -237,7 +250,7 @@ const CurriculumTab = ({
                         </button>
                     ))}
                 </div>
-                {/* Importance Group — Right */}
+                {/* Importance Group */}
                 <div className="flex items-center shrink-0">
                     <span className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mr-1">Importance</span>
                     {[{ v: 'all', l: 'All' }, { v: 'Very Important', l: 'Critical' }, { v: 'Important', l: 'Important' }, { v: 'Normal', l: 'Normal' }, { v: 'Optional', l: 'Optional' }].map(f => (
@@ -261,6 +274,12 @@ const CurriculumTab = ({
                         if (currImportance !== 'all') {
                             const secImp = section.importance || '';
                             if (secImp !== currImportance) return false;
+                        }
+                        if (lectureSearch.trim()) {
+                            const q = lectureSearch.trim().toLowerCase();
+                            const titleMatch = section.title.toLowerCase().includes(q);
+                            const lectureMatch = section.lectures?.some(l => l.title.toLowerCase().includes(q));
+                            if (!titleMatch && !lectureMatch) return false;
                         }
                         return true;
                     })
