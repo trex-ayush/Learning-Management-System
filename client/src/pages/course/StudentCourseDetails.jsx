@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen, FaBookmark, FaFilter } from 'react-icons/fa';
+import { FaPlayCircle, FaBook, FaCheckCircle, FaChevronDown, FaChevronUp, FaBullhorn, FaClipboardList, FaTrophy, FaClock, FaRedo, FaLock, FaUnlock, FaRobot, FaUserGraduate, FaSearch, FaTimes, FaGripVertical, FaGripHorizontal, FaChartLine, FaFolderOpen, FaBookmark } from 'react-icons/fa';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import AIChatPanel from '../../components/chat/AIChatPanel';
 import StudentAnalytics from '../../components/course/StudentAnalytics';
@@ -34,8 +34,9 @@ const StudentCourseDetails = () => {
     const [expandedSections, setExpandedSections] = useState({});
 
     // Curriculum filters (student)
-    const [currStatus, setCurrStatus] = useState('all'); // 'all' | 'not-started' | 'revision' | any status label from course.lectureStatuses
-    const [currImportance, setCurrImportance] = useState('all'); // all | Very Important | Important
+    const [currStatus, setCurrStatus] = useState('all');
+    const [currImportance, setCurrImportance] = useState('all');
+    const [lectureSearch, setLectureSearch] = useState('');
 
     // Shrink header on scroll (lock prevents layout-shift feedback loop)
     const [headerScrolled, setHeaderScrolled] = useState(false);
@@ -519,6 +520,18 @@ const StudentCourseDetails = () => {
                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{course.sections.length} Sections</span>
                     </div>
 
+                    {/* Curriculum Search */}
+                    <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={11} />
+                        <input
+                            type="text"
+                            placeholder="Search sections or lectures..."
+                            value={lectureSearch}
+                            onChange={(e) => setLectureSearch(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 transition-colors"
+                        />
+                    </div>
+
                     {/* Curriculum Filters */}
                     <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
                         {/* Status Group — dynamic from course.lectureStatuses */}
@@ -571,6 +584,13 @@ const StudentCourseDetails = () => {
                                 if (currImportance !== 'all') {
                                     const secImp = section.importance || '';
                                     if (secImp !== currImportance) return false;
+                                }
+                                // Search filter
+                                if (lectureSearch.trim()) {
+                                    const q = lectureSearch.trim().toLowerCase();
+                                    const titleMatch = section.title.toLowerCase().includes(q);
+                                    const lectureMatch = visibleLectures.some(l => l.title.toLowerCase().includes(q));
+                                    if (!titleMatch && !lectureMatch) return false;
                                 }
                                 return true;
                             }).map((section) => {
