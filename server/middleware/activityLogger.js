@@ -22,6 +22,7 @@ const activityLogger = async (req, res, next) => {
             // Sanitize sensitive fields
             if (eventData.password) delete eventData.password;
             if (eventData.token) delete eventData.token;
+            if (eventData.sections) delete eventData.sections; // sections too large for logs
 
             const url = req.originalUrl;
 

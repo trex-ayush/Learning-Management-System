@@ -96,11 +96,29 @@ const ActivityDetailDrawer = ({ log, onClose }) => {
                                         {Object.entries(log.data).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([key, value]) => (
                                             <div key={key} className="py-2 first:pt-0 last:pb-0 flex gap-3 items-start">
                                                 <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 shrink-0 min-w-[120px]">{key}</span>
-                                                <span className="text-xs text-slate-800 dark:text-slate-200 break-all">
-                                                    {typeof value === 'boolean' ? (value ? 'true' : 'false') :
-                                                     Array.isArray(value) ? `[${value.length} items]` :
-                                                     typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                </span>
+                                                <div className="text-xs text-slate-800 dark:text-slate-200 break-all flex-1">
+                                                    {typeof value === 'boolean' ? (
+                                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${value ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                                                            {value ? 'true' : 'false'}
+                                                        </span>
+                                                    ) : Array.isArray(value) ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {value.map((v, i) => (
+                                                                <span key={i} className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                                                    {typeof v === 'object' ? (v.label || v.title || v.name || JSON.stringify(v)) : String(v)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : typeof value === 'object' ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {Object.entries(value).map(([k, v]) => (
+                                                                <span key={k} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${v === true ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : v === false ? 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
+                                                                    {k}: {String(v)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : String(value)}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
