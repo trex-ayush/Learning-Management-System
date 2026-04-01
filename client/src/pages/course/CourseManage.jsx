@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser, FaFilter, FaBell, FaPaperPlane } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser, FaFilter, FaBell, FaPaperPlane, FaCheck } from 'react-icons/fa';
 import Modal from '../../components/ui/Modal';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import TeacherManagement from '../../components/course/TeacherManagement';
@@ -59,20 +59,42 @@ const CourseManage = () => {
     const [notifMessage, setNotifMessage] = useState('');
     const [notifPriority, setNotifPriority] = useState('normal');
     const [sendingNotif, setSendingNotif] = useState(false);
+    const [notifTarget, setNotifTarget] = useState('all'); // 'all' | 'specific'
+    const [notifStudentSearch, setNotifStudentSearch] = useState('');
+    const [notifStudentList, setNotifStudentList] = useState([]);
+    const [notifSelectedStudents, setNotifSelectedStudents] = useState([]); // [{ _id, name, email }]
+
+    const fetchNotifStudents = async (keyword = '') => {
+        try {
+            const res = await api.get(`/courses/${id}/enrolled-students?keyword=${keyword}`);
+            setNotifStudentList(res.data || []);
+        } catch {}
+    };
+
+    useEffect(() => {
+        if (notifTarget === 'specific' && isNotifModalOpen) {
+            const timer = setTimeout(() => fetchNotifStudents(notifStudentSearch), 300);
+            return () => clearTimeout(timer);
+        }
+    }, [notifStudentSearch, notifTarget, isNotifModalOpen]);
 
     const handleSendNotification = async () => {
         if (!notifTitle.trim()) return showError('Title is required');
+        if (notifTarget === 'specific' && notifSelectedStudents.length === 0) return showError('Select at least one student');
         setSendingNotif(true);
         try {
             await api.post(`/notifications/course/${id}/send`, {
                 title: notifTitle,
                 message: notifMessage,
-                priority: notifPriority
+                priority: notifPriority,
+                studentIds: notifTarget === 'specific' ? notifSelectedStudents.map(s => s._id) : undefined
             });
-            showSuccess('Notification sent to all students');
+            showSuccess(notifTarget === 'specific' ? `Notification sent to ${notifSelectedStudents.length} student(s)` : 'Notification sent to all students');
             setNotifTitle('');
             setNotifMessage('');
             setNotifPriority('normal');
+            setNotifTarget('all');
+            setNotifSelectedStudents([]);
             setIsNotifModalOpen(false);
         } catch { showError('Failed to send notification'); }
         finally { setSendingNotif(false); }
@@ -1200,6 +1222,76 @@ const CourseManage = () => {
                 title="Send Notification"
             >
                 <div className="space-y-4">
+                    {/* Target: All or Specific */}
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5">Send To</label>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => { setNotifTarget('all'); setNotifSelectedStudents([]); }}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${notifTarget === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-gray-200 dark:border-slate-700 text-slate-500 hover:border-slate-400'}`}>
+                                All Students
+                            </button>
+                            <button type="button" onClick={() => setNotifTarget('specific')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${notifTarget === 'specific' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-gray-200 dark:border-slate-700 text-slate-500 hover:border-slate-400'}`}>
+                                Specific Students
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Student Picker (when specific) */}
+                    {notifTarget === 'specific' && (
+                        <div>
+                            {/* Selected chips */}
+                            {notifSelectedStudents.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {notifSelectedStudents.map(s => (
+                                        <span key={s._id} className="inline-flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-medium px-2 py-1 rounded-full">
+                                            {s.name}
+                                            <button onClick={() => setNotifSelectedStudents(prev => prev.filter(x => x._id !== s._id))} className="hover:text-red-500 transition-colors">
+                                                <FaTimes size={8} />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {/* Search */}
+                            <div className="relative">
+                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={10} />
+                                <input
+                                    type="text"
+                                    value={notifStudentSearch}
+                                    onChange={(e) => setNotifStudentSearch(e.target.value)}
+                                    placeholder="Search students..."
+                                    className="w-full pl-8 pr-3 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 dark:text-slate-200"
+                                />
+                            </div>
+                            {/* Student list */}
+                            <div className="max-h-36 overflow-y-auto mt-2 border border-gray-200 dark:border-slate-700 rounded-lg divide-y divide-gray-100 dark:divide-slate-800">
+                                {notifStudentList.length > 0 ? notifStudentList.map(s => {
+                                    const isSelected = notifSelectedStudents.some(x => x._id === s._id);
+                                    return (
+                                        <button key={s._id} onClick={() => {
+                                            if (isSelected) {
+                                                setNotifSelectedStudents(prev => prev.filter(x => x._id !== s._id));
+                                            } else {
+                                                setNotifSelectedStudents(prev => [...prev, { _id: s._id, name: s.name, email: s.email }]);
+                                            }
+                                        }} className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                {isSelected && <FaCheck size={8} />}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{s.name}</p>
+                                                <p className="text-[10px] text-slate-400 truncate">{s.email}</p>
+                                            </div>
+                                        </button>
+                                    );
+                                }) : (
+                                    <div className="px-3 py-4 text-xs text-slate-400 text-center">No students found</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Title *</label>
                         <input
@@ -1241,12 +1333,11 @@ const CourseManage = () => {
                     </div>
                     <button
                         onClick={handleSendNotification}
-                        disabled={sendingNotif || !notifTitle.trim()}
+                        disabled={sendingNotif || !notifTitle.trim() || (notifTarget === 'specific' && notifSelectedStudents.length === 0)}
                         className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <FaPaperPlane size={12} /> {sendingNotif ? 'Sending...' : 'Send to All Students'}
+                        <FaPaperPlane size={12} /> {sendingNotif ? 'Sending...' : notifTarget === 'specific' ? `Send to ${notifSelectedStudents.length} Student(s)` : 'Send to All Students'}
                     </button>
-                    <p className="text-[10px] text-slate-400 text-center">This will notify all enrolled students in this course</p>
                 </div>
             </Modal>
 

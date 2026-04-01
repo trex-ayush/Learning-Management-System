@@ -120,20 +120,34 @@ const deleteNotification = asyncHandler(async (req, res) => {
 // @route   POST /api/notifications/course/:courseId/send
 // @access  Instructor only
 const sendCustomNotification = asyncHandler(async (req, res) => {
-    const { title, message, priority } = req.body;
+    const { title, message, priority, studentIds } = req.body;
     if (!title) {
         res.status(400);
         throw new Error('Title is required');
     }
 
-    await notifyCourseStudents(req.params.courseId, {
-        title,
-        message,
-        type: 'custom',
-        priority: priority || 'normal'
-    });
-
-    res.json({ message: 'Notification sent to all enrolled students' });
+    if (studentIds && studentIds.length > 0) {
+        // Send to specific students
+        for (const studentId of studentIds) {
+            await notifyUser(studentId, {
+                courseId: req.params.courseId,
+                title,
+                message,
+                type: 'custom',
+                priority: priority || 'normal'
+            });
+        }
+        res.json({ message: `Notification sent to ${studentIds.length} student(s)` });
+    } else {
+        // Send to all enrolled students
+        await notifyCourseStudents(req.params.courseId, {
+            title,
+            message,
+            type: 'custom',
+            priority: priority || 'normal'
+        });
+        res.json({ message: 'Notification sent to all enrolled students' });
+    }
 });
 
 // @desc    Update notification settings for a course

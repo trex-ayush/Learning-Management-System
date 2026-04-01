@@ -15,7 +15,7 @@ export const ALL_ACTIONS = [
     'User Warned', 'User Blocked', 'User Unblocked', 'Role Changed',
     'Course Blocked', 'Course Unblocked',
     'Student AI Enabled', 'Student AI Disabled', 'Student AI Blocked', 'Student AI Unblocked',
-    'Notification Sent', 'Notification Settings Updated',
+    'Notification Sent', 'Notification Settings Updated', 'Notification Read', 'Notifications Read', 'Notification Deleted',
 ];
 
 export const ALL_ACTIONS_ADMIN = [...ALL_ACTIONS, 'Impersonated'];
@@ -80,6 +80,8 @@ export const getActionIcon = (action) => {
     if (action === 'Student AI Unblocked') return <FaRobot className="text-green-500" />;
     if (action === 'Notification Sent') return <FaPaperPlane className="text-indigo-500" />;
     if (action === 'Notification Settings Updated') return <FaBell className="text-amber-500" />;
+    if (action === 'Notification Read' || action === 'Notifications Read') return <FaBell className="text-green-500" />;
+    if (action === 'Notification Deleted') return <FaBell className="text-red-500" />;
     if (action.includes('Deleted')) return <FaTrash className="text-red-500" />;
     if (action.includes('Added') || action.includes('Created')) return <FaPlus className="text-emerald-500" />;
     if (action.includes('Updated')) return <FaPen className="text-violet-500" />;
@@ -105,6 +107,8 @@ export const getActionBadgeClass = (action) => {
     if (action === 'Student AI Unblocked') return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
     if (action === 'Notification Sent') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400';
     if (action === 'Notification Settings Updated') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400';
+    if (action === 'Notification Read' || action === 'Notifications Read') return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
+    if (action === 'Notification Deleted') return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
     if (action.includes('Deleted') || action === 'Unenrolled') return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
     if (action.includes('Added') || action.includes('Created')) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400';
     if (action.includes('Updated')) return 'bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400';
