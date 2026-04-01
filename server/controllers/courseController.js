@@ -63,9 +63,15 @@ const updateCourse = asyncHandler(async (req, res) => {
     if (req.body.requirements !== undefined) course.requirements = req.body.requirements;
     if (req.body.whatYouWillLearn !== undefined) course.whatYouWillLearn = req.body.whatYouWillLearn;
     if (req.body.allowPeerProgress !== undefined) course.allowPeerProgress = req.body.allowPeerProgress;
+    if (req.body.notificationSettings !== undefined) {
+        course.notificationSettings = { ...course.notificationSettings?.toObject?.() || {}, ...req.body.notificationSettings };
+    }
 
     await course.save();
-    res.status(200).json(course);
+
+    // Return only the updated fields, not the full course with sections
+    const { sections, ...courseWithoutSections } = course.toObject();
+    res.status(200).json(courseWithoutSections);
 });
 
 // @desc    Get all courses
@@ -143,6 +149,17 @@ const addSection = asyncHandler(async (req, res) => {
 
     course.sections.push({ title, isPublic: req.body.isPublic, isPreview: req.body.isPreview, importance: req.body.importance || '', lectures: [] });
     await course.save();
+
+    // Notification trigger: new content
+    if (course.notificationSettings?.newContent) {
+        const { notifyCourseStudents } = require('./notificationController');
+        notifyCourseStudents(course._id, {
+            title: `New Section: ${title}`,
+            message: `A new section "${title}" was added to "${course.title}"`,
+            type: 'new_content',
+            link: `/course/${course._id}`
+        });
+    }
 
     res.status(201).json(course);
 });
@@ -235,6 +252,17 @@ const addLectureToSection = asyncHandler(async (req, res) => {
     // Add to section
     section.lectures.push(lecture._id);
     await course.save();
+
+    // Notification trigger: new content
+    if (course.notificationSettings?.newContent) {
+        const { notifyCourseStudents } = require('./notificationController');
+        notifyCourseStudents(course._id, {
+            title: `New Lecture: ${lecture.title}`,
+            message: `A new lecture "${lecture.title}" was added to "${course.title}"`,
+            type: 'new_content',
+            link: `/course/${course._id}/lecture/${lecture._id}`
+        });
+    }
 
     res.status(201).json(lecture);
 });
@@ -395,7 +423,7 @@ const getMyProgress = asyncHandler(async (req, res) => {
     });
 
     if (!progress) {
-        return res.status(200).json({ completedLectures: [] });
+        return res.status(200).json({ enrolled: false, completedLectures: [] });
     }
 
     res.status(200).json({
@@ -1654,6 +1682,19 @@ const toggleAIBlockStudent = asyncHandler(async (req, res) => {
         course.aiBlockedStudents.push(studentId);
     }
     await course.save();
+
+    // Notification trigger: AI access change (single student)
+    if (course.notificationSettings?.aiAccessChange) {
+        const { notifyUser } = require('./notificationController');
+        notifyUser(studentId, {
+            courseId: course._id,
+            title: !isBlocked ? 'AI Access Blocked' : 'AI Access Restored',
+            message: !isBlocked ? `Your AI access has been blocked in "${course.title}"` : `Your AI access has been restored in "${course.title}"`,
+            type: 'ai_access',
+            link: `/course/${course._id}`
+        });
+    }
+
     res.locals.activity = {
         course: course._id,
         action: !isBlocked ? 'Student AI Blocked' : 'Student AI Unblocked',
@@ -1677,6 +1718,18 @@ const toggleStudentAI = asyncHandler(async (req, res) => {
     }
     course.allowStudentAI = !course.allowStudentAI;
     await course.save();
+
+    // Notification trigger: AI access change
+    if (course.notificationSettings?.aiAccessChange) {
+        const { notifyCourseStudents } = require('./notificationController');
+        notifyCourseStudents(course._id, {
+            title: course.allowStudentAI ? 'AI Access Enabled' : 'AI Access Disabled',
+            message: course.allowStudentAI ? `You can now use the instructor's AI key in "${course.title}"` : `Instructor AI key access has been disabled in "${course.title}"`,
+            type: 'ai_access',
+            link: `/course/${course._id}`
+        });
+    }
+
     res.locals.activity = {
         course: course._id,
         action: course.allowStudentAI ? 'Student AI Enabled' : 'Student AI Disabled',

@@ -137,18 +137,20 @@ const CourseView = () => {
             try {
                 const res = await api.get(`/courses/${id}/my-progress`);
 
-                if (res.data && res.data.completedLectures && res.data.completedLectures.length > 0) {
-                    const map = {};
-                    res.data.completedLectures.forEach(item => {
-                        map[item.lecture] = {
-                            status: item.status,
-                            notes: item.notes,
-                            completedAt: item.completedAt,
-                            markedForRevision: item.markedForRevision || false
-                        };
-                    });
-                    setProgressMap(map);
+                if (res.data && res.data.enrolled !== false) {
                     setIsEnrolled(true);
+                    const map = {};
+                    if (res.data.completedLectures) {
+                        res.data.completedLectures.forEach(item => {
+                            map[item.lecture] = {
+                                status: item.status,
+                                notes: item.notes,
+                                completedAt: item.completedAt,
+                                markedForRevision: item.markedForRevision || false
+                            };
+                        });
+                    }
+                    setProgressMap(map);
                 } else {
                     setIsEnrolled(false);
                 }

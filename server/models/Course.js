@@ -54,6 +54,14 @@ const courseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    notificationSettings: {
+        newContent: { type: Boolean, default: false },
+        newBroadcast: { type: Boolean, default: false },
+        newQuiz: { type: Boolean, default: false },
+        dueDateReminder: { type: Boolean, default: false },
+        aiAccessChange: { type: Boolean, default: false },
+        progressMilestone: { type: Boolean, default: false }
+    },
     sections: [{
         title: { type: String, required: true },
         isPublic: { type: Boolean, default: false },
