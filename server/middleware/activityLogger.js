@@ -80,6 +80,10 @@ const activityLogger = async (req, res, next) => {
             else if (url.includes('/role')) { action = 'Role Changed'; details = 'Changed a user role'; }
             else if (url.includes('/block') && url.includes('/courses')) { action = 'Course Blocked'; details = 'Blocked a course'; }
             else if (url.includes('/unblock') && url.includes('/courses')) { action = 'Course Unblocked'; details = 'Unblocked a course'; }
+            // Notifications
+            else if (url.includes('/notifications') && url.includes('/send')) { action = 'Notification Sent'; details = `Sent notification${eventData.title ? ': ' + eventData.title : ''}`; }
+            else if (url.includes('/notifications') && url.includes('/settings')) { action = 'Notification Settings Updated'; details = 'Updated notification trigger settings'; }
+            else if (url.includes('/notifications') && url.includes('/mark-all-read')) { action = 'Notifications Read'; details = 'Marked all notifications as read'; }
 
             // Extract lecture ID from URL pattern /lectures/:id
             const lectureMatch = url.match(/\/lectures\/([a-f0-9]{24})/i);
