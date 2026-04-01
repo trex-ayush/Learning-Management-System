@@ -54,6 +54,17 @@ const createQuiz = asyncHandler(async (req, res) => {
         createdBy: userId
     });
 
+    // Notification trigger: new quiz
+    if (course.notificationSettings?.newQuiz) {
+        const { notifyCourseStudents } = require('./notificationController');
+        notifyCourseStudents(courseId, {
+            title: `New Quiz: ${title}`,
+            message: `A new quiz "${title}" is available in "${course.title}"`,
+            type: 'quiz',
+            link: `/course/${courseId}?tab=quizzes`
+        });
+    }
+
     res.status(201).json(quiz);
 });
 

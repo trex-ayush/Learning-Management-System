@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaClipboardList, FaSearch, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaTimes, FaFilter } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaClipboardList, FaSearch, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaTimes, FaFilter, FaBell } from 'react-icons/fa';
 import api from '../../api/axios';
 import { showSuccess, showError } from '../../utils/toast';
 
@@ -35,6 +35,7 @@ const CurriculumTab = ({
     onClearStudent,
     getProgressStatusIcon,
     getProgressStatusColor,
+    onSendNotification,
 }) => {
     const navigate = useNavigate();
 
@@ -94,6 +95,13 @@ const CurriculumTab = ({
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Organize your course content into sections and lectures</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={onSendNotification}
+                        className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors h-8 sm:h-9"
+                        title="Send notification to students"
+                    >
+                        <FaBell className="text-slate-400" size={10} /> <span className="hidden xs:inline">Notify</span>
+                    </button>
                     <button
                         onClick={() => navigate(`/admin/course/${courseId}/quizzes`)}
                         className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors h-8 sm:h-9"

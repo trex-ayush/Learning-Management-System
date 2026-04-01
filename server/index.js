@@ -72,6 +72,9 @@ app.use('/api/student-ai', require('./routes/studentAiRoutes'));
 // Admin routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// Notification routes
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+
 // Error handler middleware
 app.use((err, req, res, next) => {
     if (res.headersSent) {

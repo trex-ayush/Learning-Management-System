@@ -56,6 +56,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 // Shared
 const Profile = lazy(() => import('./pages/Profile'));
 const MyActivity = lazy(() => import('./pages/MyActivity'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 
@@ -221,6 +222,7 @@ function App() {
 
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                   <Route path="/course/:id" element={<ProtectedRoute><StudentCourseDetails /></ProtectedRoute>} />
                   {/* Public route for lecture view - checks preview status internally */}
                   <Route path="/course/:id/lecture/:lectureId" element={<CourseView />} />

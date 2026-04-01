@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser, FaFilter } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEdit, FaTrash, FaChevronDown, FaBook, FaCog, FaUsers, FaBullhorn, FaUserTie, FaTimes, FaSignOutAlt, FaChartBar, FaClipboardList, FaSearch, FaUserPlus, FaHistory, FaRobot, FaUserGraduate, FaCheckCircle, FaPlayCircle, FaClock, FaGripVertical, FaGripHorizontal, FaFolderOpen, FaBan, FaComments, FaChevronRight, FaUser, FaFilter, FaBell, FaPaperPlane } from 'react-icons/fa';
 import Modal from '../../components/ui/Modal';
 import BroadcastList from '../../components/broadcast/BroadcastList';
 import TeacherManagement from '../../components/course/TeacherManagement';
@@ -52,6 +52,31 @@ const CourseManage = () => {
     const [newLecture, setNewLecture] = useState({ title: '', number: '', resourceUrl: '', description: '', dueDate: '', status: 'Pending', isPublic: true, isPreview: false });
     const [lectureBroadcast, setLectureBroadcast] = useState({ enabled: false, message: '', priority: 'normal' });
 
+
+    // Send Notification Modal State
+    const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+    const [notifTitle, setNotifTitle] = useState('');
+    const [notifMessage, setNotifMessage] = useState('');
+    const [notifPriority, setNotifPriority] = useState('normal');
+    const [sendingNotif, setSendingNotif] = useState(false);
+
+    const handleSendNotification = async () => {
+        if (!notifTitle.trim()) return showError('Title is required');
+        setSendingNotif(true);
+        try {
+            await api.post(`/notifications/course/${id}/send`, {
+                title: notifTitle,
+                message: notifMessage,
+                priority: notifPriority
+            });
+            showSuccess('Notification sent to all students');
+            setNotifTitle('');
+            setNotifMessage('');
+            setNotifPriority('normal');
+            setIsNotifModalOpen(false);
+        } catch { showError('Failed to send notification'); }
+        finally { setSendingNotif(false); }
+    };
 
     // AI Chat Viewer State (instructor view of student conversations using instructor key)
     const [aiChatDrawerOpen, setAiChatDrawerOpen] = useState(false);
@@ -842,6 +867,7 @@ const CourseManage = () => {
                         }}
                         getProgressStatusIcon={getProgressStatusIcon}
                         getProgressStatusColor={getProgressStatusColor}
+                        onSendNotification={() => setIsNotifModalOpen(true)}
                     />
                 )}
                 {activeTab === 'broadcasts' && renderBroadcastsTab()}
@@ -1165,6 +1191,63 @@ const CourseManage = () => {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Send Notification Modal */}
+            <Modal
+                isOpen={isNotifModalOpen}
+                onClose={() => setIsNotifModalOpen(false)}
+                title="Send Notification"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Title *</label>
+                        <input
+                            type="text"
+                            value={notifTitle}
+                            onChange={(e) => setNotifTitle(e.target.value)}
+                            placeholder="Notification title..."
+                            className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Message</label>
+                        <textarea
+                            rows={3}
+                            value={notifMessage}
+                            onChange={(e) => setNotifMessage(e.target.value)}
+                            placeholder="Optional message..."
+                            className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5">Priority</label>
+                        <div className="flex gap-2">
+                            {['normal', 'important', 'urgent'].map(p => (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => setNotifPriority(p)}
+                                    className={`flex-1 py-2 rounded-lg text-xs font-bold capitalize border transition-all ${notifPriority === p
+                                        ? p === 'urgent' ? 'bg-red-500 border-red-500 text-white'
+                                        : p === 'important' ? 'bg-amber-500 border-amber-500 text-white'
+                                        : 'bg-indigo-500 border-indigo-500 text-white'
+                                        : 'border-gray-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSendNotification}
+                        disabled={sendingNotif || !notifTitle.trim()}
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FaPaperPlane size={12} /> {sendingNotif ? 'Sending...' : 'Send to All Students'}
+                    </button>
+                    <p className="text-[10px] text-slate-400 text-center">This will notify all enrolled students in this course</p>
+                </div>
             </Modal>
 
             {/* AI Chat Viewer Drawer */}

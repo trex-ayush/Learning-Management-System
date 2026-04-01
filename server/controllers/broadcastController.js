@@ -29,6 +29,18 @@ const createBroadcast = asyncHandler(async (req, res) => {
     // Populate createdBy for response
     await broadcast.populate('createdBy', 'name');
 
+    // Notification trigger: new broadcast
+    if (course.notificationSettings?.newBroadcast) {
+        const { notifyCourseStudents } = require('./notificationController');
+        notifyCourseStudents(course._id, {
+            title: `Announcement: ${broadcast.title}`,
+            message: broadcast.message?.substring(0, 150) || '',
+            type: 'broadcast',
+            link: `/course/${course._id}?tab=announcements`,
+            priority: broadcast.priority || 'normal'
+        });
+    }
+
     res.status(201).json(broadcast);
 });
 

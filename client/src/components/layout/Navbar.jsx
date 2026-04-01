@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import ThemeContext from '../../context/ThemeContext';
 import { FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaGraduationCap, FaSearch, FaTimes, FaChevronDown, FaArrowLeft, FaStore, FaShoppingBag, FaChalkboardTeacher, FaRobot, FaChartLine, FaUserSecret, FaHistory } from 'react-icons/fa';
+import NotificationBell from './NotificationBell';
 import api from '../../api/axios';
 
 const Navbar = () => {
@@ -279,6 +280,9 @@ const Navbar = () => {
                         >
                             {theme === 'light' ? <FaMoon size={18} /> : <FaSun size={18} />}
                         </button>
+
+                        {/* Notifications */}
+                        {user && <NotificationBell />}
 
                         {user ? (
                             <div className="relative" ref={menuRef}>

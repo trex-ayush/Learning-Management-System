@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaPalette, FaStore, FaTag, FaTimes, FaTicketAlt, FaCog, FaChartBar, FaGift } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaPalette, FaStore, FaTag, FaTimes, FaTicketAlt, FaCog, FaChartBar, FaGift, FaBell, FaPaperPlane } from 'react-icons/fa';
 import { showSuccess, showError } from '../../utils/toast';
 import ManageCoupons from './ManageCoupons';
 
@@ -46,8 +46,17 @@ const CourseSettings = ({ isEmbedded = false }) => {
         { id: 'general', label: 'General', icon: FaCog },
         { id: 'marketplace', label: 'Marketplace', icon: FaStore },
         { id: 'coupons', label: 'Coupons', icon: FaTicketAlt },
-        { id: 'progress', label: 'Progress Tracking', icon: FaChartBar }
+        { id: 'progress', label: 'Progress Tracking', icon: FaChartBar },
+        { id: 'notifications', label: 'Notifications', icon: FaBell }
     ];
+
+    // Notification settings state
+    const [notifSettings, setNotifSettings] = useState({
+        newContent: false, newBroadcast: false, newQuiz: false,
+        dueDateReminder: false, aiAccessChange: false, progressMilestone: false
+    });
+    const [notifLoaded, setNotifLoaded] = useState(false);
+    const [notifSaving, setNotifSaving] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -83,6 +92,18 @@ const CourseSettings = ({ isEmbedded = false }) => {
                 requirements: res.data.requirements || [],
                 whatYouWillLearn: res.data.whatYouWillLearn || []
             });
+            // Load notification settings
+            if (res.data.notificationSettings) {
+                setNotifSettings({
+                    newContent: res.data.notificationSettings.newContent || false,
+                    newBroadcast: res.data.notificationSettings.newBroadcast || false,
+                    newQuiz: res.data.notificationSettings.newQuiz || false,
+                    dueDateReminder: res.data.notificationSettings.dueDateReminder || false,
+                    aiAccessChange: res.data.notificationSettings.aiAccessChange || false,
+                    progressMilestone: res.data.notificationSettings.progressMilestone || false
+                });
+            }
+            setNotifLoaded(true);
             setLoading(false);
         } catch (err) {
             showError('Failed to load course settings');
@@ -94,7 +115,7 @@ const CourseSettings = ({ isEmbedded = false }) => {
         if (e) e.preventDefault();
         setSaving(true);
         try {
-            await api.put(`/courses/${id}`, formData);
+            await api.put(`/courses/${id}`, { ...formData, notificationSettings: notifSettings });
             showSuccess('Settings saved successfully');
         } catch (error) {
             showError('Error saving settings');
@@ -619,6 +640,48 @@ const CourseSettings = ({ isEmbedded = false }) => {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Notifications Tab */}
+                    {activeTab === 'notifications' && (
+                        <div className="space-y-6">
+                            {/* Auto Notification Triggers */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/50">
+                                    <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <FaBell className="text-indigo-500" /> Auto Notification Triggers
+                                    </h2>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Choose which events automatically notify enrolled students</p>
+                                </div>
+                                <div className="p-4 md:p-6 space-y-1">
+                                    {[
+                                        { key: 'newContent', label: 'New Content', desc: 'When a section or lecture is added' },
+                                        { key: 'newBroadcast', label: 'New Broadcast', desc: 'When a course announcement is posted' },
+                                        { key: 'newQuiz', label: 'New Quiz', desc: 'When a quiz is published' },
+                                        { key: 'dueDateReminder', label: 'Due Date Reminder', desc: 'Remind students 1 day before a due date' },
+                                        { key: 'aiAccessChange', label: 'AI Access Changes', desc: 'When AI access is enabled, disabled, or a student is blocked' },
+                                        { key: 'progressMilestone', label: 'Progress Milestones', desc: 'When a student reaches 25%, 50%, 75%, or 100%' }
+                                    ].map(item => (
+                                        <div key={item.key} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{item.label}</p>
+                                                <p className="text-[11px] text-slate-400 dark:text-slate-500">{item.desc}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNotifSettings(prev => ({ ...prev, [item.key]: !prev[item.key] }));
+                                                }}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${notifSettings[item.key] ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${notifSettings[item.key] ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                         </div>
                     )}
 
