@@ -423,7 +423,7 @@ const getMyProgress = asyncHandler(async (req, res) => {
     });
 
     if (!progress) {
-        return res.status(200).json({ completedLectures: [] });
+        return res.status(200).json({ enrolled: false, completedLectures: [] });
     }
 
     res.status(200).json({
