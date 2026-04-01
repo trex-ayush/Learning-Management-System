@@ -55,7 +55,15 @@ const NotificationBell = () => {
 
     // Fetch notifications when panel opens
     useEffect(() => {
-        if (isOpen) fetchNotifications();
+        if (isOpen) {
+            fetchNotifications();
+            // Auto mark all as read when opened (like broadcasts)
+            if (unreadCount > 0) {
+                api.put('/notifications/mark-all-read').then(() => {
+                    setUnreadCount(0);
+                }).catch(() => {});
+            }
+        }
     }, [isOpen]);
 
     // Close on outside click
