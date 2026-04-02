@@ -47,6 +47,9 @@ const CourseView = () => {
     const [isSidebarVisible, setIsSidebarVisible] = useState(true); // Desktop sidebar toggle - open by default
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'notes' | 'discussion' | 'resources'
 
+    // Hidden/unavailable lecture
+    const [lectureNotAvailable, setLectureNotAvailable] = useState(false);
+
     // Lecture-linked resources
     const [lectureResources, setLectureResources] = useState([]);
     const [lectureResourcesLoading, setLectureResourcesLoading] = useState(false);
@@ -306,9 +309,16 @@ const CourseView = () => {
                         break;
                     }
                 }
+
+                // Lecture ID in URL but not found in visible sections = hidden/unavailable
+                if (!targetLecture) {
+                    setLectureNotAvailable(true);
+                    return;
+                }
+                setLectureNotAvailable(false);
             }
 
-            // Fallback to first lecture if no URL param or not found
+            // Fallback to first lecture if no URL param
             if (!targetLecture && !selectedLecture) {
                 targetLecture = course.sections[0].lectures[0];
                 targetSectionId = course.sections[0]._id;
@@ -822,7 +832,39 @@ const CourseView = () => {
 
                 {/* Main Content */}
                 <div className="flex-1 min-w-0 bg-white dark:bg-slate-950 transition-colors duration-300">
-                    {selectedLecture ? (
+                    {lectureNotAvailable ? (
+                        <div className="flex items-center justify-center h-full min-h-[60vh]">
+                            <div className="text-center px-6">
+                                <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                                    <svg className="w-7 h-7 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Lecture not available</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">This lecture is hidden or doesn't exist.</p>
+                                <div className="flex items-center justify-center gap-3">
+                                    <button
+                                        onClick={() => navigate(-1)}
+                                        className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        Go Back
+                                    </button>
+                                    {course?.sections?.[0]?.lectures?.[0] && (
+                                        <button
+                                            onClick={() => {
+                                                const firstLec = course.sections[0].lectures[0];
+                                                setLectureNotAvailable(false);
+                                                setSelectedLecture(firstLec);
+                                                fetchComments(firstLec._id);
+                                                navigate(`/course/${id}/lecture/${firstLec._id}`, { replace: true });
+                                            }}
+                                            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                        >
+                                            Go to First Lecture
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ) : selectedLecture ? (
                         <div className="w-full max-w-[1800px] mx-auto">
 
                             {/* Video Player - Full Width */}

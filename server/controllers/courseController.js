@@ -441,6 +441,44 @@ const getLecture = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Lecture not found');
     }
+
+    const userId = req.user?.id || req.user?._id;
+    const course = await Course.findById(lecture.course);
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    const isOwnerOrAdmin = canManage(req.user, course.user);
+    const teacherPermissions = await getTeacherPermissions(userId, course._id);
+    const isTeacher = !!teacherPermissions;
+
+    // If lecture or its section is hidden, only owner/admin/teacher can access
+    if (!isOwnerOrAdmin && !isTeacher) {
+        if (!lecture.isPublic) {
+            res.status(403);
+            throw new Error('This lecture is not available');
+        }
+
+        // Check if parent section is hidden
+        const section = course.sections.find(s =>
+            s.lectures.some(l => l.toString() === lecture._id.toString())
+        );
+        if (section && !section.isPublic) {
+            res.status(403);
+            throw new Error('This lecture is not available');
+        }
+
+        // Check if lecture is preview-only (for non-enrolled users)
+        if (!lecture.isPreview) {
+            const progress = await Progress.findOne({ student: userId, course: course._id });
+            if (!progress) {
+                res.status(403);
+                throw new Error('You must be enrolled to view this lecture');
+            }
+        }
+    }
+
     res.status(200).json(lecture);
 });
 
