@@ -9,7 +9,7 @@ import CurriculumTab from '../../components/course/CurriculumTab';
 import StudentsTab from '../../components/course/StudentsTab';
 import AINotesGenerator from '../../components/course/AINotesGenerator';
 import ResourceManager from '../../components/course/ResourceManager';
-import { showSuccess, showError } from '../../utils/toast';
+import { showSuccess, showError, showWarning } from '../../utils/toast';
 import AuthContext from '../../context/AuthContext';
 
 const CourseManage = () => {
@@ -385,7 +385,7 @@ const CourseManage = () => {
             if (editingLectureId) {
                 await api.put(`/courses/lectures/${editingLectureId}`, newLecture);
             } else {
-                if (!activeSectionId) return alert('Select a section first');
+                if (!activeSectionId) return showWarning('Select a section first');
                 const { data: createdLecture } = await api.post(`/courses/${id}/sections/${activeSectionId}/lectures`, newLecture);
                 if (lectureBroadcast.enabled) {
                     const sectionTitle = course?.sections?.find(s => s._id === activeSectionId)?.title || '';
