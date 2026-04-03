@@ -293,8 +293,10 @@ const Navbar = () => {
                                     <span className="hidden md:block text-sm font-medium text-slate-700 dark:text-slate-200">
                                         {user.name}
                                     </span>
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300">
-                                        {user.name ? user.name.charAt(0).toUpperCase() : <FaUserCircle />}
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 overflow-hidden">
+                                        {user.profileImage ? (
+                                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                                        ) : user.name ? user.name.charAt(0).toUpperCase() : <FaUserCircle />}
                                     </div>
                                 </button>
 
