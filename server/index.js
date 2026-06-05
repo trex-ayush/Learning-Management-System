@@ -151,7 +151,7 @@ app.listen(port, () => {
 
     // Keep-alive: self-ping at random intervals (30s - 120s) between 6:00 PM and 2:00 AM IST
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
-    if (RENDER_URL) {
+    if (RENDER_URL && process.env.KEEP_ALIVE === 'true') {
         const pingServer = () => {
             const delay = Math.floor(Math.random() * (120000 - 30000 + 1)) + 30000;
             setTimeout(() => {
