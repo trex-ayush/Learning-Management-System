@@ -7,10 +7,10 @@ import { FaCheckCircle } from 'react-icons/fa';
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
     </svg>
 );
 
@@ -22,24 +22,15 @@ const perks = [
     'Quiz builder and grading tools',
 ];
 
-const Register = () => {
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
-    const [isLoading, setIsLoading] = useState(false);
-    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-    const { register, googleLogin } = useContext(AuthContext);
-    const navigate = useNavigate();
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-    const { name, email, password } = formData;
-    const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+const GoogleSignUpButton = ({ onSuccess, disabled }) => {
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const handleGoogleSuccess = async (codeResponse) => {
         setIsGoogleLoading(true);
         try {
-            await googleLogin(codeResponse.code);
-            navigate('/');
-            showSuccess('Account created successfully');
-        } catch (error) {
-            if (!error.handled) showError(error, 'Google sign-up failed');
+            await onSuccess(codeResponse);
         } finally {
             setIsGoogleLoading(false);
         }
@@ -50,6 +41,43 @@ const Register = () => {
         onSuccess: handleGoogleSuccess,
         onError: () => showError('Google sign-up failed'),
     });
+
+    return (
+        <button
+            type="button"
+            onClick={() => signUpWithGoogle()}
+            disabled={isGoogleLoading || disabled}
+            className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-750 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {isGoogleLoading ? (
+                <svg className="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+            ) : <GoogleIcon />}
+            Continue with Google
+        </button>
+    );
+};
+
+const Register = () => {
+    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    const [isLoading, setIsLoading] = useState(false);
+    const { register, googleLogin } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    const { name, email, password } = formData;
+    const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const handleGoogleSuccess = async (codeResponse) => {
+        try {
+            await googleLogin(codeResponse.code);
+            navigate('/');
+            showSuccess('Account created successfully');
+        } catch (error) {
+            if (!error.handled) showError(error, 'Google sign-up failed');
+        }
+    };
 
     const onSubmit = async (e) => {
         e.preventDefault();
@@ -67,7 +95,10 @@ const Register = () => {
     };
 
     return (
-        <div className="h-screen overflow-hidden flex bg-gray-50 dark:bg-slate-950">
+        <div className="relative min-h-[100dvh] overflow-hidden flex bg-slate-950 lg:bg-gray-50 dark:bg-slate-950">
+            <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950" />
+            <div className="absolute -top-24 -right-20 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl lg:hidden" />
+            <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl lg:hidden" />
 
             {/* ── Left branding panel (hidden on mobile) ── */}
             <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] relative flex-col bg-slate-900 dark:bg-slate-950 overflow-hidden">
@@ -119,30 +150,37 @@ const Register = () => {
             </div>
 
             {/* ── Right form panel ── */}
-            <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-14 xl:px-20 bg-white dark:bg-slate-900 overflow-y-auto">
-                <div className="w-full max-w-sm mx-auto lg:mx-0">
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        Create your account
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Start your learning journey — it's completely free
-                    </p>
+            <div className="relative z-10 flex-1 flex flex-col justify-center px-4 py-6 sm:px-10 lg:px-14 xl:px-20 lg:bg-white dark:bg-slate-900 overflow-y-auto">
+                <div className="w-full max-w-sm mx-auto lg:mx-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none rounded-3xl lg:rounded-none shadow-2xl lg:shadow-none border border-white/10 lg:border-0 px-5 py-6 sm:px-0 sm:py-0">
+                    <div className="mb-6 lg:hidden">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-blue-200">
+                            <FaCheckCircle className="text-blue-400" />
+                            Create your account
+                        </div>
+                        <h2 className="mt-4 text-3xl font-bold text-white tracking-tight">
+                            Get started
+                        </h2>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                            Join thousands of educators and learners on the platform.
+                        </p>
+                    </div>
 
-                    {/* Google button */}
-                    <button
-                        type="button"
-                        onClick={() => signUpWithGoogle()}
-                        disabled={isGoogleLoading || isLoading}
-                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-750 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isGoogleLoading ? (
-                            <svg className="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                        ) : <GoogleIcon />}
-                        Continue with Google
-                    </button>
+                    <div className="hidden lg:block">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                            Create your account
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Start your learning journey — it's completely free
+                        </p>
+                    </div>
+
+                    {googleClientId ? (
+                        <GoogleSignUpButton onSuccess={handleGoogleSuccess} disabled={isLoading} />
+                    ) : (
+                        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                            Google sign-up is not configured. Set VITE_GOOGLE_CLIENT_ID in client/.env to enable it.
+                        </div>
+                    )}
 
                     {/* Divider */}
                     <div className="my-4 flex items-center gap-3">

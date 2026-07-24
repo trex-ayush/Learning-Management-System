@@ -6,6 +6,16 @@ const Progress = require('../models/Progress');
 const Coupon = require('../models/Coupon');
 const { generateInvoicePDF } = require('../services/invoiceService');
 
+const requireStripe = () => {
+    if (!stripe) {
+        const error = new Error('Stripe is not configured. Set STRIPE_SECRET_KEY in server/.env.');
+        error.statusCode = 503;
+        throw error;
+    }
+
+    return stripe;
+};
+
 // @desc    Create Stripe checkout session
 // @route   POST /api/purchase/checkout
 // @access  Private
@@ -76,7 +86,9 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     finalPrice = Math.max(finalPrice, 1);
 
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    const stripeClient = requireStripe();
+
+    const session = await stripeClient.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
             {
@@ -139,7 +151,7 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(
+        event = requireStripe().webhooks.constructEvent(
             req.body,
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
@@ -302,7 +314,7 @@ const getSessionStatus = asyncHandler(async (req, res) => {
     // If still pending, verify directly with Stripe (handles cases where webhook hasn't fired)
     if (purchase.status === 'pending') {
         try {
-            const session = await stripe.checkout.sessions.retrieve(sessionId);
+            const session = await requireStripe().checkout.sessions.retrieve(sessionId);
             if (session.payment_status === 'paid') {
                 await handleSuccessfulPayment(session);
                 purchase = await Purchase.findOne({
