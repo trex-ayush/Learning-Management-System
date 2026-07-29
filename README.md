@@ -598,4 +598,4 @@ Educational project. All rights reserved.
 
 ---
 
-Built by **Ayush Kumar Singh** · [GitHub](https://github.com/trex-ayush)
+Built by **the team** · [GitHub](https://github.com/trex-ayush)
