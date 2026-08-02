@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }) => {
 
     const googleLogin = async (code) => {
         const res = await api.post('/auth/google', { code });
+        prompt: 'select_account';
         localStorage.setItem('token', res.data.token);
         cacheUser(res.data);
         setUser(res.data);
