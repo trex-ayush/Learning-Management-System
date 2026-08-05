@@ -37,6 +37,7 @@ const GoogleLoginButton = ({ onSuccess, disabled }) => {
 
     const loginWithGoogle = useGoogleLogin({
         flow: 'auth-code',
+        prompt: 'select_account',
         onSuccess: handleGoogleSuccess,
         onError: () => showError('Google sign-in failed'),
     });
