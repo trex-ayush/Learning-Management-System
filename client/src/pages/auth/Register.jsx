@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import { showSuccess, showError } from '../../utils/toast';
@@ -14,12 +14,20 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const perks = [
+const studentPerks = [
     'Create and publish unlimited courses',
     'Enroll students and track their progress',
     'AI study assistant included for free',
     'Real-time broadcasts and announcements',
     'Quiz builder and grading tools',
+];
+
+const teacherPerks = [
+    'Publish courses with a guided curriculum editor',
+    'Manage enrolled learners and course progress',
+    'Broadcast updates and announcements instantly',
+    'Use AI notes and quiz tools to save time',
+    'Set up your instructor profile and start teaching',
 ];
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -65,6 +73,9 @@ const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { register, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const isTeacherRegister = location.pathname.startsWith('/teacher/register');
+    const perks = isTeacherRegister ? teacherPerks : studentPerks;
 
     const { name, email, password } = formData;
     const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -84,8 +95,8 @@ const Register = () => {
         if (isLoading) return;
         setIsLoading(true);
         try {
-            await register(name, email, password);
-            navigate('/');
+            await register(name, email, password, isTeacherRegister ? 'instructor' : 'student');
+            navigate(isTeacherRegister ? '/instructor/dashboard' : '/');
             showSuccess('Account created successfully');
         } catch (error) {
             if (!error.handled) showError(error, 'Registration failed');
@@ -112,14 +123,15 @@ const Register = () => {
                     <div className="mb-5">
                         <div className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 rounded-full px-3 py-1 mb-4">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                            <span className="text-blue-300 text-xs font-medium">Free to get started</span>
+                            <span className="text-blue-300 text-xs font-medium">{isTeacherRegister ? 'Teacher onboarding' : 'Free to get started'}</span>
                         </div>
                         <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight tracking-tight">
-                            Everything you need<br />
-                            <span className="text-blue-400">in one place.</span>
+                            {isTeacherRegister ? <>Start teaching<br /><span className="text-blue-400">with your own classroom.</span></> : <>Everything you need<br /><span className="text-blue-400">in one place.</span></>}
                         </h1>
                         <p className="mt-3 text-slate-400 text-sm xl:text-base leading-relaxed max-w-md">
-                            Join thousands of educators and learners on the platform built for modern education.
+                            {isTeacherRegister
+                                ? 'Create your teacher account and start building courses, broadcasts, and learning experiences.'
+                                : 'Join thousands of educators and learners on the platform built for modern education.'}
                         </p>
                     </div>
 
@@ -155,26 +167,32 @@ const Register = () => {
                     <div className="mb-6 lg:hidden">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-blue-200">
                             <FaCheckCircle className="text-blue-400" />
-                            Create your account
+                            {isTeacherRegister ? 'Create your teacher account' : 'Create your account'}
                         </div>
                         <h2 className="mt-4 text-3xl font-bold text-white tracking-tight">
-                            Get started
+                            {isTeacherRegister ? 'Become a teacher' : 'Get started'}
                         </h2>
                         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Join thousands of educators and learners on the platform.
+                            {isTeacherRegister
+                                ? 'Set up your instructor profile and publish your first course.'
+                                : 'Join thousands of educators and learners on the platform.'}
                         </p>
                     </div>
 
                     <div className="hidden lg:block">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Create your account
+                            {isTeacherRegister ? 'Teacher registration' : 'Create your account'}
                         </h2>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Start your learning journey — it's completely free
+                            {isTeacherRegister ? 'Create an instructor account to manage and publish courses' : 'Start your learning journey — it\'s completely free'}
                         </p>
                     </div>
 
-                    {googleClientId ? (
+                    {isTeacherRegister ? (
+                        <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+                            Teacher registration uses email and password so we can set your instructor role correctly.
+                        </div>
+                    ) : googleClientId ? (
                         <GoogleSignUpButton onSuccess={handleGoogleSuccess} disabled={isLoading} />
                     ) : (
                         <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
@@ -185,7 +203,7 @@ const Register = () => {
                     {/* Divider */}
                     <div className="my-4 flex items-center gap-3">
                         <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">or sign up with email</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{isTeacherRegister ? 'or continue with email' : 'or sign up with email'}</span>
                         <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
                     </div>
 
@@ -252,16 +270,16 @@ const Register = () => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Creating account...
+                                    {isTeacherRegister ? 'Creating teacher account...' : 'Creating account...'}
                                 </>
-                            ) : 'Create account'}
+                            ) : (isTeacherRegister ? 'Create teacher account' : 'Create account')}
                         </button>
                     </form>
 
                     <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                        Already have an account?{' '}
-                        <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Sign in
+                        {isTeacherRegister ? 'Already have a student account?' : 'Already have an account?'}{' '}
+                        <Link to={isTeacherRegister ? '/register' : '/teacher/register'} className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                            {isTeacherRegister ? 'Back to student sign up' : 'Register as a teacher'}
                         </Link>
                     </p>
                 </div>
