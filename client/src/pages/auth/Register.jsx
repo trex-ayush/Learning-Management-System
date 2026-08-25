@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import { showSuccess, showError } from '../../utils/toast';
@@ -14,12 +14,28 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const perks = [
+const studentPerks = [
     'Create and publish unlimited courses',
     'Enroll students and track their progress',
     'AI study assistant included for free',
     'Real-time broadcasts and announcements',
     'Quiz builder and grading tools',
+];
+
+const teacherPerks = [
+    'Publish courses with a guided curriculum editor',
+    'Manage enrolled learners and course progress',
+    'Broadcast updates and announcements instantly',
+    'Use AI notes and quiz tools to save time',
+    'Set up your instructor profile and start teaching',
+];
+
+const adminPerks = [
+    'Oversee platform safety and activity logs',
+    'Manage users, instructor profiles, and warnings',
+    'Configure payment settings and payouts',
+    'Monitor broadcasts and platform-wide updates',
+    'Admin controls and system analytics included',
 ];
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -65,14 +81,26 @@ const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { register, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const isTeacherRegister = location.pathname.startsWith('/teacher/register');
+    const isAdminRegister = location.pathname.startsWith('/admin/register');
+    const isStudentRegister = !isTeacherRegister && !isAdminRegister;
+    const perks = isAdminRegister ? adminPerks : (isTeacherRegister ? teacherPerks : studentPerks);
+    const targetRole = isAdminRegister ? 'admin' : (isTeacherRegister ? 'instructor' : 'student');
 
     const { name, email, password } = formData;
     const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleGoogleSuccess = async (codeResponse) => {
         try {
-            await googleLogin(codeResponse.code);
-            navigate('/');
+            const user = await googleLogin(codeResponse.code, targetRole);
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else if (user.role === 'instructor') {
+                navigate('/instructor/dashboard');
+            } else {
+                navigate('/');
+            }
             showSuccess('Account created successfully');
         } catch (error) {
             if (!error.handled) showError(error, 'Google sign-up failed');
@@ -84,8 +112,14 @@ const Register = () => {
         if (isLoading) return;
         setIsLoading(true);
         try {
-            await register(name, email, password);
-            navigate('/');
+            const user = await register(name, email, password, targetRole);
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else if (user.role === 'instructor') {
+                navigate('/instructor/dashboard');
+            } else {
+                navigate('/');
+            }
             showSuccess('Account created successfully');
         } catch (error) {
             if (!error.handled) showError(error, 'Registration failed');
@@ -112,14 +146,17 @@ const Register = () => {
                     <div className="mb-5">
                         <div className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 rounded-full px-3 py-1 mb-4">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                            <span className="text-blue-300 text-xs font-medium">Free to get started</span>
+                            <span className="text-blue-300 text-xs font-medium">
+                                {isAdminRegister ? 'Administrator access' : (isTeacherRegister ? 'Teacher onboarding' : 'Free to get started')}
+                            </span>
                         </div>
                         <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight tracking-tight">
-                            Everything you need<br />
-                            <span className="text-blue-400">in one place.</span>
+                            {isAdminRegister ? <>Super Admin<br /><span className="text-blue-400">control center.</span></> : (isTeacherRegister ? <>Start teaching<br /><span className="text-blue-400">with your own classroom.</span></> : <>Everything you need<br /><span className="text-blue-400">in one place.</span></>)}
                         </h1>
                         <p className="mt-3 text-slate-400 text-sm xl:text-base leading-relaxed max-w-md">
-                            Join thousands of educators and learners on the platform built for modern education.
+                            {isAdminRegister
+                                ? 'Register an administrator account to oversee students, teachers, courses, and platform operations.'
+                                : (isTeacherRegister ? 'Create your teacher account and start building courses, broadcasts, and learning experiences.' : 'Join thousands of educators and learners on the platform built for modern education.')}
                         </p>
                     </div>
 
@@ -136,12 +173,12 @@ const Register = () => {
                     {/* Testimonial */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <p className="text-slate-300 text-sm leading-relaxed italic">
-                            "Skill Path transformed how I manage my courses. The AI assistant alone saves me hours every week."
+                            "Tenz Learn transformed how I manage my courses. The AI assistant alone saves me hours every week."
                         </p>
                         <div className="flex items-center gap-3 mt-3">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">A</div>
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">T</div>
                             <div>
-                                <p className="text-white text-xs font-semibold">Ayush T.</p>
+                                <p className="text-white text-xs font-semibold">Tenze</p>
                                 <p className="text-slate-500 text-xs">Course Creator</p>
                             </div>
                         </div>
@@ -155,22 +192,26 @@ const Register = () => {
                     <div className="mb-6 lg:hidden">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-blue-200">
                             <FaCheckCircle className="text-blue-400" />
-                            Create your account
+                            {isAdminRegister ? 'Create your admin account' : (isTeacherRegister ? 'Create your teacher account' : 'Create your account')}
                         </div>
                         <h2 className="mt-4 text-3xl font-bold text-white tracking-tight">
-                            Get started
+                            {isAdminRegister ? 'Become an admin' : (isTeacherRegister ? 'Become a teacher' : 'Get started')}
                         </h2>
                         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Join thousands of educators and learners on the platform.
+                            {isAdminRegister
+                                ? 'Set up your administrator profile to manage the platform.'
+                                : (isTeacherRegister ? 'Set up your instructor profile and publish your first course.' : 'Join thousands of educators and learners on the platform.')}
                         </p>
                     </div>
 
                     <div className="hidden lg:block">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Create your account
+                            {isAdminRegister ? 'Admin registration' : (isTeacherRegister ? 'Teacher registration' : 'Create your account')}
                         </h2>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Start your learning journey — it's completely free
+                            {isAdminRegister
+                                ? 'Create an admin account to configure and oversee portal features'
+                                : (isTeacherRegister ? 'Create an instructor account to manage and publish courses' : 'Start your learning journey — it\'s completely free')}
                         </p>
                     </div>
 
@@ -185,7 +226,7 @@ const Register = () => {
                     {/* Divider */}
                     <div className="my-4 flex items-center gap-3">
                         <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">or sign up with email</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{isTeacherRegister ? 'or continue with email' : 'or sign up with email'}</span>
                         <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
                     </div>
 
@@ -252,18 +293,38 @@ const Register = () => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Creating account...
+                                    {isAdminRegister ? 'Creating admin account...' : (isTeacherRegister ? 'Creating teacher account...' : 'Creating account...')}
                                 </>
-                            ) : 'Create account'}
+                            ) : (isAdminRegister ? 'Create admin account' : (isTeacherRegister ? 'Create teacher account' : 'Create account'))}
                         </button>
                     </form>
 
-                    <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                        Already have an account?{' '}
-                        <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Sign in
-                        </Link>
-                    </p>
+                    <div className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400 space-y-2">
+                        {isStudentRegister && (
+                            <p>
+                                Already have an account?{' '}
+                                <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Sign in
+                                </Link>
+                            </p>
+                        )}
+                        {isTeacherRegister && (
+                            <p>
+                                Already have a teacher account?{' '}
+                                <Link to="/teacher/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Sign in
+                                </Link>
+                            </p>
+                        )}
+                        {isAdminRegister && (
+                            <p>
+                                Already have an admin account?{' '}
+                                <Link to="/admin/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Sign in
+                                </Link>
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

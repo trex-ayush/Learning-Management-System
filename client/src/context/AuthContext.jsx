@@ -71,24 +71,33 @@ export const AuthProvider = ({ children }) => {
         checkUserLoggedIn();
     }, []);
 
-    const login = async (email, password) => {
-        const res = await api.post('/auth/login', { email, password });
+    const getRolePath = (role) => {
+        if (role === 'admin') return 'admin';
+        if (role === 'instructor') return 'teacher';
+        return 'student';
+    };
+
+    const login = async (email, password, role) => {
+        const rolePath = getRolePath(role);
+        const res = await api.post(`/auth/${rolePath}/login`, { email, password });
         localStorage.setItem('token', res.data.token);
         cacheUser(res.data);
         setUser(res.data);
         return res.data;
     };
 
-    const register = async (name, email, password) => {
-        const res = await api.post('/auth/register', { name, email, password });
+    const register = async (name, email, password, role = 'student') => {
+        const rolePath = getRolePath(role);
+        const res = await api.post(`/auth/${rolePath}/register`, { name, email, password });
         localStorage.setItem('token', res.data.token);
         cacheUser(res.data);
         setUser(res.data);
         return res.data;
     };
 
-    const googleLogin = async (code) => {
-        const res = await api.post('/auth/google', { code });
+    const googleLogin = async (code, role) => {
+        const rolePath = getRolePath(role);
+        const res = await api.post(`/auth/${rolePath}/google`, { code });
         prompt: 'select_account';
         localStorage.setItem('token', res.data.token);
         cacheUser(res.data);
