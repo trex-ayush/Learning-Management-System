@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import AuthContext from '../../context/AuthContext';
 import { showSuccess, showError, showWarning } from '../../utils/toast';
@@ -14,11 +14,25 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const features = [
+const studentFeatures = [
     { icon: FaGraduationCap, text: 'Track your learning progress across all enrolled courses' },
     { icon: FaChalkboardTeacher, text: 'Build and publish courses with a powerful curriculum editor' },
     { icon: FaRobot, text: 'AI-powered study assistant for instant help with any topic' },
     { icon: FaBullhorn, text: 'Real-time announcements and broadcasts from instructors' },
+];
+
+const adminFeatures = [
+    { icon: FaShieldAlt, text: 'Review platform activity and manage account safety' },
+    { icon: FaBullhorn, text: 'Monitor broadcasts, reports, and platform-wide announcements' },
+    { icon: FaChalkboardTeacher, text: 'Oversee instructors, courses, and publishing workflows' },
+    { icon: FaGraduationCap, text: 'Keep the learning experience running smoothly for everyone' },
+];
+
+const teacherFeatures = [
+    { icon: FaChalkboardTeacher, text: 'Create and publish courses with a guided curriculum editor' },
+    { icon: FaGraduationCap, text: 'Manage enrolled learners and track their course progress' },
+    { icon: FaBullhorn, text: 'Broadcast updates and announcements to your students instantly' },
+    { icon: FaRobot, text: 'Use AI notes, assistants and quiz tools to save grading time' },
 ];
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -65,14 +79,36 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { login, googleLogin } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const isTeacherLogin = location.pathname.startsWith('/teacher/login');
+    const isAdminLogin = location.pathname.startsWith('/admin/login');
+    const isStudentLogin = !isTeacherLogin && !isAdminLogin;
+    const features = isAdminLogin ? adminFeatures : (isTeacherLogin ? teacherFeatures : studentFeatures);
+    const targetRole = isAdminLogin ? 'admin' : (isTeacherLogin ? 'instructor' : 'student');
 
     const { email, password } = formData;
     const onChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    const finishLogin = (user) => {
+        if (targetRole && user.role !== targetRole) {
+            showError(`Account role is not ${targetRole === 'instructor' ? 'teacher' : targetRole}.`);
+            return false;
+        }
+
+        if (user.role === 'admin') {
+            navigate('/admin/dashboard');
+        } else if (user.role === 'instructor') {
+            navigate('/instructor/dashboard');
+        } else {
+            navigate('/');
+        }
+        return true;
+    };
+
     const handleGoogleSuccess = async (codeResponse) => {
         try {
-            const user = await googleLogin(codeResponse.code);
-            navigate('/');
+            const user = await googleLogin(codeResponse.code, targetRole);
+            if (!finishLogin(user)) return;
             if (user.warnings?.length > 0) {
                 showWarning(`You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`);
             } else {
@@ -95,8 +131,8 @@ const Login = () => {
         if (isLoading) return;
         setIsLoading(true);
         try {
-            const user = await login(email, password);
-            navigate('/');
+            const user = await login(email, password, targetRole);
+            if (!finishLogin(user)) return;
             if (user.warnings?.length > 0) {
                 showWarning(`You have ${user.warnings.length} warning${user.warnings.length > 1 ? 's' : ''} on your account. Check your profile for details.`);
             } else {
@@ -179,23 +215,27 @@ const Login = () => {
                 <div className="w-full max-w-sm mx-auto lg:mx-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none rounded-3xl lg:rounded-none shadow-2xl lg:shadow-none border border-white/10 lg:border-0 px-5 py-6 sm:px-0 sm:py-0">
                     <div className="mb-6 lg:hidden">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-blue-200">
-                            <FaGraduationCap className="text-blue-400" />
-                            Skill Path
+                            {isAdminLogin ? <FaShieldAlt className="text-blue-400" /> : (isTeacherLogin ? <FaChalkboardTeacher className="text-blue-400" /> : <FaGraduationCap className="text-blue-400" />)}
+                            {isAdminLogin ? 'Admin access' : (isTeacherLogin ? 'Teacher access' : 'Tenz Learn')}
                         </div>
                         <h2 className="mt-4 text-3xl font-bold text-white tracking-tight">
-                            Welcome back
+                            {isAdminLogin ? 'Welcome, administrator' : (isTeacherLogin ? 'Teacher portal' : 'Welcome back')}
                         </h2>
                         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Sign in to continue your learning journey.
+                            {isAdminLogin
+                                ? 'Sign in to manage users, courses, and platform activity.'
+                                : (isTeacherLogin ? 'Sign in to manage your classes and students.' : 'Sign in to continue your learning journey.')}
                         </p>
                     </div>
 
                     <div className="hidden lg:block">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Welcome back
+                            {isAdminLogin ? 'Administrator login' : (isTeacherLogin ? 'Teacher login' : 'Welcome back')}
                         </h2>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Sign in to continue your learning journey
+                            {isAdminLogin
+                                ? 'Use your admin account to access platform controls'
+                                : (isTeacherLogin ? 'Sign in to manage and build your courses' : 'Sign in to continue your learning journey')}
                         </p>
                     </div>
 
@@ -267,12 +307,32 @@ const Login = () => {
                         </button>
                     </form>
 
-                    <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-                        Don't have an account?{' '}
-                        <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Create one free
-                        </Link>
-                    </p>
+                    <div className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400 space-y-2">
+                        {isStudentLogin && (
+                            <p>
+                                Don't have an account?{' '}
+                                <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Sign up as a student
+                                </Link>
+                            </p>
+                        )}
+                        {isTeacherLogin && (
+                            <p>
+                                Don't have an account?{' '}
+                                <Link to="/teacher/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Sign up as a teacher
+                                </Link>
+                            </p>
+                        )}
+                        {isAdminLogin && (
+                            <p>
+                                Need an admin account?{' '}
+                                <Link to="/admin/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    Register as admin
+                                </Link>
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
