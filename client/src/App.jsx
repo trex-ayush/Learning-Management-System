@@ -151,7 +151,7 @@ const AuthenticatedFloatingButton = () => {
 };
 
 function App() {
-  const authRoutePaths = ['/login', '/register', '/admin/login', '/teacher/register'];
+  const authRoutePaths = ['/login', '/register', '/admin/login', '/teacher/register', '/teacher/login', '/admin/register'];
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   return (
@@ -224,8 +224,10 @@ const AppShell = ({ authRoutePaths }) => {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/admin/login" element={<Login />} />
+            <Route path="/teacher/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/teacher/register" element={<Register />} />
+            <Route path="/admin/register" element={<Register />} />
 
             {/* Admin-only routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />

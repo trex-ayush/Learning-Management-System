@@ -1,4 +1,4 @@
-# Skill Path — Online Learning Platform
+# Tenz Learn — Online Learning Platform
 
 A full-stack online learning and course marketplace platform. Supports multiple user roles (Student, Instructor, Admin) with course creation, AI-powered tools, Stripe payments, progress tracking, quizzes, broadcasts, and comprehensive admin controls.
 
@@ -530,7 +530,7 @@ skill-path/
 ### 1. Clone
 
 ```bash
-git clone https://github.com/trex-ayush/study-portal.git
+git clone https://github.com/tenze/study-portal.git
 cd study-portal
 ```
 
@@ -598,4 +598,4 @@ Educational project. All rights reserved.
 
 ---
 
-Built by **the team** · [GitHub](https://github.com/trex-ayush)
+Built by **the team** · [GitHub](https://github.com/tenze)

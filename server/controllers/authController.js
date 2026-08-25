@@ -57,7 +57,7 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // Check for user email
     const user = await User.findOne({ email });
@@ -68,6 +68,11 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     if (user && (await user.matchPassword(password))) {
+        if (role && user.role !== role) {
+            res.status(400);
+            throw new Error(`Account role is not ${role === 'instructor' ? 'teacher' : role}.`);
+        }
+
         res.locals.user = user; // For Activity Logger
         res.json({
             _id: user.id,
@@ -120,7 +125,7 @@ const updatePassword = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleLogin = asyncHandler(async (req, res) => {
-    const { code } = req.body;
+    const { code, role } = req.body;
 
     if (!code) {
         res.status(400);
@@ -153,6 +158,11 @@ const googleLogin = asyncHandler(async (req, res) => {
             res.status(403);
             throw new Error(user.blockReason || 'Your account has been blocked. Please contact support.');
         }
+
+        if (role && user.role !== role) {
+            res.status(400);
+            throw new Error(`Account role is not ${role === 'instructor' ? 'teacher' : role}.`);
+        }
     } else {
         // Create new user
         user = await User.create({
@@ -160,7 +170,7 @@ const googleLogin = asyncHandler(async (req, res) => {
             email,
             googleId,
             profileImage: picture || '',
-            role: 'student',
+            role: role || 'student',
         });
     }
 
