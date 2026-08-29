@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useContext, useState, useEffect, lazy, Suspense } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import AuthContext, { AuthProvider } from './context/AuthContext';
@@ -151,118 +151,146 @@ const AuthenticatedFloatingButton = () => {
 };
 
 function App() {
+  const authRoutePaths = ['/login', '/register', '/admin/login', '/teacher/register', '/teacher/login', '/admin/register'];
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-    <AuthProvider>
-      <ThemeProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 flex flex-col">
-            <Navbar />
-            <div className="flex-1">
-              <Toaster
-                position="top-center"
-                reverseOrder={false}
-                gutter={10}
-                toastOptions={{
-                  duration: 3000,
-                  style: {
-                    background: '#1e293b',
-                    color: '#f1f5f9',
-                    fontSize: '13.5px',
-                    fontWeight: 500,
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    maxWidth: '420px',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  },
-                  success: {
-                    style: {
-                      background: '#064e3b',
-                      border: '1px solid #059669',
-                    },
-                    iconTheme: { primary: '#34d399', secondary: '#064e3b' },
-                  },
-                  error: {
-                    style: {
-                      background: '#450a0a',
-                      border: '1px solid #dc2626',
-                    },
-                    iconTheme: { primary: '#f87171', secondary: '#450a0a' },
-                    duration: 4000,
-                  },
-                }}
-              />
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-
-                  {/* Admin-only routes */}
-                  <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
-                  <Route path="/admin/activities" element={<ProtectedRoute adminOnly={true}><GlobalActivity /></ProtectedRoute>} />
-
-                  {/* Course owner routes (admin OR course owner - backend verifies ownership) */}
-                  <Route path="/admin/course/:id" element={<CourseOwnerRoute><CourseManage /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:id/settings" element={<CourseOwnerRoute><CourseSettings /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:id/analytics" element={<CourseOwnerRoute><CourseAnalytics /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:courseId/student/:studentId" element={<CourseOwnerRoute><StudentDetail /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:courseId/student/:studentId/progress" element={<CourseOwnerRoute><StudentProgressDetail /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:courseId/quizzes" element={<CourseOwnerRoute><QuizManage /></CourseOwnerRoute>} />
-                  <Route path="/admin/course/:courseId/quiz/:quizId/analytics" element={<CourseOwnerRoute><QuizAnalytics /></CourseOwnerRoute>} />
-
-                  {/* Home - redirects to My Learning if enrolled, otherwise Marketplace */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/marketplace" element={<Marketplace />} />
-                  <Route path="/marketplace/course/:id" element={<CourseLanding />} />
-
-                  {/* My Learning & My Courses - tabs on StudentDashboard */}
-                  <Route path="/my-learning" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-                  <Route path="/my-courses" element={<ProtectedRoute><StudentDashboard defaultTab="created" /></ProtectedRoute>} />
-
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
-                  <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-                  <Route path="/course/:id" element={<ProtectedRoute><StudentCourseDetails /></ProtectedRoute>} />
-                  {/* Public route for lecture view - checks preview status internally */}
-                  <Route path="/course/:id/lecture/:lectureId" element={<CourseView />} />
-                  <Route path="/course/:courseId/quiz/:quizId" element={<ProtectedRoute><QuizTake /></ProtectedRoute>} />
-
-                  {/* Marketplace routes - protected */}
-                  <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
-                  <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
-
-                  {/* AI Chat - any logged-in user */}
-                  <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
-                  <Route path="/ai-settings" element={<ProtectedRoute><StudentAISettings /></ProtectedRoute>} />
-
-                  {/* Invoice - public (shareable via link) */}
-                  <Route path="/invoice/:invoiceNumber" element={<InvoicePage />} />
-
-
-                  {/* Instructor routes */}
-                  <Route path="/become-instructor" element={<ProtectedRoute><BecomeInstructor /></ProtectedRoute>} />
-                  <Route path="/instructor/dashboard" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
-                  <Route path="/instructor/create-course" element={<InstructorRoute><CreateMarketplaceCourse /></InstructorRoute>} />
-                  <Route path="/instructor/courses" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
-                  <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
-                  <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
-                  <Route path="/instructor/ai-settings" element={<InstructorRoute><AISettings /></InstructorRoute>} />
-                  <Route path="/instructor/payment-settings" element={<InstructorRoute><InstructorPaymentSettings /></InstructorRoute>} />
-
-                  {/* 404 Not Found - Catch all undefined routes */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </div>
-            <Footer />
-            <AuthenticatedFloatingButton />
-          </div>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
-    </GoogleOAuthProvider>
+    googleClientId ? (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <AuthProvider>
+          <ThemeProvider>
+            <Router>
+              <AppShell authRoutePaths={authRoutePaths} />
+            </Router>
+          </ThemeProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    ) : (
+      <AuthProvider>
+        <ThemeProvider>
+          <Router>
+            <AppShell authRoutePaths={authRoutePaths} />
+          </Router>
+        </ThemeProvider>
+      </AuthProvider>
+    )
   );
 }
+
+const AppShell = ({ authRoutePaths }) => {
+  const location = useLocation();
+  const isAuthRoute = authRoutePaths.includes(location.pathname);
+
+  return (
+
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 flex flex-col">
+      {!isAuthRoute && <Navbar />}
+      <div className="flex-1">
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={10}
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#1e293b',
+              color: '#f1f5f9',
+              fontSize: '13.5px',
+              fontWeight: 500,
+              borderRadius: '12px',
+              padding: '12px 16px',
+              maxWidth: '420px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            },
+            success: {
+              style: {
+                background: '#064e3b',
+                border: '1px solid #059669',
+              },
+              iconTheme: { primary: '#34d399', secondary: '#064e3b' },
+            },
+            error: {
+              style: {
+                background: '#450a0a',
+                border: '1px solid #dc2626',
+              },
+              iconTheme: { primary: '#f87171', secondary: '#450a0a' },
+              duration: 4000,
+            },
+          }}
+        />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/teacher/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/teacher/register" element={<Register />} />
+            <Route path="/admin/register" element={<Register />} />
+
+            {/* Admin-only routes */}
+            <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/activities" element={<ProtectedRoute adminOnly={true}><GlobalActivity /></ProtectedRoute>} />
+
+            {/* Course owner routes (admin OR course owner - backend verifies ownership) */}
+            <Route path="/admin/course/:id" element={<CourseOwnerRoute><CourseManage /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:id/settings" element={<CourseOwnerRoute><CourseSettings /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:id/analytics" element={<CourseOwnerRoute><CourseAnalytics /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:courseId/student/:studentId" element={<CourseOwnerRoute><StudentDetail /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:courseId/student/:studentId/progress" element={<CourseOwnerRoute><StudentProgressDetail /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:courseId/quizzes" element={<CourseOwnerRoute><QuizManage /></CourseOwnerRoute>} />
+            <Route path="/admin/course/:courseId/quiz/:quizId/analytics" element={<CourseOwnerRoute><QuizAnalytics /></CourseOwnerRoute>} />
+
+            {/* Home - redirects to My Learning if enrolled, otherwise Marketplace */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/marketplace/course/:id" element={<CourseLanding />} />
+
+            {/* My Learning & My Courses - tabs on StudentDashboard */}
+            <Route path="/my-learning" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/my-courses" element={<ProtectedRoute><StudentDashboard defaultTab="created" /></ProtectedRoute>} />
+
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/course/:id" element={<ProtectedRoute><StudentCourseDetails /></ProtectedRoute>} />
+            {/* Public route for lecture view - checks preview status internally */}
+            <Route path="/course/:id/lecture/:lectureId" element={<CourseView />} />
+            <Route path="/course/:courseId/quiz/:quizId" element={<ProtectedRoute><QuizTake /></ProtectedRoute>} />
+
+            {/* Marketplace routes - protected */}
+            <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
+            <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
+
+            {/* AI Chat - any logged-in user */}
+            <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+            <Route path="/ai-settings" element={<ProtectedRoute><StudentAISettings /></ProtectedRoute>} />
+
+            {/* Invoice - public (shareable via link) */}
+            <Route path="/invoice/:invoiceNumber" element={<InvoicePage />} />
+
+
+            {/* Instructor routes */}
+            <Route path="/become-instructor" element={<ProtectedRoute><BecomeInstructor /></ProtectedRoute>} />
+            <Route path="/instructor/dashboard" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
+            <Route path="/instructor/create-course" element={<InstructorRoute><CreateMarketplaceCourse /></InstructorRoute>} />
+            <Route path="/instructor/courses" element={<InstructorRoute><InstructorDashboard /></InstructorRoute>} />
+            <Route path="/instructor/course/:id/edit" element={<InstructorRoute><CourseManage /></InstructorRoute>} />
+            <Route path="/instructor/course/:id/coupons" element={<InstructorRoute><InstructorCoupons /></InstructorRoute>} />
+            <Route path="/instructor/ai-settings" element={<InstructorRoute><AISettings /></InstructorRoute>} />
+            <Route path="/instructor/payment-settings" element={<InstructorRoute><InstructorPaymentSettings /></InstructorRoute>} />
+
+            {/* 404 Not Found - Catch all undefined routes */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </div>
+      {!isAuthRoute && <Footer />}
+      {!isAuthRoute && <AuthenticatedFloatingButton />}
+    </div>
+
+  );
+};
 
 export default App;
